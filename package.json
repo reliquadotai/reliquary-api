@@ -1,0 +1,37 @@
+{
+  "name": "@reliquary/api",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "description": "Versioned generation contracts and client",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./batch-orders": {
+      "types": "./dist/batch-orders.d.ts",
+      "import": "./dist/batch-orders.js"
+    },
+    "./product-inventory": {
+      "types": "./dist/product-inventory.d.ts",
+      "import": "./dist/product-inventory.js"
+    },
+    "./openapi": "./contracts/generation.openapi.json"
+  },
+  "files": [
+    "dist",
+    "contracts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "check": "npm test",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

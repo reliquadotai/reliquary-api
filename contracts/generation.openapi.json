@@ -1,0 +1,3728 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "Generation API",
+    "version": "0.1.0",
+    "description": "Compatibility baseline for existing customer generation and browser projection routes. Contracts do not guarantee live ordering or elastic capacity. Structural JSON Schema constraints complement runtime checks for exact identity/link resolution, monetary sums, uniqueness by identifier and qualification."
+  },
+  "servers": [
+    {
+      "url": "https://app.reliqua.ai",
+      "description": "Customer API origin. Browser session routes use the application same-origin transport."
+    }
+  ],
+  "tags": [
+    {
+      "name": "Customer generation",
+      "description": "orders:write workspace key; responses omit browser billing."
+    },
+    {
+      "name": "Browser generation",
+      "description": "Existing session projection; mutations need approved Origin and matching XSRF. Authorization headers are refused."
+    }
+  ],
+  "paths": {
+    "/api/v1/generation/catalog": {
+      "get": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyCatalog",
+        "summary": "Read the public generation catalogue",
+        "security": [],
+        "x-audience": "workspace-api-key",
+        "description": "Discovery does not establish account permission, available capacity or ordering eligibility.",
+        "responses": {
+          "200": {
+            "description": "Catalogue and current ordering gates.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationCatalog"
+                },
+                "examples": {
+                  "catalog": {
+                    "$ref": "#/components/examples/catalog"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "catalog_limit or invalid_catalog",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dataset-orders/quotes": {
+      "post": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyQuote",
+        "summary": "Create a catalogue or immutable-model quote",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "A quote expires after 24 hours. Dataset permission, inputs, source availability, pricing and daily limits are checked. Pinned models additionally undergo metadata, architecture, context and sizing checks. A quote does not reserve credit, procure capacity or launch work.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created quote; review price, limits and expiry.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationQuote"
+                },
+                "examples": {
+                  "catalogQuote": {
+                    "$ref": "#/components/examples/catalogQuote"
+                  },
+                  "pinnedQuote": {
+                    "$ref": "#/components/examples/pinnedQuote"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, invalid_quote, unknown_offer, unknown_env, env_not_generatable, thinking_unavailable or greedy_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "source_exhausted or pricing_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "model_private, model_not_found, model_unsupported, architecture_unsupported, context_too_long, model_too_large or exceeds_generation_deadline",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: daily quote or model lookup admission limit",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "pricing_unavailable, model_lookup_unavailable or architecture_list_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dataset-orders": {
+      "get": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyOrders",
+        "summary": "List the newest 100 owned orders",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "Newest 100 across both order modes; created_at descending then id descending. No cursor exists.",
+        "responses": {
+          "200": {
+            "description": "Owned order list.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOrdersResponse"
+                },
+                "examples": {
+                  "keyOrders": {
+                    "$ref": "#/components/examples/keyOrders"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyCreateOrder",
+        "summary": "Confirm one reviewed quote and reserve its price",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "description": "Confirmation can reserve or spend credits and enqueue work. Permission and dispatch availability are rechecked before replay or placement. Preserve the original quote and key after ambiguous outcomes; inspect owned state before retrying.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New owned order reserved.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOrderResponse"
+                },
+                "examples": {
+                  "keyCreatedOrder": {
+                    "$ref": "#/components/examples/keyCreatedOrder"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Existing owned order for the same quote and key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOrderResponse"
+                },
+                "examples": {
+                  "keyOrder": {
+                    "$ref": "#/components/examples/keyOrder"
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "insufficient_balance includes available balance and quote price.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "insufficientBalance": {
+                    "$ref": "#/components/examples/insufficientBalance"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: quote missing or not owned",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "orders_unavailable, idempotency_conflict, quote_used, order_limit or source_exhausted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "quote_expired",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dataset-orders/{orderId}": {
+      "get": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyOrder",
+        "summary": "Read owned progress and delivery metadata",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned order detail.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOrderResponse"
+                },
+                "examples": {
+                  "keyOrder": {
+                    "$ref": "#/components/examples/keyOrder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dataset-orders/{orderId}/cancel": {
+      "post": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyCancelOrder",
+        "summary": "Request cancellation of an owned order",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "description": "Reserved work can release its reservation immediately. Running work can drain and deliver verified output after cancellation is requested. 202 acknowledges acceptance; inspect the returned state. Repeated cancellation is not a generic mutation-retry guarantee.",
+        "responses": {
+          "202": {
+            "description": "Cancellation accepted; resulting owned detail.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyOrderResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "invalid_state",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dataset-orders/{orderId}/deliveries/{deliveryId}/files/{fileName}": {
+      "get": {
+        "tags": [
+          "Customer generation"
+        ],
+        "operationId": "keyDownload",
+        "summary": "Read an owned delivery or finite byte range",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          },
+          {
+            "$ref": "#/components/parameters/DeliveryId"
+          },
+          {
+            "$ref": "#/components/parameters/FileName"
+          },
+          {
+            "$ref": "#/components/parameters/Range"
+          }
+        ],
+        "description": "Resolve identifiers from owned detail. A range request can receive 200 or 206; validate bytes and Content-Range before assembly. This handler emits no ETag. Browser URLs use the same-origin transport; workspace keys use the customer API origin.",
+        "responses": {
+          "200": {
+            "description": "Whole binary file; apply the client byte bound.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial binary file.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^bytes [0-9]+-[0-9]+/[0-9]+$"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "file_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/catalog": {
+      "get": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserCatalog",
+        "summary": "Read the public generation catalogue",
+        "security": [],
+        "x-audience": "browser-session",
+        "description": "Discovery does not establish account permission, available capacity or ordering eligibility.",
+        "responses": {
+          "200": {
+            "description": "Catalogue and current ordering gates.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationCatalog"
+                },
+                "examples": {
+                  "catalog": {
+                    "$ref": "#/components/examples/catalog"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "catalog_limit or invalid_catalog",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/quotes": {
+      "post": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserQuote",
+        "summary": "Create a catalogue or immutable-model quote",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "description": "A quote expires after 24 hours. Dataset permission, inputs, source availability, pricing and daily limits are checked. Pinned models additionally undergo metadata, architecture, context and sizing checks. A quote does not reserve credit, procure capacity or launch work.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created quote; review price, limits and expiry.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationQuote"
+                },
+                "examples": {
+                  "catalogQuote": {
+                    "$ref": "#/components/examples/catalogQuote"
+                  },
+                  "pinnedQuote": {
+                    "$ref": "#/components/examples/pinnedQuote"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required, invalid_origin, invalid_xsrf, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, invalid_quote, unknown_offer, unknown_env, env_not_generatable, thinking_unavailable or greedy_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "source_exhausted or pricing_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "model_private, model_not_found, model_unsupported, architecture_unsupported, context_too_long, model_too_large or exceeds_generation_deadline",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited: daily quote or model lookup admission limit",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "pricing_unavailable, model_lookup_unavailable or architecture_list_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/orders": {
+      "get": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserOrders",
+        "summary": "List the newest 100 owned orders",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "description": "Newest 100 across both order modes; created_at descending then id descending. No cursor exists.",
+        "responses": {
+          "200": {
+            "description": "Owned order list.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserOrdersResponse"
+                },
+                "examples": {
+                  "browserOrders": {
+                    "$ref": "#/components/examples/browserOrders"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "invalid_order",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserCreateOrder",
+        "summary": "Confirm one reviewed quote and reserve its price",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "description": "Confirmation can reserve or spend credits and enqueue work. Permission and dispatch availability are rechecked before replay or placement. Preserve the original quote and key after ambiguous outcomes; inspect owned state before retrying.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New owned order reserved.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserOrderResponse"
+                },
+                "examples": {
+                  "browserCreatedOrder": {
+                    "$ref": "#/components/examples/browserCreatedOrder"
+                  }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Existing owned order for the same quote and key.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserOrderResponse"
+                },
+                "examples": {
+                  "browserOrder": {
+                    "$ref": "#/components/examples/browserOrder"
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "insufficient_balance includes available balance and quote price.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "insufficientBalance": {
+                    "$ref": "#/components/examples/insufficientBalance"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required, invalid_origin, invalid_xsrf",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found: quote missing or not owned",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "orders_unavailable, idempotency_conflict, quote_used, order_limit or source_exhausted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "quote_expired",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserOrder",
+        "summary": "Read owned progress and delivery metadata",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned order detail.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserOrderResponse"
+                },
+                "examples": {
+                  "browserOrder": {
+                    "$ref": "#/components/examples/browserOrder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "invalid_order",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/orders/{orderId}/cancel": {
+      "post": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserCancelOrder",
+        "summary": "Request cancellation of an owned order",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          },
+          {
+            "$ref": "#/components/parameters/OrderId"
+          }
+        ],
+        "description": "Reserved work can release its reservation immediately. Running work can drain and deliver verified output after cancellation is requested. 202 acknowledges acceptance; inspect the returned state. Repeated cancellation is not a generic mutation-retry guarantee.",
+        "responses": {
+          "202": {
+            "description": "Cancellation accepted; resulting owned detail.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserOrderResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required, invalid_origin, invalid_xsrf",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "invalid_state",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "invalid_order",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch/orders/{orderId}/deliveries/{deliveryId}/files/{fileName}": {
+      "get": {
+        "tags": [
+          "Browser generation"
+        ],
+        "operationId": "browserDownload",
+        "summary": "Read an owned delivery or finite byte range",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "x-audience": "browser-session",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderId"
+          },
+          {
+            "$ref": "#/components/parameters/DeliveryId"
+          },
+          {
+            "$ref": "#/components/parameters/FileName"
+          },
+          {
+            "$ref": "#/components/parameters/Range"
+          }
+        ],
+        "description": "Resolve identifiers from owned detail. A range request can receive 200 or 206; validate bytes and Content-Range before assembly. This handler emits no ETag. Browser URLs use the same-origin transport; workspace keys use the customer API origin.",
+        "responses": {
+          "200": {
+            "description": "Whole binary file; apply the client byte bound.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial binary file.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^bytes [0-9]+-[0-9]+/[0-9]+$"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "session_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "file_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "workspaceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "rlq_ followed by 48 hexadecimal characters",
+        "description": "Account workspace key with orders:write. Expiry, revocation, account access and ownership remain server checks."
+      },
+      "browserSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "__Host-reliquary_session",
+        "description": "Existing HTTPS session. No workspace key on browser routes. Local HTTP development uses the unprefixed cookie through its configured transport."
+      }
+    },
+    "parameters": {
+      "OrderId": {
+        "name": "orderId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+        }
+      },
+      "DeliveryId": {
+        "name": "deliveryId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,80}$"
+        }
+      },
+      "FileName": {
+        "name": "fileName",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": "Flat filename from an owned delivery. Percent-encode the segment; never follow an arbitrary URL."
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{16,80}$"
+        },
+        "description": "Stable key for this account and exact quote. Preserve quote_id and key after ambiguous outcomes. Another quote with the same key returns 409; successful replay returns 200 and new placement 201. No automatic mutation retry."
+      },
+      "Origin": {
+        "name": "Origin",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": "Browser mutations require the request origin or a configured approved app origin. Sec-Fetch-Site, when present, must be same-origin."
+      },
+      "Xsrf": {
+        "name": "X-XSRF-TOKEN",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": "Must match the XSRF-TOKEN cookie. The existing browser transport supplies it."
+      },
+      "Range": {
+        "name": "Range",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^bytes=[0-9]+-[0-9]+$"
+        },
+        "description": "Use a finite bytes=start-end interval for bounded client reads. Clients check safe bounds, ordering and their maximum byte limit. This server also supports whole-file responses and delegates range semantics to storage; it imposes no application-level range-size cap."
+      }
+    },
+    "schemas": {
+      "GenerationSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "prompts_available": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "thinking": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "prompts_available",
+          "thinking"
+        ]
+      },
+      "CatalogModel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/GenerationSource"
+            }
+          },
+          "model": {
+            "type": "object",
+            "properties": {
+              "repo": {
+                "type": "string",
+                "maxLength": 194,
+                "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              }
+            },
+            "required": [
+              "repo",
+              "revision"
+            ]
+          },
+          "price_per_mtok_usd": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sources"
+        ]
+      },
+      "GenerationCatalog": {
+        "type": "object",
+        "properties": {
+          "ordering": {
+            "enum": [
+              "pilot",
+              "disabled"
+            ]
+          },
+          "any_model_ordering": {
+            "enum": [
+              "pilot",
+              "disabled"
+            ]
+          },
+          "envs": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/GenerationSource"
+            }
+          },
+          "models": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/CatalogModel"
+            }
+          }
+        },
+        "required": [
+          "ordering",
+          "any_model_ordering",
+          "envs",
+          "models"
+        ],
+        "description": "Public qualified catalogue and ordering gates. Discovery, price or a pilot flag does not prove account access, execution capacity or availability at confirmation."
+      },
+      "Sampling": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 2,
+            "default": 0.6
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1,
+            "default": 0.95
+          },
+          "top_k": {
+            "oneOf": [
+              {
+                "const": -1
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            ],
+            "default": 20
+          }
+        },
+        "required": [
+          "temperature",
+          "top_p",
+          "top_k"
+        ],
+        "additionalProperties": false
+      },
+      "SamplingInput": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 2,
+            "default": 0.6
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1,
+            "default": 0.95
+          },
+          "top_k": {
+            "oneOf": [
+              {
+                "const": -1
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            ],
+            "default": 20
+          }
+        },
+        "required": [],
+        "additionalProperties": false,
+        "description": "Omitted fields use the defaults shown. Generation refuses temperature zero."
+      },
+      "CatalogQuoteInput": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Catalogue model id."
+          },
+          "prompt_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "samples_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 32768
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "source": {
+            "type": "string",
+            "description": "Source id belonging to the selected catalogue model."
+          }
+        },
+        "required": [
+          "model",
+          "prompt_count",
+          "samples_per_prompt",
+          "max_new_tokens",
+          "thinking",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "PinnedQuoteInput": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 194,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$",
+            "description": "Public repository. Runtime validation additionally refuses double-dot segments."
+          },
+          "prompt_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "samples_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "env": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/SamplingInput"
+          }
+        },
+        "required": [
+          "model",
+          "prompt_count",
+          "samples_per_prompt",
+          "max_new_tokens",
+          "thinking",
+          "revision",
+          "env"
+        ],
+        "additionalProperties": false
+      },
+      "QuoteInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogQuoteInput"
+          },
+          {
+            "$ref": "#/components/schemas/PinnedQuoteInput"
+          }
+        ]
+      },
+      "QuoteBase": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "prompt_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "samples_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "quote_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1000000,
+            "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+          },
+          "est_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "eta_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "model",
+          "prompt_count",
+          "samples_per_prompt",
+          "max_new_tokens",
+          "thinking",
+          "quote_id",
+          "price_usd",
+          "est_tokens",
+          "eta_hours",
+          "expires_at"
+        ]
+      },
+      "CatalogQuote": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QuoteBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "max_new_tokens": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 32768
+              }
+            },
+            "required": [
+              "source",
+              "max_new_tokens"
+            ]
+          }
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "revision"
+              ]
+            },
+            {
+              "required": [
+                "env"
+              ]
+            }
+          ]
+        }
+      },
+      "PinnedQuote": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QuoteBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string",
+                "maxLength": 194,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$",
+                "description": "Public repository. Runtime validation additionally refuses double-dot segments."
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "env": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "gpu_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "sampling": {
+                "$ref": "#/components/schemas/Sampling"
+              },
+              "architecture": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "est_price_usd": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000,
+                "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+              },
+              "max_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "max_hours": {
+                "type": "number",
+                "minimum": 0
+              },
+              "pricing": {
+                "type": "object",
+                "description": "Server pricing terms. Estimates and the reservation ceiling remain separate; new terms may be added."
+              }
+            },
+            "required": [
+              "model",
+              "revision",
+              "env",
+              "gpu_count",
+              "sampling",
+              "architecture",
+              "est_price_usd",
+              "max_tokens",
+              "max_hours",
+              "pricing"
+            ]
+          }
+        ],
+        "not": {
+          "required": [
+            "source"
+          ]
+        }
+      },
+      "GenerationQuote": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogQuote"
+          },
+          {
+            "$ref": "#/components/schemas/PinnedQuote"
+          }
+        ]
+      },
+      "CreateOrderInput": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          }
+        },
+        "required": [
+          "quote_id"
+        ],
+        "description": "Confirm the reviewed quote. Extra JSON fields are accepted by the current handler but only quote_id is used."
+      },
+      "OrderProgress": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "enum": [
+              "open",
+              "full",
+              "retired",
+              "drained"
+            ]
+          },
+          "prompts_total": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "prompts_full": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "submissions_accepted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "audited": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "verified_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "settled": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "accepted_last_hour": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "counts_complete": {
+            "type": "boolean"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "state",
+          "prompts_total",
+          "prompts_full",
+          "submissions_accepted",
+          "audited",
+          "passed",
+          "verified_tokens",
+          "settled",
+          "accepted_last_hour",
+          "counts_complete",
+          "observed_at"
+        ],
+        "description": "Published observations. Acceptance, audit, passing, settlement and realized payout are distinct outcomes."
+      },
+      "OrderBase": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "prompt_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "samples_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "provisioning",
+              "qualifying",
+              "queued",
+              "running",
+              "draining",
+              "exporting",
+              "delivered",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Nonnegative historical order price in USD, to six decimal places. Quotes retain their separate 0.01 USD minimum; runtime validation checks precision."
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "status_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "needs_attention": {
+            "type": "boolean"
+          },
+          "progress": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/OrderProgress"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 40
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "model",
+          "prompt_count",
+          "samples_per_prompt",
+          "max_new_tokens",
+          "thinking",
+          "id",
+          "status",
+          "price_usd",
+          "cancel_requested",
+          "status_reason",
+          "needs_attention",
+          "progress",
+          "created_at",
+          "updated_at",
+          "finished_at"
+        ]
+      },
+      "CatalogOrder": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "max_new_tokens": {
+                "type": "integer",
+                "minimum": 16,
+                "maximum": 32768
+              }
+            },
+            "required": [
+              "source",
+              "max_new_tokens"
+            ]
+          }
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "revision"
+              ]
+            },
+            {
+              "required": [
+                "env"
+              ]
+            }
+          ]
+        }
+      },
+      "PinnedOrder": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string",
+                "maxLength": 194,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$",
+                "description": "Public repository. Runtime validation additionally refuses double-dot segments."
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "env": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+              },
+              "gpu_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "sampling": {
+                "$ref": "#/components/schemas/Sampling"
+              }
+            },
+            "required": [
+              "model",
+              "revision",
+              "env",
+              "gpu_count",
+              "sampling"
+            ]
+          }
+        ],
+        "not": {
+          "required": [
+            "source"
+          ]
+        }
+      },
+      "KeyOrder": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogOrder"
+          },
+          {
+            "$ref": "#/components/schemas/PinnedOrder"
+          }
+        ],
+        "description": "API-key projection omits browser billing. Do not synthesize a finance receipt from its price/refund fields."
+      },
+      "BrowserBilling": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "enum": [
+              "held",
+              "settled"
+            ]
+          },
+          "reserved_micro_usd": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "held_micro_usd": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "released_micro_usd": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000000000
+          },
+          "charged_micro_usd": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1000000000000
+          }
+        },
+        "required": [
+          "status",
+          "reserved_micro_usd",
+          "held_micro_usd",
+          "released_micro_usd",
+          "charged_micro_usd"
+        ],
+        "description": "Micro-USD receipt. Runtime validators check held+released=reserved while held, charged+released=reserved and held=0 when settled, and reservation versus order price."
+      },
+      "BrowserOrder": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KeyOrder"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "billing": {
+                "$ref": "#/components/schemas/BrowserBilling"
+              },
+              "price_usd": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 1000000,
+                "description": "Existing browser projection accepts order prices of at least 0.01 USD."
+              }
+            },
+            "required": [
+              "billing"
+            ]
+          }
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          },
+          "balance_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "description": "Safe server error. Insufficient-balance errors also contain balance_usd and price_usd. Request references use X-Request-ID, not an error-body field."
+      },
+      "KeyDeliveryFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^/api/v1/dataset-orders/[A-Za-z0-9_-]{1,64}/deliveries/[A-Za-z0-9_-]{1,80}/files/.+$",
+            "description": "Owned relative download route. Runtime validation binds order id, delivery id and percent-encoded filename."
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "sha256",
+          "url"
+        ]
+      },
+      "KeyDelivery": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,80}$"
+          },
+          "files": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/KeyDeliveryFile"
+            }
+          }
+        },
+        "required": [
+          "delivery_id",
+          "files"
+        ]
+      },
+      "KeyOrderDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KeyOrder"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "refunded_usd": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000,
+                "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+              },
+              "deliveries": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "$ref": "#/components/schemas/KeyDelivery"
+                }
+              }
+            },
+            "required": [
+              "refunded_usd",
+              "deliveries"
+            ]
+          }
+        ]
+      },
+      "KeyOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/KeyOrder"
+            }
+          }
+        },
+        "required": [
+          "orders"
+        ],
+        "description": "Newest 100 owned orders, created_at descending then id descending. No cursor or pagination exists."
+      },
+      "KeyOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/KeyOrderDetail"
+          }
+        },
+        "required": [
+          "order"
+        ]
+      },
+      "BrowserDeliveryFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^/api/batch/orders/[A-Za-z0-9_-]{1,64}/deliveries/[A-Za-z0-9_-]{1,80}/files/.+$",
+            "description": "Owned relative download route. Runtime validation binds order id, delivery id and percent-encoded filename."
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "sha256",
+          "url"
+        ]
+      },
+      "BrowserDelivery": {
+        "type": "object",
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,80}$"
+          },
+          "files": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/BrowserDeliveryFile"
+            }
+          }
+        },
+        "required": [
+          "delivery_id",
+          "files"
+        ]
+      },
+      "BrowserOrderDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BrowserOrder"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "refunded_usd": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000000,
+                "description": "USD to six decimal places. Runtime validation checks precision and monetary arithmetic."
+              },
+              "deliveries": {
+                "type": "array",
+                "maxItems": 100,
+                "items": {
+                  "$ref": "#/components/schemas/BrowserDelivery"
+                }
+              }
+            },
+            "required": [
+              "refunded_usd",
+              "deliveries"
+            ]
+          }
+        ]
+      },
+      "BrowserOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/BrowserOrder"
+            }
+          }
+        },
+        "required": [
+          "orders"
+        ],
+        "description": "Newest 100 owned orders, created_at descending then id descending. No cursor or pagination exists."
+      },
+      "BrowserOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order": {
+            "$ref": "#/components/schemas/BrowserOrderDetail"
+          }
+        },
+        "required": [
+          "order"
+        ]
+      }
+    },
+    "examples": {
+      "catalog": {
+        "summary": "Illustrative catalog",
+        "value": {
+          "ordering": "disabled",
+          "any_model_ordering": "disabled",
+          "envs": [
+            {
+              "id": "example-source",
+              "name": "Example source",
+              "prompts_available": 100,
+              "thinking": true
+            }
+          ],
+          "models": [
+            {
+              "id": "example-model",
+              "name": "Example model",
+              "model": {
+                "repo": "example/model",
+                "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              },
+              "price_per_mtok_usd": 0.5,
+              "sources": [
+                {
+                  "id": "example-source",
+                  "name": "Example source",
+                  "prompts_available": 100,
+                  "thinking": true
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "catalogQuoteInput": {
+        "summary": "Illustrative catalogQuoteInput",
+        "value": {
+          "model": "example-model",
+          "source": "example-source",
+          "prompt_count": 1,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 128,
+          "thinking": false
+        }
+      },
+      "pinnedQuoteInput": {
+        "summary": "Illustrative pinnedQuoteInput",
+        "value": {
+          "model": "example/model",
+          "prompt_count": 1,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 128,
+          "thinking": false,
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "env": "example-source",
+          "sampling": {
+            "temperature": 0.6
+          }
+        }
+      },
+      "catalogQuote": {
+        "summary": "Illustrative catalogQuote",
+        "value": {
+          "model": "example-model",
+          "source": "example-source",
+          "prompt_count": 1,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 128,
+          "thinking": false,
+          "quote_id": "example-quote",
+          "price_usd": 0.01,
+          "est_tokens": 128,
+          "eta_hours": 0.01,
+          "expires_at": "2026-10-08T00:00:00.000Z"
+        }
+      },
+      "pinnedQuote": {
+        "summary": "Illustrative pinnedQuote",
+        "value": {
+          "model": "example/model",
+          "prompt_count": 1,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 128,
+          "thinking": false,
+          "quote_id": "example-quote",
+          "price_usd": 0.01,
+          "est_tokens": 128,
+          "eta_hours": 0.01,
+          "expires_at": "2026-10-08T00:00:00.000Z",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "env": "example-source",
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20
+          },
+          "gpu_count": 1,
+          "architecture": "ExampleForCausalLM",
+          "est_price_usd": 0.01,
+          "max_tokens": 128,
+          "max_hours": 0.02,
+          "pricing": {}
+        }
+      },
+      "keyOrder": {
+        "summary": "Illustrative keyOrder",
+        "value": {
+          "order": {
+            "model": "example-model",
+            "source": "example-source",
+            "prompt_count": 1,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 128,
+            "thinking": false,
+            "id": "example-order",
+            "status": "delivered",
+            "price_usd": 0.01,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-10-07T00:00:00.000Z",
+            "updated_at": "2026-10-07T00:00:00.000Z",
+            "finished_at": "2026-10-07T00:01:00.000Z",
+            "refunded_usd": 0,
+            "deliveries": [
+              {
+                "delivery_id": "example-delivery",
+                "files": [
+                  {
+                    "name": "part-00000.parquet",
+                    "size": 128,
+                    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "url": "/api/v1/dataset-orders/example-order/deliveries/example-delivery/files/part-00000.parquet"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "browserOrder": {
+        "summary": "Illustrative browserOrder",
+        "value": {
+          "order": {
+            "model": "example-model",
+            "source": "example-source",
+            "prompt_count": 1,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 128,
+            "thinking": false,
+            "id": "example-order",
+            "status": "delivered",
+            "price_usd": 0.01,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-10-07T00:00:00.000Z",
+            "updated_at": "2026-10-07T00:00:00.000Z",
+            "finished_at": "2026-10-07T00:01:00.000Z",
+            "refunded_usd": 0,
+            "deliveries": [
+              {
+                "delivery_id": "example-delivery",
+                "files": [
+                  {
+                    "name": "part-00000.parquet",
+                    "size": 128,
+                    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                    "url": "/api/batch/orders/example-order/deliveries/example-delivery/files/part-00000.parquet"
+                  }
+                ]
+              }
+            ],
+            "billing": {
+              "status": "settled",
+              "reserved_micro_usd": 10000,
+              "held_micro_usd": 0,
+              "charged_micro_usd": 10000,
+              "released_micro_usd": 0
+            }
+          }
+        }
+      },
+      "keyOrders": {
+        "summary": "Illustrative keyOrders",
+        "value": {
+          "orders": [
+            {
+              "model": "example-model",
+              "source": "example-source",
+              "prompt_count": 1,
+              "samples_per_prompt": 1,
+              "max_new_tokens": 128,
+              "thinking": false,
+              "id": "example-order",
+              "status": "reserved",
+              "price_usd": 0.01,
+              "cancel_requested": false,
+              "status_reason": null,
+              "needs_attention": false,
+              "progress": null,
+              "created_at": "2026-10-07T00:00:00.000Z",
+              "updated_at": "2026-10-07T00:00:00.000Z",
+              "finished_at": null
+            }
+          ]
+        }
+      },
+      "browserOrders": {
+        "summary": "Illustrative browserOrders",
+        "value": {
+          "orders": [
+            {
+              "model": "example-model",
+              "source": "example-source",
+              "prompt_count": 1,
+              "samples_per_prompt": 1,
+              "max_new_tokens": 128,
+              "thinking": false,
+              "id": "example-order",
+              "status": "reserved",
+              "price_usd": 0.01,
+              "cancel_requested": false,
+              "status_reason": null,
+              "needs_attention": false,
+              "progress": null,
+              "created_at": "2026-10-07T00:00:00.000Z",
+              "updated_at": "2026-10-07T00:00:00.000Z",
+              "finished_at": null,
+              "billing": {
+                "status": "held",
+                "reserved_micro_usd": 10000,
+                "held_micro_usd": 10000,
+                "charged_micro_usd": null,
+                "released_micro_usd": 0
+              }
+            }
+          ]
+        }
+      },
+      "error": {
+        "summary": "Illustrative error",
+        "value": {
+          "error": {
+            "code": "orders_unavailable",
+            "message": "Dataset ordering is limited to approved pilot accounts."
+          }
+        }
+      },
+      "insufficientBalance": {
+        "summary": "Illustrative insufficientBalance",
+        "value": {
+          "error": {
+            "code": "insufficient_balance",
+            "message": "Your balance does not cover this quote."
+          },
+          "balance_usd": 0,
+          "price_usd": 0.01
+        }
+      },
+      "keyCreatedOrder": {
+        "summary": "Illustrative reserved order",
+        "value": {
+          "order": {
+            "model": "example-model",
+            "source": "example-source",
+            "prompt_count": 1,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 128,
+            "thinking": false,
+            "id": "example-order",
+            "status": "reserved",
+            "price_usd": 0.01,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-10-07T00:00:00.000Z",
+            "updated_at": "2026-10-07T00:00:00.000Z",
+            "finished_at": null,
+            "refunded_usd": 0,
+            "deliveries": []
+          }
+        }
+      },
+      "browserCreatedOrder": {
+        "summary": "Illustrative reserved order",
+        "value": {
+          "order": {
+            "model": "example-model",
+            "source": "example-source",
+            "prompt_count": 1,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 128,
+            "thinking": false,
+            "id": "example-order",
+            "status": "reserved",
+            "price_usd": 0.01,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-10-07T00:00:00.000Z",
+            "updated_at": "2026-10-07T00:00:00.000Z",
+            "finished_at": null,
+            "refunded_usd": 0,
+            "deliveries": [],
+            "billing": {
+              "status": "held",
+              "reserved_micro_usd": 10000,
+              "held_micro_usd": 10000,
+              "charged_micro_usd": null,
+              "released_micro_usd": 0
+            }
+          }
+        }
+      },
+      "keyHistoricalOrder": {
+        "summary": "Illustrative historical one-micro-USD key order",
+        "value": {
+          "order": {
+            "model": "example-model",
+            "source": "example-source",
+            "prompt_count": 1,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 128,
+            "thinking": false,
+            "id": "example-historical-order",
+            "status": "reserved",
+            "price_usd": 1e-06,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-10-07T00:00:00.000Z",
+            "updated_at": "2026-10-07T00:00:00.000Z",
+            "finished_at": null,
+            "refunded_usd": 0,
+            "deliveries": []
+          }
+        }
+      }
+    }
+  }
+}
