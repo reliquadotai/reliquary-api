@@ -40,7 +40,7 @@ export function createSubnetTaskClient(request: SubnetOperatorTransport) {
         const next = receipt(value);
         if (Object.entries(manifest).some(([key, field]) => next.manifest[key as keyof SubnetTaskManifest] !== field)) throw new Error();
         return next;
-      } catch { throw new GenerationApiError('outcome_unknown', undefined, requestId); }
+      } catch { throw new GenerationApiError('outcome_unknown', undefined, requestId, 'The launch receipt did not match the reviewed task. Retry the same confirmation.'); }
     },
     cancel: async (input: SubnetRun, reason: string) => {
       const run = parseSubnetRun(input);
@@ -51,7 +51,7 @@ export function createSubnetTaskClient(request: SubnetOperatorTransport) {
         const next = receipt(value);
         if (next.id !== run.id || next.manifestSha256 !== run.manifestSha256) throw new Error();
         return next;
-      } catch { throw new GenerationApiError('outcome_unknown'); }
+      } catch { throw new GenerationApiError('outcome_unknown', undefined, undefined, 'The cancellation receipt did not match this task. Refresh its state.'); }
     },
   };
 }
