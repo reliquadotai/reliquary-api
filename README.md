@@ -1,8 +1,8 @@
 # Generation and job contracts and clients
 
-Private `@reliquary/api` 0.2.0 contains generation and job contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 bytes and protocol. The new [job contract](contracts/jobs.openapi.json) uses OpenAPI 3.1.1 / JSON Schema 2020-12 and schema version 1.
+Private `@reliquary/api` 0.2.1 contains generation and job contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 bytes and protocol. The new [job contract](contracts/jobs.openapi.json) uses OpenAPI 3.1.1 / JSON Schema 2020-12 and schema version 1.
 
-Pin the reviewed `vendor/api-client-0.2.0.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI requires Node.js 22 or later.
+Pin the reviewed `vendor/api-client-0.2.1.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI requires Node.js 22 or later.
 
 ```ts
 import { createGenerationClient, createGenerationTransport } from '@reliquary/api';

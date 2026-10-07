@@ -149,7 +149,9 @@ test('operator client preserves canonical native inputs and delegates wallet act
   assert.equal(seen[1].init.headers['X-Resource-Revision'], run.revision);
   assert.match(seen[1].confirmation, /In-flight submissions must drain/);
   const broken = createSubnetTaskClient(async () => ({ run: { ...run, manifest: { ...manifest, thinking: true } } }));
-  await assert.rejects(broken.launch(manifest, requestKey), e => e.code === 'outcome_unknown' && e.retryKey === requestKey);
+  await assert.rejects(broken.launch(manifest, requestKey), e => e.code === 'outcome_unknown' && e.retryKey === requestKey && e.message === 'The launch receipt did not match the reviewed task. Retry the same confirmation.');
+  const wrongCancel = createSubnetTaskClient(async () => ({ run: { ...run, id: requestKey } }));
+  await assert.rejects(wrongCancel.cancel(run, 'Reviewed cancellation.'), e => e.code === 'outcome_unknown' && e.retryKey === undefined && e.message === 'The cancellation receipt did not match this task. Refresh its state.');
 });
 
 test('clean packed client and CLI use real loopback protocol, safe key authority and explicit writes', async () => {
