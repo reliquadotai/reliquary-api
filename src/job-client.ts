@@ -61,7 +61,7 @@ export function jobRequests(audience: JobAudience = 'key') {
 export function createJobsClient(request: JobJsonTransport, options: { audience?: JobAudience } = {}) {
   const audience = options.audience ?? 'key';
   const descriptors = jobRequests(audience);
-  const call = async <T>(descriptor: JobRequest, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> => {
+  const call = async <T>(descriptor: JobRequest, parse: (value: unknown) => T, signal?: AbortSignal): Promise<Awaited<T>> => {
     const mutation = descriptor.method === 'POST';
     const key = descriptor.headers?.['Idempotency-Key'];
     const revision = descriptor.headers?.['X-Resource-Revision'];
