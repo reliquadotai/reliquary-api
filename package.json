@@ -1,10 +1,12 @@
 {
   "name": "@reliquary/api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
-  "description": "Versioned generation contracts and client",
+  "engines": { "node": ">=22" },
+  "bin": { "jobctl": "bin/jobctl.mjs" },
+  "description": "Versioned generation and job contracts and clients",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,11 +20,25 @@
       "types": "./dist/product-inventory.d.ts",
       "import": "./dist/product-inventory.js"
     },
-    "./openapi": "./contracts/generation.openapi.json"
+    "./openapi": "./contracts/generation.openapi.json",
+    "./jobs": {
+      "types": "./dist/job-api.d.ts",
+      "import": "./dist/job-api.js"
+    },
+    "./subnet-tasks": {
+      "types": "./dist/subnet-tasks.d.ts",
+      "import": "./dist/subnet-tasks.js"
+    },
+    "./jobs/openapi": "./contracts/jobs.openapi.json",
+    "./subnet-client": {
+      "types": "./dist/subnet-client.d.ts",
+      "import": "./dist/subnet-client.js"
+    }
   },
   "files": [
     "dist",
     "contracts",
+    "bin",
     "README.md"
   ],
   "scripts": {

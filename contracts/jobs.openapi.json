@@ -1,0 +1,4360 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "Job API contracts",
+    "version": "0.2.0",
+    "description": "Owner-scoped CPU dataset validation and browser-authorized native corpus job projections. Native creation retains its separate wallet-authorized operator workflow. A capability is an observation, not proof of funded capacity or GPU qualification. Public operations exclude worker lease endpoints. Timestamps are Unix epoch milliseconds. Input encoding is UTF-8 JSONL, not CSV. Job spec pins and source references do not replace the economic task registry."
+  },
+  "servers": [
+    {
+      "url": "https://app.reliqua.ai"
+    }
+  ],
+  "paths": {
+    "/api/v1/jobs": {
+      "get": {
+        "operationId": "keyListJobs",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      },
+      "post": {
+        "operationId": "keyCreateJob",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/v1/jobs/capabilities": {
+      "get": {
+        "operationId": "keyJobCapabilities",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      }
+    },
+    "/api/v1/jobs/{jobId}": {
+      "get": {
+        "operationId": "keyJobDetail",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      }
+    },
+    "/api/v1/jobs/{jobId}/events": {
+      "get": {
+        "operationId": "keyJobEvents",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      }
+    },
+    "/api/v1/jobs/{jobId}/artifacts/{artifactId}": {
+      "get": {
+        "operationId": "keyJobArtifact",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      }
+    },
+    "/api/v1/jobs/{jobId}/pause": {
+      "post": {
+        "operationId": "keyPauseJob",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    },
+    "/api/v1/jobs/{jobId}/resume": {
+      "post": {
+        "operationId": "keyResumeJob",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/v1/jobs/{jobId}/cancel": {
+      "post": {
+        "operationId": "keyCancelJob",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    },
+    "/api/v1/job-inputs": {
+      "post": {
+        "operationId": "keyUploadJobInput",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InputUpload"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/v1/job-workers": {
+      "get": {
+        "operationId": "keyJobWorkers",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkersPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:read"
+      },
+      "post": {
+        "operationId": "keyEnrollJobWorker",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerEnrollmentResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerEnrollmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkerEnroll"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/v1/job-workers/{workerId}/revoke": {
+      "post": {
+        "operationId": "keyRevokeJobWorker",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkerId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-required-api-key-scope": "resources:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkerRevoke"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "operationId": "browserListJobs",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserJobsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "browserCreateJob",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/jobs/capabilities": {
+      "get": {
+        "operationId": "browserJobCapabilities",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{jobId}": {
+      "get": {
+        "operationId": "browserJobDetail",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{jobId}/events": {
+      "get": {
+        "operationId": "browserJobEvents",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{jobId}/artifacts/{artifactId}": {
+      "get": {
+        "operationId": "browserJobArtifact",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/ArtifactId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtifactResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{jobId}/pause": {
+      "post": {
+        "operationId": "browserPauseJob",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    },
+    "/api/jobs/{jobId}/resume": {
+      "post": {
+        "operationId": "browserResumeJob",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/jobs/{jobId}/cancel": {
+      "post": {
+        "operationId": "browserCancelJob",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CpuJobId"
+          },
+          {
+            "$ref": "#/components/parameters/Revision"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyJobResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlInput"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    },
+    "/api/job-inputs": {
+      "post": {
+        "operationId": "browserUploadJobInput",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InputResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InputUpload"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/job-workers": {
+      "get": {
+        "operationId": "browserJobWorkers",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkersPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "browserEnrollJobWorker",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerEnrollmentResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerEnrollmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkerEnroll"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "x-required-account-grant": "datasets:submit or training:submit"
+      }
+    },
+    "/api/job-workers/{workerId}/revoke": {
+      "post": {
+        "operationId": "browserRevokeJobWorker",
+        "security": [
+          {
+            "browserSession": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkerId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestKey"
+          },
+          {
+            "$ref": "#/components/parameters/Origin"
+          },
+          {
+            "$ref": "#/components/parameters/Xsrf"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success; inspect the returned state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scope or account grant required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Revision, idempotency, or state conflict.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error; mutation outcome may be unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkerRevoke"
+              }
+            }
+          }
+        },
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "InputRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "format": {
+            "enum": [
+              "instruction",
+              "preference",
+              "corpus"
+            ]
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32768
+          }
+        },
+        "required": [
+          "dataset_id",
+          "sha256",
+          "format",
+          "size_bytes"
+        ]
+      },
+      "ValidationSpec": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "dataset_validation"
+          },
+          "input": {
+            "$ref": "#/components/schemas/InputRef"
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "deadline_seconds": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 3600
+              },
+              "max_attempts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3
+              }
+            },
+            "required": [
+              "deadline_seconds",
+              "max_attempts"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "input",
+          "limits"
+        ]
+      },
+      "NativeManifest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "modelRevision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "checkpointSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "environmentSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "promptStart": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "promptCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "samplesPerPrompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16
+          },
+          "maxNewTokens": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 32768
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "incentiveCap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "deadlineSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "name",
+          "model",
+          "modelRevision",
+          "checkpointSha256",
+          "environment",
+          "environmentSha256",
+          "promptStart",
+          "promptCount",
+          "samplesPerPrompt",
+          "maxNewTokens",
+          "thinking",
+          "incentiveCap",
+          "deadlineSeconds"
+        ]
+      },
+      "CorpusSpec": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "corpus_generation"
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/NativeManifest"
+          }
+        },
+        "required": [
+          "kind",
+          "manifest"
+        ]
+      },
+      "Artifact": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "job_id": {
+            "type": "string",
+            "pattern": "^(cpu|subnet):[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "work_unit_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "enum": [
+              "validation_report",
+              "dataset"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[\\w.()-]{1,100}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10737418240
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "content_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "work_unit_id",
+          "attempt_id",
+          "kind",
+          "name",
+          "size_bytes",
+          "sha256",
+          "content_type",
+          "created_at"
+        ]
+      },
+      "Attempt": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "job_id": {
+            "type": "string",
+            "pattern": "^(cpu|subnet):[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "work_unit_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "attempt_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "worker_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "state": {
+            "enum": [
+              "running",
+              "succeeded",
+              "failed",
+              "expired",
+              "cancelled"
+            ]
+          },
+          "lease_expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "heartbeat_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "started_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,79}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "work_unit_id",
+          "attempt_number",
+          "worker_id",
+          "fence",
+          "state",
+          "lease_expires_at",
+          "heartbeat_at",
+          "started_at",
+          "finished_at",
+          "error_code"
+        ]
+      },
+      "WorkUnit": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "job_id": {
+            "type": "string",
+            "pattern": "^(cpu|subnet):[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "paused",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "needs_attention"
+            ]
+          },
+          "attempt_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            "maxItems": 3
+          },
+          "artifact_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+            },
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "state",
+          "attempt_ids",
+          "artifact_ids"
+        ]
+      },
+      "CpuJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^cpu:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "kind": {
+            "const": "dataset_validation"
+          },
+          "source_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "const": "dataset_validation"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ]
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "paused",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "needs_attention"
+            ]
+          },
+          "native_phase": {
+            "type": "null"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,15}$"
+          },
+          "spec_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ValidationSpec"
+          },
+          "current_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkUnit"
+            },
+            "maxItems": 1,
+            "minItems": 1
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "maxItems": 3
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Artifact"
+            },
+            "maxItems": 1000
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "id",
+          "kind",
+          "source_ref",
+          "state",
+          "native_phase",
+          "revision",
+          "spec_sha256",
+          "spec",
+          "current_attempt_id",
+          "work_units",
+          "attempts",
+          "artifacts",
+          "created_at",
+          "updated_at",
+          "finished_at"
+        ]
+      },
+      "NativeJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^subnet:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "kind": {
+            "const": "corpus_generation"
+          },
+          "source_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "const": "subnet_task"
+              },
+              "id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              }
+            },
+            "required": [
+              "type",
+              "id"
+            ]
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "paused",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "needs_attention"
+            ]
+          },
+          "native_phase": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "spec_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/CorpusSpec"
+          },
+          "current_attempt_id": {
+            "type": "null"
+          },
+          "work_units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkUnit"
+            },
+            "maxItems": 0
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "maxItems": 0
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Artifact"
+            },
+            "maxItems": 1000
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "updated_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "id",
+          "kind",
+          "source_ref",
+          "state",
+          "native_phase",
+          "revision",
+          "spec_sha256",
+          "spec",
+          "current_attempt_id",
+          "work_units",
+          "attempts",
+          "artifacts",
+          "created_at",
+          "updated_at",
+          "finished_at"
+        ]
+      },
+      "Job": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CpuJob"
+          },
+          {
+            "$ref": "#/components/schemas/NativeJob"
+          }
+        ]
+      },
+      "KeyJobResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "job": {
+            "$ref": "#/components/schemas/CpuJob"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job"
+        ]
+      },
+      "BrowserJobResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "job": {
+            "$ref": "#/components/schemas/Job"
+          }
+        },
+        "required": [
+          "schema_version",
+          "job"
+        ]
+      },
+      "KeyJobsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CpuJob"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,512}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "jobs",
+          "next_cursor"
+        ]
+      },
+      "BrowserJobsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,512}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "jobs",
+          "next_cursor"
+        ]
+      },
+      "CreateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ValidationSpec"
+          }
+        },
+        "required": [
+          "schema_version",
+          "spec"
+        ]
+      },
+      "ControlInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,15}$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "required": [
+          "schema_version",
+          "revision",
+          "reason"
+        ]
+      },
+      "InputUpload": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "format": {
+            "enum": [
+              "instruction",
+              "preference",
+              "corpus"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768,
+            "description": "UTF-8 encoded content is bounded to 32768 bytes; JSON wire envelope is bounded to 256 KiB."
+          }
+        },
+        "required": [
+          "schema_version",
+          "format",
+          "content"
+        ]
+      },
+      "InputResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "input": {
+            "$ref": "#/components/schemas/InputRef"
+          }
+        },
+        "required": [
+          "schema_version",
+          "input"
+        ]
+      },
+      "Event": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "job_id": {
+            "type": "string",
+            "pattern": "^(cpu|subnet):[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "paused",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled",
+              "needs_attention"
+            ]
+          },
+          "native_phase": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,79}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "sequence",
+          "state",
+          "native_phase",
+          "code",
+          "created_at"
+        ]
+      },
+      "EventsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,512}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "events",
+          "next_cursor"
+        ]
+      },
+      "Worker": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "qualified_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "expires_at",
+          "revoked_at",
+          "last_seen_at",
+          "qualified_at"
+        ]
+      },
+      "WorkersPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "workers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Worker"
+            },
+            "maxItems": 100
+          },
+          "next_cursor": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "schema_version",
+          "workers",
+          "next_cursor"
+        ]
+      },
+      "WorkerEnroll": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "minimum": 300,
+            "maximum": 86400
+          }
+        },
+        "required": [
+          "schema_version",
+          "name",
+          "ttl_seconds"
+        ]
+      },
+      "WorkerEnrollmentResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "worker": {
+            "$ref": "#/components/schemas/Worker"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{32,256}$",
+                "writeOnly": true,
+                "description": "Returned once. Replays return null; the service stores only the token hash."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "worker",
+          "token"
+        ]
+      },
+      "WorkerRevoke": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500,
+            "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+          }
+        },
+        "required": [
+          "schema_version",
+          "reason"
+        ]
+      },
+      "WorkerResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "worker": {
+            "$ref": "#/components/schemas/Worker"
+          }
+        },
+        "required": [
+          "schema_version",
+          "worker"
+        ]
+      },
+      "ValidationReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "input_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "format": {
+            "enum": [
+              "instruction",
+              "preference",
+              "corpus"
+            ]
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "valid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "line": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "code": {
+                  "enum": [
+                    "too_large",
+                    "invalid_utf8",
+                    "too_many_rows",
+                    "empty",
+                    "invalid_json",
+                    "invalid_fields"
+                  ]
+                }
+              },
+              "required": [
+                "line",
+                "code"
+              ]
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "schema_version",
+          "input_sha256",
+          "format",
+          "rows",
+          "valid",
+          "errors"
+        ]
+      },
+      "ArtifactResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "report": {
+            "$ref": "#/components/schemas/ValidationReport"
+          }
+        },
+        "required": [
+          "schema_version",
+          "artifact",
+          "report"
+        ]
+      },
+      "WorkloadCapability": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "dataset_validation",
+              "corpus_generation"
+            ]
+          },
+          "input_formats": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "instruction",
+                "preference",
+                "corpus"
+              ]
+            },
+            "maxItems": 3
+          },
+          "execution": {
+            "enum": [
+              "cpu",
+              "subnet"
+            ]
+          },
+          "attempts_supported": {
+            "type": "boolean"
+          },
+          "controls": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "pause",
+                "resume",
+                "cancel"
+              ]
+            },
+            "maxItems": 3
+          },
+          "can_submit": {
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enrolled_workers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "live_workers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "qualified_workers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "queued_jobs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "running_jobs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 8
+          },
+          "oldest_queued_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "input_formats",
+          "execution",
+          "attempts_supported",
+          "controls",
+          "can_submit",
+          "reason",
+          "enrolled_workers",
+          "live_workers",
+          "qualified_workers",
+          "queued_jobs",
+          "running_jobs",
+          "oldest_queued_at"
+        ]
+      },
+      "Capabilities": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "workloads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkloadCapability"
+            },
+            "maxItems": 2
+          }
+        },
+        "required": [
+          "schema_version",
+          "workloads"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000,
+                "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "WorkloadDefinition": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1
+          },
+          "kind": {
+            "enum": [
+              "dataset_validation",
+              "corpus_generation"
+            ]
+          },
+          "version": {
+            "const": 1
+          },
+          "execution": {
+            "enum": [
+              "cpu",
+              "subnet"
+            ]
+          },
+          "recovery_mode": {
+            "enum": [
+              "restart_safe",
+              "native_managed"
+            ]
+          },
+          "attempts_supported": {
+            "type": "boolean"
+          },
+          "input_schema_ref": {
+            "enum": [
+              "#/components/schemas/ValidationSpec",
+              "#/components/schemas/CorpusSpec"
+            ]
+          },
+          "result_schema_ref": {
+            "enum": [
+              "#/components/schemas/ValidationReport",
+              null
+            ]
+          }
+        },
+        "required": [
+          "schema_version",
+          "kind",
+          "version",
+          "execution",
+          "recovery_mode",
+          "attempts_supported",
+          "input_schema_ref",
+          "result_schema_ref"
+        ]
+      }
+    },
+    "parameters": {
+      "JobId": {
+        "in": "path",
+        "name": "jobId",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^(cpu|subnet):[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "ArtifactId": {
+        "in": "path",
+        "name": "artifactId",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,100}$"
+        }
+      },
+      "WorkerId": {
+        "in": "path",
+        "name": "workerId",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "RequestKey": {
+        "in": "header",
+        "name": "Idempotency-Key",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      },
+      "Revision": {
+        "in": "header",
+        "name": "X-Resource-Revision",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,15}$"
+        }
+      },
+      "Cursor": {
+        "in": "query",
+        "name": "cursor",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,512}$"
+        }
+      },
+      "Limit": {
+        "in": "query",
+        "name": "limit",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "Origin": {
+        "in": "header",
+        "name": "Origin",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "Xsrf": {
+        "in": "header",
+        "name": "X-XSRF-TOKEN",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        }
+      },
+      "CpuJobId": {
+        "in": "path",
+        "name": "jobId",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^cpu:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        }
+      }
+    },
+    "examples": {
+      "queuedJob": {
+        "value": {
+          "schema_version": 1,
+          "job": {
+            "schema_version": 1,
+            "id": "cpu:11111111-1111-4111-8111-111111111111",
+            "kind": "dataset_validation",
+            "source_ref": {
+              "type": "dataset_validation",
+              "id": "11111111-1111-4111-8111-111111111111"
+            },
+            "state": "queued",
+            "native_phase": null,
+            "revision": "1",
+            "spec_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "spec": {
+              "kind": "dataset_validation",
+              "input": {
+                "dataset_id": "11111111-1111-4111-8111-111111111111",
+                "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "format": "corpus",
+                "size_bytes": 20
+              },
+              "limits": {
+                "deadline_seconds": 300,
+                "max_attempts": 2
+              }
+            },
+            "current_attempt_id": null,
+            "work_units": [
+              {
+                "id": "22222222-2222-4222-8222-222222222222",
+                "job_id": "cpu:11111111-1111-4111-8111-111111111111",
+                "state": "queued",
+                "attempt_ids": [],
+                "artifact_ids": []
+              }
+            ],
+            "attempts": [],
+            "artifacts": [],
+            "created_at": 1800000000000,
+            "updated_at": 1800000000000,
+            "finished_at": null
+          }
+        }
+      },
+      "jobs": {
+        "value": {
+          "schema_version": 1,
+          "jobs": [
+            {
+              "schema_version": 1,
+              "id": "cpu:11111111-1111-4111-8111-111111111111",
+              "kind": "dataset_validation",
+              "source_ref": {
+                "type": "dataset_validation",
+                "id": "11111111-1111-4111-8111-111111111111"
+              },
+              "state": "queued",
+              "native_phase": null,
+              "revision": "1",
+              "spec_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "spec": {
+                "kind": "dataset_validation",
+                "input": {
+                  "dataset_id": "11111111-1111-4111-8111-111111111111",
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "format": "corpus",
+                  "size_bytes": 20
+                },
+                "limits": {
+                  "deadline_seconds": 300,
+                  "max_attempts": 2
+                }
+              },
+              "current_attempt_id": null,
+              "work_units": [
+                {
+                  "id": "22222222-2222-4222-8222-222222222222",
+                  "job_id": "cpu:11111111-1111-4111-8111-111111111111",
+                  "state": "queued",
+                  "attempt_ids": [],
+                  "artifact_ids": []
+                }
+              ],
+              "attempts": [],
+              "artifacts": [],
+              "created_at": 1800000000000,
+              "updated_at": 1800000000000,
+              "finished_at": null
+            }
+          ],
+          "next_cursor": null
+        }
+      },
+      "input": {
+        "value": {
+          "schema_version": 1,
+          "input": {
+            "dataset_id": "11111111-1111-4111-8111-111111111111",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "format": "corpus",
+            "size_bytes": 20
+          }
+        }
+      },
+      "create": {
+        "value": {
+          "schema_version": 1,
+          "spec": {
+            "kind": "dataset_validation",
+            "input": {
+              "dataset_id": "11111111-1111-4111-8111-111111111111",
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "format": "corpus",
+              "size_bytes": 20
+            },
+            "limits": {
+              "deadline_seconds": 300,
+              "max_attempts": 2
+            }
+          }
+        }
+      },
+      "report": {
+        "value": {
+          "schema_version": 1,
+          "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "format": "corpus",
+          "rows": 1,
+          "valid": true,
+          "errors": []
+        }
+      },
+      "capabilities": {
+        "value": {
+          "schema_version": 1,
+          "workloads": [
+            {
+              "kind": "dataset_validation",
+              "input_formats": [
+                "instruction",
+                "preference",
+                "corpus"
+              ],
+              "execution": "cpu",
+              "attempts_supported": true,
+              "controls": [
+                "pause",
+                "resume",
+                "cancel"
+              ],
+              "can_submit": false,
+              "reason": "Feature disabled.",
+              "enrolled_workers": 0,
+              "live_workers": 0,
+              "qualified_workers": 0,
+              "queued_jobs": 0,
+              "running_jobs": 0,
+              "oldest_queued_at": null
+            }
+          ]
+        }
+      }
+    },
+    "securitySchemes": {
+      "workspaceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Customer key. Native job projections and operator actions are not key-authorized."
+      },
+      "browserSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Existing browser session. Native projections additionally require fresh administrator wallet verification."
+      }
+    }
+  }
+}
