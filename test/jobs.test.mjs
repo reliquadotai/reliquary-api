@@ -122,6 +122,20 @@ test('uncertain mutations preserve original idempotency and revision without ret
   await assert.rejects(badUpload.uploadInput({ schema_version: 1, format: 'corpus', content }, requestKey), e => e.code === 'outcome_unknown' && e.requestKey === requestKey);
 });
 
+test('native common controls require the browser administrator transport and exact native revision', async () => {
+  const calls = [];
+  const client = createJobsClient(async (path, init) => { calls.push({ path, init }); return { schema_version: 1, job: native }; }, { audience: 'browser' });
+  const input = { schema_version: 1, revision: native.revision, reason: 'Reviewed pause.' };
+  await client.control(native.id, 'pause', input, requestKey);
+  assert.equal(calls[0].path, '/api/jobs/subnet%3A' + uuid + '/pause');
+  assert.equal(calls[0].init.headers['X-Resource-Revision'], native.revision);
+  assert.equal(calls[0].init.headers['Idempotency-Key'], requestKey);
+  assert.deepEqual(JSON.parse(calls[0].init.body), input);
+  const keyClient = createJobsClient(async () => { throw new Error('Should not call key transport.'); });
+  assert.throws(() => keyClient.control(native.id, 'pause', input, requestKey), e => e.code === 'unsupported_workload');
+  assert.throws(() => client.control(native.id, 'resume', { ...input, revision: '1' }, requestKey));
+});
+
 test('operator client preserves canonical native inputs and delegates wallet action proof to browser transport', async () => {
   const run = { id: uuid, name: manifest.name, status: 'queued', revision: 'c'.repeat(64), manifestSha256: 'd'.repeat(64), manifest,
     native: { jobId: 'example-job', taskId: 'example-task', manifestSha256: 'e'.repeat(64), profileSha256: 'f'.repeat(64), minerEndpoint: null }, progress: null, deliveries: [], createdAt: now, updatedAt: now, reason: null };

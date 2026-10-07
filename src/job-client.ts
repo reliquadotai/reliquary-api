@@ -40,8 +40,9 @@ export function jobRequests(audience: JobAudience = 'key') {
     events: (id: string, input?: JobPageInput): JobRequest => ({ path: ownedPath(id) + '/events' + page(input) }),
     create: (input: JobCreateInput, key: string): JobRequest => mutation(root, parseJobCreateInput(input), key),
     control: (id: string, action: 'pause' | 'resume' | 'cancel', input: JobControlInput, key: string): JobRequest => {
-      if (!id.startsWith('cpu:') || !['pause', 'resume', 'cancel'].includes(action)) throw new JobApiError('unsupported_workload');
+      if ((!id.startsWith('cpu:') && audience !== 'browser') || !['pause', 'resume', 'cancel'].includes(action)) throw new JobApiError('unsupported_workload');
       const parsed = parseJobControlInput(input);
+      if (id.startsWith('cpu:') ? !/^[1-9][0-9]*$/.test(parsed.revision) : !/^[a-f0-9]{64}$/.test(parsed.revision)) throw new Error('Review the current job revision.');
       return mutation(ownedPath(id) + '/' + action, parsed, key, parsed.revision);
     },
     uploadInput: (input: JobInputUpload, key: string): JobRequest => mutation(prefix + '/job-inputs', parseJobInputUpload(input), key),
