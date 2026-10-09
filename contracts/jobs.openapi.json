@@ -8,7 +8,12 @@
   },
   "servers": [
     {
-      "url": "https://app.reliqua.ai"
+      "url": "https://api.reliqua.ai",
+      "description": "Canonical customer API origin."
+    },
+    {
+      "url": "https://app.reliqua.ai",
+      "description": "Existing application proxy. Browser sessions use their same-origin transport."
     }
   ],
   "paths": {
@@ -98,6 +103,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -194,6 +202,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -290,6 +301,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -378,6 +392,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -472,6 +489,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -563,6 +583,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -667,6 +690,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -782,6 +808,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -898,6 +927,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -1007,6 +1039,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -1103,6 +1138,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:read"
@@ -1199,6 +1237,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -1302,6 +1343,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "x-required-api-key-scope": "resources:write",
@@ -1404,6 +1448,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -1505,6 +1552,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -1600,6 +1650,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -1687,6 +1740,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -1780,6 +1836,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -1870,6 +1929,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -1979,6 +2041,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -2099,6 +2164,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -2220,6 +2288,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -2334,6 +2405,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -2429,6 +2503,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       },
@@ -2530,6 +2607,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -2638,6 +2718,9 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         },
         "requestBody": {
@@ -4354,6 +4437,43 @@
         "in": "cookie",
         "name": "session",
         "description": "Existing browser session. Native projections additionally require fresh administrator wallet verification."
+      }
+    },
+    "responses": {
+      "RateLimited": {
+        "description": "Owner request limit shared across browser sessions and workspace keys: 240 GET requests and 120 writes per minute. Retry-After is a wait hint; mutations require explicit reconciliation with the original key.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds before another explicit request.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            }
+          },
+          "X-Request-ID": {
+            "description": "Safe request reference for diagnostics.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "rate_limited",
+                "message": "Too many job requests. Wait before trying again."
+              }
+            }
+          }
+        }
       }
     }
   }

@@ -1,14 +1,16 @@
 # Generation and job contracts and clients
 
-Private `@reliquary/api` 0.2.1 contains generation and job contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 bytes and protocol. The new [job contract](contracts/jobs.openapi.json) uses OpenAPI 3.1.1 / JSON Schema 2020-12 and schema version 1.
+Private `@reliquary/api` 0.2.2 contains generation and job contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. Both use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
 
-Pin the reviewed `vendor/api-client-0.2.1.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI requires Node.js 22 or later.
+Pin the reviewed `vendor/api-client-0.2.2.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
+
+Customer transports default to `https://api.reliqua.ai`. Set `origin: 'https://app.reliqua.ai'` to use the existing application proxy, or supply another reviewed HTTPS origin. Browser clients retain their injected same-origin session transport.
 
 ```ts
 import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
 
 const transport = createGenerationTransport({
-  origin: 'https://app.reliqua.ai',
+  origin: 'https://api.reliqua.ai',
   apiKey: process.env.GENERATION_API_KEY, // existing orders:write workspace key
 });
 const generation = createGenerationClient(transport.request);
@@ -54,6 +56,10 @@ Customer routes support owned CPU `dataset_validation` jobs. Reads require `reso
 
 `control(id, action, {schema_version:1, revision, reason}, originalRequestKey)` supports CPU pause, resume and cancel. It sends both the original UUID idempotency key and `X-Resource-Revision`. On `JobApiError('outcome_unknown')`, preserve `requestKey`, `revision` and the original input, then reconcile owned history and current state. Transport or response-validation failures never trigger an automatic mutation retry. List and event pages use bounded opaque cursors and a maximum limit of 100.
 
+`JobApiError` and `GenerationApiError` can include `requestId` from `X-Request-ID` and `retryAfterSeconds` from `Retry-After`. Invalid hints are omitted; request IDs are limited to 128 safe characters and retry delays to 0–86400 seconds. Integer delays and standard GMT HTTP dates are supported. These optional diagnostics help identify a request and choose when to reconcile; they never enable automatic retries. Generation errors retain their original `retryKey`; job errors retain `requestKey` and `revision`.
+
+Job routes share an owner limit across browser sessions and workspace keys: 240 GET requests and 120 writes per minute. HTTP 429 uses the existing `rate_limited` error envelope and supplies `Retry-After` and `X-Request-ID`. The CLI keeps its refusal message and prints a second JSON diagnostic line when these optional hints are available. Wait as directed before another explicit request; a response hint does not authorize replaying a mutation with a new key.
+
 Capability reads distinguish submission permission, enrolled workers, recently seen workers, verified CPU workers and queued/running demand. Permission can allow a bounded job to queue while worker capacity is zero. CPU qualification does not establish GPU execution, subnet proof, incentives or settlement. Worker enrollment returns its scoped token once; a replay returns `token:null`, and token values never appear in worker list or job views.
 
 Browser consumers inject their existing session transport using `{audience:'browser'}`. Fresh administrator verification additionally permits an owned `corpus_generation` projection. The projection preserves its native manifest, hash, source reference and phase, and exposes no synthetic work units or attempts. Native pause, resume and cancel additionally require the existing administrator browser transport and a wallet action proof for the exact reviewed body and route; its revision remains the native 64-character digest. Customer key clients reject these native controls. The economic task registry remains distinct from a workload definition, customer job or execution attempt. The customer OpenAPI documents CPU control contracts; native controls retain this separate operator security requirement.
@@ -70,6 +76,24 @@ jobctl list --limit 25
 jobctl submit --file request.json --request-key ORIGINAL_UUID --confirm
 jobctl --help
 ```
+
+## CPU quickstart
+
+With an existing `resources:write` key, dataset or training approval, and an available owned CPU worker, run the shipped [validation example](examples/validate-dataset.mjs). This example submits a real bounded validation job; it creates no worker credentials and provisions no capacity. `can_submit` permits queueing and does not guarantee a qualified worker is currently available.
+
+Prepare an `instruction` JSONL file, for example `{"prompt":"Example question","response":"Example answer"}`. Generate and retain two distinct UUIDv4 values once through your normal request journal. Supply those same values and the unchanged file for any explicit reconciliation retry; do not generate fresh keys after an ambiguous result.
+
+```sh
+export JOBS_API_ORIGIN=https://api.reliqua.ai
+export INPUT_REQUEST_KEY=RETAINED_UPLOAD_UUID
+export JOB_REQUEST_KEY=RETAINED_SUBMISSION_UUID
+# JOBS_API_KEY comes from your normal secret mechanism.
+node node_modules/@reliquary/api/examples/validate-dataset.mjs input.jsonl
+```
+
+The example checks capabilities, uploads at most 32 KiB of UTF-8 JSONL, submits the immutable input reference with a 300-second deadline and at most two attempts, and polls for up to 90 seconds. It prints the job and original keys before polling. The client verifies the report's artifact digest, and the example also checks its input digest and format. An invalid dataset still has a verified report and exits with status 1. Set `JOBS_DATASET_FORMAT=preference` or `corpus` for the other supported formats.
+
+If polling times out or the job pauses or needs attention, read its state with `jobctl status --id JOB_ID`; the job remains available within its original lifecycle. Use `jobctl events` for history and `jobctl report --id JOB_ID --artifact ARTIFACT_ID` to fetch the digest-verified report. To pause, resume or cancel, inspect the current revision and explicitly use the existing control command with the original control UUID, revision, reason and `--confirm`. The CLI's unknown-outcome JSON retains the original key, revision and optional response diagnostics. No mutation is retried automatically.
 
 ```sh
 npm ci

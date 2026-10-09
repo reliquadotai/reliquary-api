@@ -156,7 +156,17 @@ test('operator client preserves canonical native inputs and delegates wallet act
 
 test('clean packed client and CLI use real loopback protocol, safe key authority and explicit writes', async () => {
   const seen = [];
+  let refuseSubmission = false;
+  let throttleReads = false;
+  let quickstart = false;
+  let polls = 0;
   const worker = { id: requestKey, name: 'Example worker', expires_at: now + 600000, revoked_at: null, last_seen_at: null, qualified_at: null };
+  const report = { schema_version: 1, input_sha256: input.sha256, format: 'corpus', rows: 1, valid: true, errors: [] };
+  const reportBytes = JSON.stringify(report);
+  const artifact = { id: 'report-a', job_id: id, work_unit_id: unit, attempt_id: attemptId, kind: 'validation_report', name: 'validation.json', size_bytes: Buffer.byteLength(reportBytes), sha256: sha256(reportBytes), content_type: 'application/json', created_at: now + 1000 };
+  const succeeded = { ...job, state: 'succeeded', revision: '3', updated_at: now + 1000, finished_at: now + 1000,
+    work_units: [{ ...job.work_units[0], state: 'succeeded', attempt_ids: [attemptId], artifact_ids: [artifact.id] }],
+    attempts: [{ ...attempt, state: 'succeeded', finished_at: now + 1000 }], artifacts: [artifact] };
   const server = createServer((request, response) => {
     let body = '';
     request.on('data', bytes => { body += bytes; });
@@ -164,19 +174,30 @@ test('clean packed client and CLI use real loopback protocol, safe key authority
       seen.push({ path: request.url, method: request.method, headers: request.headers, body });
       response.setHeader('Content-Type', 'application/json');
       const path = request.url.split('?')[0];
+      if (throttleReads && path === '/api/v1/jobs' && request.method === 'GET') {
+        response.statusCode = 429;
+        response.setHeader('X-Request-ID', 'request-cli-rate');
+        response.setHeader('Retry-After', '11');
+        return response.end('{"error":{"code":"rate_limited"}}');
+      }
+      if (refuseSubmission && path === '/api/v1/jobs' && request.method === 'POST') {
+        response.statusCode = 503;
+        response.setHeader('X-Request-ID', 'request-cli');
+        response.setHeader('Retry-After', '9');
+        return response.end('{"error":{"code":"upstream_unavailable"}}');
+      }
       let output;
-      if (path.endsWith('/capabilities')) output = caps;
+      if (path.endsWith('/capabilities')) output = quickstart ? { ...caps, workloads: [{ ...capability, can_submit: true, reason: null, enrolled_workers: 1, live_workers: 1, qualified_workers: 1 }] } : caps;
       else if (path === '/api/v1/job-inputs') { const parsed = JSON.parse(body); output = { schema_version: 1, input: { ...input, sha256: sha256(parsed.content), size_bytes: Buffer.byteLength(parsed.content) } }; }
       else if (path === '/api/v1/job-workers' && request.method === 'GET') output = { schema_version: 1, workers: [], next_cursor: null };
       else if (path === '/api/v1/job-workers' && request.method === 'POST') output = { schema_version: 1, worker, token: 'x'.repeat(48) };
       else if (path.endsWith('/revoke')) output = { schema_version: 1, worker: { ...worker, revoked_at: now } };
       else if (path.endsWith('/events')) output = { schema_version: 1, events: [], next_cursor: null };
       else if (path.endsWith('/artifacts/report-a')) {
-        const report = { schema_version: 1, input_sha256: input.sha256, format: 'corpus', rows: 1, valid: true, errors: [] };
-        const data = JSON.stringify(report);
-        output = { schema_version: 1, artifact: { id: 'report-a', job_id: id, work_unit_id: unit, attempt_id: attemptId, kind: 'validation_report', name: 'validation.json', size_bytes: Buffer.byteLength(data), sha256: sha256(data), content_type: 'application/json', created_at: now }, report };
+        output = { schema_version: 1, artifact, report };
       }
       else if (path === '/api/v1/jobs' && request.method === 'GET') output = { schema_version: 1, jobs: [job], next_cursor: null };
+      else if (quickstart && path === '/api/v1/jobs/cpu%3A' + uuid && request.method === 'GET') output = { schema_version: 1, job: ++polls === 1 ? running : succeeded };
       else output = { schema_version: 1, job };
       response.end(JSON.stringify(output));
     });
@@ -212,6 +233,41 @@ test('clean packed client and CLI use real loopback protocol, safe key authority
     assert.equal(seen.length, before);
     const created = await execFile(process.execPath, [cli, 'submit', '--file', file, '--request-key', requestKey, '--confirm'], { cwd: root, env });
     assert.deepEqual(JSON.parse(created.stdout), job);
+    refuseSubmission = true;
+    const beforeRefusal = seen.length;
+    await assert.rejects(execFile(process.execPath, [cli, 'submit', '--file', file, '--request-key', requestKey, '--confirm'], { cwd: root, env }), error => {
+      const diagnostic = JSON.parse(error.stderr);
+      assert.equal(diagnostic.error, 'outcome_unknown'); assert.equal(diagnostic.request_key, requestKey);
+      assert.equal(diagnostic.status, 503); assert.equal(diagnostic.request_id, 'request-cli'); assert.equal(diagnostic.retry_after_seconds, 9);
+      return true;
+    });
+    assert.equal(seen.length, beforeRefusal + 1);
+    refuseSubmission = false;
+    throttleReads = true;
+    const beforeThrottle = seen.length;
+    await assert.rejects(execFile(process.execPath, [cli, 'list'], { cwd: root, env }), error => {
+      const [message, data] = error.stderr.trim().split('\n');
+      assert.equal(message, 'Job API refused the request: rate_limited.');
+      assert.deepEqual(JSON.parse(data), { status: 429, request_id: 'request-cli-rate', retry_after_seconds: 11 });
+      return true;
+    });
+    assert.equal(seen.length, beforeThrottle + 1);
+    throttleReads = false;
+    quickstart = true;
+    const inputFile = join(root, 'input.jsonl'); await writeFile(inputFile, content);
+    const beforeExample = seen.length;
+    const completed = await execFile(process.execPath, [join(root, 'node_modules/@reliquary/api/examples/validate-dataset.mjs'), inputFile], {
+      cwd: root, env: { ...env, JOBS_DATASET_FORMAT: 'corpus', INPUT_REQUEST_KEY: requestKey, JOB_REQUEST_KEY: '66666666-6666-4666-8666-666666666666' }, timeout: 20000,
+    });
+    assert.deepEqual(JSON.parse(completed.stdout), { artifact, report });
+    assert.equal(JSON.parse(completed.stderr).job_id, id);
+    const exampleCalls = seen.slice(beforeExample);
+    assert.equal(exampleCalls.filter(r => r.method === 'POST').length, 2);
+    assert.equal(exampleCalls.filter(r => r.path.startsWith('/api/v1/job-workers')).length, 0);
+    assert.equal(polls, 2);
+    assert.equal(exampleCalls.find(r => r.path === '/api/v1/job-inputs').headers['idempotency-key'], requestKey);
+    assert.equal(exampleCalls.find(r => r.path === '/api/v1/jobs').headers['idempotency-key'], '66666666-6666-4666-8666-666666666666');
+    quickstart = false;
     const readOnly = await execFile(process.execPath, ['--input-type=module', '-e', 'import {jobRequests,parseJob} from "@reliquary/api/jobs"; console.log(JSON.stringify(jobRequests().list()))'], { cwd: root });
     assert.deepEqual(JSON.parse(readOnly.stdout), { path: '/api/v1/jobs' });
     const definitions = await execFile(process.execPath, [cli, 'definitions'], { cwd: root, env: { ...env, JOBS_API_KEY: '', JOBS_API_ORIGIN: 'invalid' } });

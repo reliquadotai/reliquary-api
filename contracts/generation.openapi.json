@@ -8,8 +8,12 @@
   },
   "servers": [
     {
+      "url": "https://api.reliqua.ai",
+      "description": "Canonical customer API origin."
+    },
+    {
       "url": "https://app.reliqua.ai",
-      "description": "Customer API origin. Browser session routes use the application same-origin transport."
+      "description": "Existing application proxy. Browser sessions use their same-origin transport."
     }
   ],
   "tags": [
