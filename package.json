@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -39,6 +39,7 @@
     "dist",
     "contracts",
     "bin",
+    "examples",
     "README.md"
   ],
   "scripts": {

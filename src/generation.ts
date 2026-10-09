@@ -15,7 +15,8 @@ export type GenerationRequest = {
 export type FileRange = { offset: number; maxBytes: number };
 export const MAX_FILE_CHUNK_BYTES = 262_144;
 export class GenerationApiError extends Error {
-  constructor(public readonly code: string, public readonly status?: number, public readonly retryKey?: string, message?: string) {
+  constructor(public readonly code: string, public readonly status?: number, public readonly retryKey?: string, message?: string,
+    public readonly requestId?: string, public readonly retryAfterSeconds?: number) {
     super(message ?? `API request failed: ${code}.`);
   }
 }
@@ -134,7 +135,8 @@ export function createGenerationClient(request: GenerationJsonTransport, options
       if (error instanceof GenerationApiError && ['outcome_unknown', 'credential_required', 'invalid_origin', 'invalid_route', 'invalid_credential', 'invalid_timeout', 'request_too_large', 'writes_disabled'].includes(error.code)) throw error;
       const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
       if (typeof status === 'number' && status >= 400 && status < 500 && status !== 408) throw error;
-      throw new GenerationApiError('outcome_unknown', typeof status === 'number' ? status : undefined, r.headers?.['Idempotency-Key']);
+      throw new GenerationApiError('outcome_unknown', typeof status === 'number' ? status : undefined, r.headers?.['Idempotency-Key'], undefined,
+        error instanceof GenerationApiError ? error.requestId : undefined, error instanceof GenerationApiError ? error.retryAfterSeconds : undefined);
     }
   };
   const parseOrder = (v: unknown) => audience === 'browser' ? parseBatchOrderResponse(v) : parseGenerationOrderResponse(v);

@@ -1,4 +1,5 @@
 import { GenerationApiError, generationRequests, MAX_FILE_CHUNK_BYTES, type FileRange, type GenerationJsonTransport } from './generation.js';
+import { responseDiagnostics } from './error-diagnostics.js';
 
 export type GenerationFileChunk = { bytes: Uint8Array; contentType: string; contentRange: string | null };
 export type GenerationTransportOptions = {
@@ -29,7 +30,8 @@ async function boundedBody(response: Response, limit: number): Promise<Uint8Arra
 
 /** Scoped customer key transport. Browser callers inject their existing session transport instead. */
 export function createGenerationTransport(options: GenerationTransportOptions = {}) {
-  const origin = new URL(options.origin ?? 'https://app.reliqua.ai');
+  let origin: URL;
+  try { origin = new URL(options.origin ?? 'https://api.reliqua.ai'); } catch { throw new GenerationApiError('invalid_origin'); }
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
   if ((origin.protocol !== 'https:' && !(origin.protocol === 'http:' && loopback)) || origin.username || origin.password ||
       origin.pathname !== '/' || origin.search || origin.hash) throw new GenerationApiError('invalid_origin');
@@ -57,38 +59,46 @@ export function createGenerationTransport(options: GenerationTransportOptions = 
     }
     const retryKey = headers.get('Idempotency-Key') ?? undefined;
     const signal = init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
+    let status: number | undefined;
+    let diagnostics: ReturnType<typeof responseDiagnostics> = { requestId: undefined, retryAfterSeconds: undefined };
+    const failure = (code: string) => new GenerationApiError(code, status, retryKey, undefined, diagnostics.requestId, diagnostics.retryAfterSeconds);
     try {
       const response = await fetcher(url, { method, headers, ...(init.body == null ? {} : { body: init.body }), signal, redirect: 'manual', credentials: 'omit' });
+      status = response.status;
+      diagnostics = responseDiagnostics(response.headers);
       if (response.status >= 300 && response.status < 400) {
-        await response.body?.cancel(); throw new GenerationApiError(mutating ? 'outcome_unknown' : 'redirect_refused', response.status, retryKey);
+        await response.body?.cancel(); throw failure(mutating ? 'outcome_unknown' : 'redirect_refused');
       }
       const bytes = await boundedBody(response, response.ok && fileLimit !== undefined ? fileLimit : 4 * 1024 * 1024);
       if (!response.ok) {
-        if (mutating && response.status >= 500) throw new GenerationApiError('outcome_unknown', response.status, retryKey);
+        if (mutating && response.status >= 500) throw failure('outcome_unknown');
         let code = `http_${response.status}`;
         try {
           const value: unknown = JSON.parse(new TextDecoder().decode(bytes));
           if (value && typeof value === 'object' && 'error' in value && value.error && typeof value.error === 'object' && 'code' in value.error &&
               typeof value.error.code === 'string' && /^[a-z][a-z0-9_]{0,79}$/.test(value.error.code)) code = value.error.code;
         } catch { /* A refusal may use a plain-text body. */ }
-        throw new GenerationApiError(code, response.status, retryKey);
+        throw failure(code);
       }
       return { response, bytes };
     } catch (error) {
       if (error instanceof GenerationApiError) {
-        if (mutating && error.code === 'response_too_large') throw new GenerationApiError('outcome_unknown', error.status, retryKey);
+        if (error.code === 'response_too_large') throw failure(mutating ? 'outcome_unknown' : error.code);
         throw error;
       }
-      throw new GenerationApiError(mutating ? 'outcome_unknown' : signal.aborted ? 'request_aborted' : 'upstream_unavailable', undefined, retryKey);
+      throw failure(mutating ? 'outcome_unknown' : signal.aborted ? 'request_aborted' : 'upstream_unavailable');
     }
   };
   const request: GenerationJsonTransport = async (path, init = {}) => {
-    const { bytes } = await exchange(path, init);
+    const { response, bytes } = await exchange(path, init);
     try {
       const value: unknown = JSON.parse(new TextDecoder().decode(bytes));
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
       return value;
-    } catch { throw new GenerationApiError(init.method === 'POST' ? 'outcome_unknown' : 'invalid_response', undefined, new Headers(init.headers).get('Idempotency-Key') ?? undefined); }
+    } catch {
+      const diagnostics = responseDiagnostics(response.headers);
+      throw new GenerationApiError(init.method === 'POST' ? 'outcome_unknown' : 'invalid_response', response.status, new Headers(init.headers).get('Idempotency-Key') ?? undefined, undefined, diagnostics.requestId, diagnostics.retryAfterSeconds);
+    }
   };
   return {
     request,

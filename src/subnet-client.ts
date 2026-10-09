@@ -20,7 +20,8 @@ export function createSubnetTaskClient(request: SubnetOperatorTransport) {
       const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
       if (error instanceof GenerationApiError && error.code === 'outcome_unknown') throw error;
       if (typeof status === 'number' && status >= 400 && status < 500 && status !== 408) throw error;
-      throw new GenerationApiError('outcome_unknown', typeof status === 'number' ? status : undefined, new Headers(init.headers).get('Idempotency-Key') ?? undefined);
+      throw new GenerationApiError('outcome_unknown', typeof status === 'number' ? status : undefined, new Headers(init.headers).get('Idempotency-Key') ?? undefined, undefined,
+        error instanceof GenerationApiError ? error.requestId : undefined, error instanceof GenerationApiError ? error.retryAfterSeconds : undefined);
     }
   };
   return {

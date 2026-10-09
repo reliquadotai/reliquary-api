@@ -20,7 +20,7 @@ test('OpenAPI baseline, every reference, operation and path parameter stay compl
   assert.equal(spec.openapi, '3.1.1');
   assert.equal(spec.jsonSchemaDialect, 'https://json-schema.org/draft/2020-12/schema');
   assert.equal(spec.info.version, '0.1.0');
-  assert.deepEqual(spec.servers.map(s => s.url), ['https://app.reliqua.ai']);
+  assert.deepEqual(spec.servers.map(s => s.url), ['https://api.reliqua.ai', 'https://app.reliqua.ai']);
   const walk = value => {
     if (!value || typeof value !== 'object') return;
     if (value.$ref) resolve(value.$ref);

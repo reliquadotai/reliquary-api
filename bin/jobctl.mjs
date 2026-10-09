@@ -72,7 +72,11 @@ try {
 } catch (error) {
   const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
   if (code === 'outcome_unknown') {
-    process.stderr.write(JSON.stringify({ error: 'outcome_unknown', request_key: options.get('request-key'), revision: options.get('revision') ?? null, action: command, guidance: 'Reconcile status with the original input and key; do not create a new key to retry.' }) + '\n');
-  } else process.stderr.write((code ? `Job API refused the request: ${code}.` : error instanceof Error ? error.message : 'Job command failed.') + '\n');
+    process.stderr.write(JSON.stringify({ error: 'outcome_unknown', request_key: options.get('request-key'), revision: options.get('revision') ?? null, action: command, status: error.status ?? null, request_id: error.requestId ?? null, retry_after_seconds: error.retryAfterSeconds ?? null, guidance: 'Reconcile status with the original input and key; do not create a new key to retry.' }) + '\n');
+  } else {
+    process.stderr.write((code ? `Job API refused the request: ${code}.` : error instanceof Error ? error.message : 'Job command failed.') + '\n');
+    if (error?.requestId !== undefined || error?.retryAfterSeconds !== undefined)
+      process.stderr.write(JSON.stringify({ status: error.status ?? null, request_id: error.requestId ?? null, retry_after_seconds: error.retryAfterSeconds ?? null }) + '\n');
+  }
   process.exitCode = 1;
 }

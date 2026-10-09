@@ -74,7 +74,8 @@ export function createJobsClient(request: JobJsonTransport, options: { audience?
       if (error instanceof JobApiError && ['outcome_unknown', 'credential_required', 'invalid_origin', 'invalid_route', 'invalid_credential', 'invalid_timeout', 'request_too_large', 'writes_disabled'].includes(error.code)) throw error;
       const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
       if (typeof status === 'number' && status >= 400 && status < 500 && status !== 408) throw error;
-      throw new JobApiError('outcome_unknown', typeof status === 'number' ? status : undefined, key, revision);
+      throw new JobApiError('outcome_unknown', typeof status === 'number' ? status : undefined, key, revision,
+        error instanceof JobApiError ? error.requestId : undefined, error instanceof JobApiError ? error.retryAfterSeconds : undefined);
     }
     try { return await parse(value); }
     catch (error) { if (mutation) throw new JobApiError('outcome_unknown', undefined, key, revision); throw error; }
