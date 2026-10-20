@@ -8,3 +8,7 @@ dist/
 *.pem
 *.key
 .DS_Store
+
+/test-results/
+
+/coverage/
