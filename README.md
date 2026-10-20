@@ -102,3 +102,9 @@ npm pack
 ```
 
 Checks use Node's test runner, OpenAPI reference/operation assertions and synthetic examples through the shipped validators. A clean packed installation and CLI are exercised against a local HTTP server. Tests make no production requests, orders or provisioned rentals.
+
+### Test reports
+
+CI keeps a unit-test count summary for seven days, including failed runs.
+Generated reports stay in ignored `test-results/`; logs, credentials and raw
+response bodies are not uploaded. Maintained tests and fixtures remain versioned.
