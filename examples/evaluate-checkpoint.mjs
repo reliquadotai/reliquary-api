@@ -20,7 +20,7 @@ export function parseCheckpointConfig(value) {
   requireValue(value.schema_version === 1 && safeRef(value.trainer_run_id) && safeRef(value.client_ref), 'Use schema_version1 and safe trainer_run_id/client_ref identifiers.');
   requireValue(value.checkpoint_step === null || Number.isSafeInteger(value.checkpoint_step) && value.checkpoint_step >= 0 && value.checkpoint_step <= 1e12, 'Use an explicit optimizer checkpoint_step in0..1e12, or null when unknown.');
   requireValue(typeof value.max_total_usd === 'number' && Number.isFinite(value.max_total_usd) && value.max_total_usd >= 0, 'An explicit approved max_total_usd is required.');
-  requireValue(Array.isArray(value.requests) && value.requests.length >= 1 && value.requests.length <= 8, 'Choose1..8 fixed-set evaluation requests.');
+  requireValue(Array.isArray(value.requests) && value.requests.length >= 1 && value.requests.length <= 24, 'Choose 1..24 fixed-set evaluation requests.');
   const requests = value.requests.map(input => {
     const parsed = parseEvaluationQuoteInput(input);
     requireValue(parsed.mode === 'direct', 'Frozen checkpoint evaluations currently require explicitly qualified direct mode.');
@@ -197,7 +197,7 @@ export async function runCheckpointEvaluation(configValue, options) {
         } else if (!['cancelled', 'failed'].includes(order.status)) pending = true;
       }
       if (!pending || waitSeconds === 0) break;
-      try { await sleep(3000, undefined, { signal }); }
+      try { await sleep(30000, undefined, { signal }); }
       catch (error) { if (!signal.aborted) throw error; break; }
     } } catch (error) { if (!signal.aborted) throw error; }
     return state;

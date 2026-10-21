@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { createEvaluationClient, GenerationApiError, verifyEvaluationProtocol } from '../dist/index.js';
+import { canonicalEvaluationJson, createEvaluationClient, GenerationApiError, verifyEvaluationProtocol } from '../dist/index.js';
 import { parseCheckpointConfig, runCheckpointEvaluation, boundedRead, downloadEvaluationReport } from '../examples/evaluate-checkpoint.mjs';
 import { appendCheckpointBenchmarks, exportCheckpointBenchmarks, verifyCheckpointPublication } from '../examples/export-checkpoint-benchmarks.mjs';
 import { fixture, sha } from './evaluation-fixture.mjs';
@@ -22,6 +22,73 @@ test('the exact cross-language producer fixture verifies without reserialization
   await verifyEvaluationProtocol({ protocol: f.set_protocol, protocol_json: f.set_protocol_json, protocol_sha256: f.set_protocol_sha256 });
   await verifyEvaluationProtocol(f);
   assert.equal(sha(f.protocol_json), f.protocol_sha256);
+});
+
+test('checkpoint configurations allow up to 24 distinct fixed sets for one model revision', () => {
+  const f = fixture();
+  const config = count => ({ ...f.config, requests: Array.from({ length: count }, (_, index) => ({ ...f.input, envs: [{ ...f.input.envs[0], set_id: `fixed-set-${index}` }] })) });
+  for (const count of [12, 24]) assert.equal(parseCheckpointConfig(config(count)).requests.length, count);
+  assert.throws(() => parseCheckpointConfig(config(25)), /1\.\.24/);
+  const duplicate = config(12); duplicate.requests[11] = duplicate.requests[0];
+  assert.throws(() => parseCheckpointConfig(duplicate), /Each fixed set may appear once/);
+  for (const change of [{ model: 'other/model' }, { revision: 'b'.repeat(40) }]) {
+    const mixed = config(12); Object.assign(mixed.requests[11], change);
+    assert.throws(() => parseCheckpointConfig(mixed), /exactly one model checkpoint/);
+  }
+});
+
+test('twelve fixed sets retain one aggregate approval and poll pending orders every 30 seconds', async t => {
+  const dir = await privateDirectory(t), journalPath = join(dir, 'suite.private.json'), f = fixture();
+  const suites = Array.from({ length: 12 }, (_, index) => {
+    const setId = `fixed-set-${index}`;
+    const input = { ...f.input, envs: [{ ...f.input.envs[0], set_id: setId }] };
+    const setProtocol = { ...f.set.protocol, set: { ...f.set.protocol.set, set_id: setId } };
+    const setJson = canonicalEvaluationJson(setProtocol), setSha = sha(setJson);
+    const set = { ...f.set, set_id: setId, protocol: setProtocol, protocol_json: setJson, protocol_sha256: setSha };
+    const protocol = { ...f.protocol, sets: input.envs, protocol_bindings: { [setId]: setSha } };
+    const raw = canonicalEvaluationJson(protocol);
+    const quote = { ...f.quote, quote_id: `quote-${index}`, price_usd: 0.1, envs: input.envs, protocol, protocol_json: raw, protocol_sha256: sha(raw), protocol_bindings: protocol.protocol_bindings };
+    const order = { ...f.order, id: `order-${index}`, quote_id: quote.quote_id, client_ref: `${f.config.client_ref}:${index}`, envs: input.envs, protocol, protocol_json: raw, protocol_sha256: quote.protocol_sha256, protocol_bindings: quote.protocol_bindings, price_usd: quote.price_usd, status: 'provisioning', complete: null, finished_at: null, summary: null, generation: null, files: [] };
+    return { input, set, quote, order };
+  });
+  const config = { ...f.config, requests: suites.map(suite => suite.input), max_total_usd: 1.19 };
+  const quoteIds = suites.map(suite => suite.quote.quote_id), keys = [];
+  let quotes = 0, creates = 0, detailReads = 0;
+  const client = createEvaluationClient(async (path, init = {}) => {
+    if (path.endsWith('/catalog')) return { ...f.catalog, envs: [{ env: 'test', sets: suites.map(suite => suite.set) }] };
+    if (path.endsWith('/quotes')) {
+      quotes++;
+      return suites.find(suite => suite.set.set_id === JSON.parse(init.body).envs[0].set_id).quote;
+    }
+    if (init.method === 'POST') {
+      const approval = JSON.parse(await readFile(journalPath, 'utf8')).approval;
+      assert.deepEqual(approval.quote_ids, quoteIds); assert.equal(approval.max_total_usd, 1.2);
+      assert.equal(quotes, 12, 'all quotes precede the first order POST');
+      creates++; keys.push(init.headers['Idempotency-Key']);
+      return { evaluation: suites.find(suite => suite.quote.quote_id === JSON.parse(init.body).quote_id).order };
+    }
+    if (path.includes('?')) return { evaluations: [] };
+    detailReads++;
+    return { evaluation: suites.find(suite => path.endsWith('/' + suite.order.id)).order };
+  });
+  const options = { journalPath, client, transport: { download: async () => assert.fail('pending orders have no report') }, credentialContext: context, waitSeconds: 0 };
+  await assert.rejects(runCheckpointEvaluation(config, { ...options, confirm: true }), /cost ceiling/);
+  assert.equal(quotes, 12); assert.equal(creates, 0);
+  const prepared = JSON.parse(await readFile(journalPath, 'utf8'));
+  assert.equal(prepared.approval, undefined);
+  assert.ok(prepared.entries.every(entry => entry.phase === 'quoted' && entry.order_id === null));
+  const approved = { ...config, max_total_usd: 1.2 };
+  const state = await runCheckpointEvaluation(approved, { ...options, confirm: true });
+  assert.deepEqual(state.approval.quote_ids, quoteIds); assert.equal(state.approval.max_total_usd, 1.2);
+  assert.equal(state.entries.reduce((sum, entry) => sum + Math.round(entry.quote.price_usd * 1e6), 0), 1200000);
+  assert.equal(creates, 12); assert.equal(new Set(keys).size, 12); assert.equal(quotes, 12);
+  assert.ok(state.entries.every(entry => entry.phase === 'ordered'));
+  assert.equal(detailReads, 12, 'each new pending order is read immediately');
+  const sleeps = [];
+  await runCheckpointEvaluation(approved, { ...options, waitSeconds: 90, maxPolls: 1, sleep: async milliseconds => sleeps.push(milliseconds) });
+  assert.deepEqual(sleeps, [30000]);
+  assert.equal(detailReads, 24, 'one resumed polling round reads each pending order once');
+  assert.equal(creates, 12); assert.equal(quotes, 12);
 });
 
 test('lost create acknowledgement restarts through exact owned receipt, without another POST', async t => {
