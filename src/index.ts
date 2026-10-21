@@ -10,3 +10,4 @@ export * from './job-transport.js';
 export * from './job-errors.js';
 export * from './job-claims.js';
 export * from './dataset-validation.js';
+export * from './evaluations.js';

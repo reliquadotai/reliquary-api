@@ -1,0 +1,4071 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "Evaluation orders API",
+    "version": "0.1.0",
+    "description": "Owned pinned-model evaluation lifecycle. Execution, qualified source support, billing and publication remain independent gates."
+  },
+  "servers": [
+    {
+      "url": "https://api.reliqua.ai"
+    },
+    {
+      "url": "https://app.reliqua.ai"
+    }
+  ],
+  "paths": {
+    "/api/v1/evaluations/catalog": {
+      "get": {
+        "operationId": "evaluationCatalog",
+        "description": "Read qualified frozen sets and current availability; catalog does not authorize execution.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                },
+                "example": {
+                  "ordering": "pilot",
+                  "modes": [
+                    "subnet",
+                    "direct"
+                  ],
+                  "default_mode": "subnet",
+                  "max_problems_per_env": 5000,
+                  "max_problems": 10000,
+                  "gpu_counts": [
+                    1,
+                    2,
+                    4,
+                    8
+                  ],
+                  "envs": [
+                    {
+                      "env": "test",
+                      "sets": [
+                        {
+                          "set_id": "fixed-set",
+                          "name": "Frozen test set",
+                          "description": "Synthetic held-out examples.",
+                          "count": 20,
+                          "default_max_new_tokens": 128,
+                          "thinking": false,
+                          "qualified_support": true,
+                          "protocol": {
+                            "schema": "reliquary/evaluation-protocol/v1",
+                            "set": {
+                              "set_id": "fixed-set",
+                              "count": 20,
+                              "prompts_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                              "grading_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                            },
+                            "source": {
+                              "id": "frozen-test",
+                              "kind": "registry",
+                              "split": "held_out",
+                              "environment_manifest_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                              "taskset": null,
+                              "data": {},
+                              "licenses": [],
+                              "grader_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                            },
+                            "disjointness": {
+                              "disjoint": true,
+                              "evidence_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                            },
+                            "harness": {
+                              "id": "single-turn",
+                              "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+                              "max_turns": 1
+                            }
+                          },
+                          "protocol_json": "{\"disjointness\":{\"disjoint\":true,\"evidence_sha256\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"},\"harness\":{\"id\":\"single-turn\",\"max_turns\":1,\"sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\"},\"schema\":\"reliquary/evaluation-protocol/v1\",\"set\":{\"count\":20,\"grading_sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"prompts_sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"set_id\":\"fixed-set\"},\"source\":{\"data\":{},\"environment_manifest_sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"grader_sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"id\":\"frozen-test\",\"kind\":\"registry\",\"licenses\":[],\"split\":\"held_out\",\"taskset\":null}}",
+                          "protocol_sha256": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations/quotes": {
+      "post": {
+        "operationId": "evaluationQuote",
+        "description": "Validate and price the exact checkpoint request. This does not place an order.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Quote"
+                },
+                "example": {
+                  "model": {
+                    "repo": "example/model",
+                    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                  },
+                  "mode": "direct",
+                  "model_access": "public",
+                  "envs": [
+                    {
+                      "env": "test",
+                      "set_id": "fixed-set",
+                      "problems": 2,
+                      "samples": 2
+                    }
+                  ],
+                  "max_new_tokens": 128,
+                  "thinking": false,
+                  "sampling": {
+                    "temperature": 0.6,
+                    "top_p": 0.95,
+                    "top_k": 20,
+                    "seed": 0
+                  },
+                  "harness": "single-turn",
+                  "max_turns": 1,
+                  "max_episode_tokens": 1024,
+                  "episode_timeout_seconds": 300,
+                  "quote_id": "quote-a",
+                  "price_usd": 1,
+                  "est_price_usd": 0.5,
+                  "est_tokens": 256,
+                  "max_tokens": 512,
+                  "eta_hours": 0.1,
+                  "max_hours": 0.2,
+                  "expires_at": "2027-01-16T08:00:00.000Z",
+                  "gpu_count": 1,
+                  "weight_bytes": 1024,
+                  "pricing": {
+                    "mode": "direct"
+                  },
+                  "protocol": {
+                    "schema": "reliquary/evaluation-request/v1",
+                    "sets": [
+                      {
+                        "env": "test",
+                        "set_id": "fixed-set",
+                        "problems": 2,
+                        "samples": 2
+                      }
+                    ],
+                    "protocol_bindings": {
+                      "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                    },
+                    "sampling": {
+                      "temperature": 0.6,
+                      "top_p": 0.95,
+                      "top_k": 20,
+                      "seed": 0
+                    },
+                    "thinking": false,
+                    "max_new_tokens": 128,
+                    "harness": "single-turn",
+                    "max_turns": 1,
+                    "max_episode_tokens": 1024,
+                    "episode_timeout_seconds": 300,
+                    "interaction": "single_turn"
+                  },
+                  "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+                  "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+                  "protocol_bindings": {
+                    "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations": {
+      "get": {
+        "operationId": "evaluationOrders",
+        "description": "Last100 owned evaluations; exact filters are applied before the bound and combined with owner isolation.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "parameters": [
+          {
+            "name": "quote_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          },
+          {
+            "name": "client_ref",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersResponse"
+                },
+                "example": {
+                  "evaluations": [
+                    {
+                      "mode": "direct",
+                      "model": {
+                        "repo": "example/model",
+                        "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                      },
+                      "model_access": "public",
+                      "envs": [
+                        {
+                          "env": "test",
+                          "set_id": "fixed-set",
+                          "problems": 2,
+                          "samples": 2
+                        }
+                      ],
+                      "max_new_tokens": 128,
+                      "thinking": false,
+                      "sampling": {
+                        "temperature": 0.6,
+                        "top_p": 0.95,
+                        "top_k": 20,
+                        "seed": 0
+                      },
+                      "harness": "single-turn",
+                      "max_turns": 1,
+                      "max_episode_tokens": 1024,
+                      "episode_timeout_seconds": 300,
+                      "protocol": {
+                        "schema": "reliquary/evaluation-request/v1",
+                        "sets": [
+                          {
+                            "env": "test",
+                            "set_id": "fixed-set",
+                            "problems": 2,
+                            "samples": 2
+                          }
+                        ],
+                        "protocol_bindings": {
+                          "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                        },
+                        "sampling": {
+                          "temperature": 0.6,
+                          "top_p": 0.95,
+                          "top_k": 20,
+                          "seed": 0
+                        },
+                        "thinking": false,
+                        "max_new_tokens": 128,
+                        "harness": "single-turn",
+                        "max_turns": 1,
+                        "max_episode_tokens": 1024,
+                        "episode_timeout_seconds": 300,
+                        "interaction": "single_turn"
+                      },
+                      "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+                      "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+                      "protocol_bindings": {
+                        "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                      },
+                      "id": "order-a",
+                      "eval_id": "order-order-a",
+                      "quote_id": "quote-a",
+                      "client_ref": "checkpoint:0",
+                      "status": "delivered",
+                      "cancel_requested": false,
+                      "gpu_count": 1,
+                      "price_usd": 1,
+                      "status_reason": null,
+                      "needs_attention": false,
+                      "complete": true,
+                      "progress": null,
+                      "webhook_url": null,
+                      "created_at": "2027-01-15T07:59:50.000Z",
+                      "updated_at": "2027-01-15T08:00:00.100Z",
+                      "finished_at": "2027-01-15T08:00:00.100Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createEvaluation",
+        "description": "Can reserve credits and enqueue work. Preserve original quote/key/client_ref/body after unknown acknowledgement. Single attempt; reconcile owner-filtered history before explicit same-body replay.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 16,
+              "maxLength": 80,
+              "pattern": "^[\\w-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Original idempotent receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                },
+                "example": {
+                  "evaluation": {
+                    "model": {
+                      "repo": "example/model",
+                      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "mode": "direct",
+                    "model_access": "public",
+                    "envs": [
+                      {
+                        "env": "test",
+                        "set_id": "fixed-set",
+                        "problems": 2,
+                        "samples": 2
+                      }
+                    ],
+                    "max_new_tokens": 128,
+                    "thinking": false,
+                    "sampling": {
+                      "temperature": 0.6,
+                      "top_p": 0.95,
+                      "top_k": 20,
+                      "seed": 0
+                    },
+                    "harness": "single-turn",
+                    "max_turns": 1,
+                    "max_episode_tokens": 1024,
+                    "episode_timeout_seconds": 300,
+                    "quote_id": "quote-a",
+                    "price_usd": 1,
+                    "gpu_count": 1,
+                    "protocol": {
+                      "schema": "reliquary/evaluation-request/v1",
+                      "sets": [
+                        {
+                          "env": "test",
+                          "set_id": "fixed-set",
+                          "problems": 2,
+                          "samples": 2
+                        }
+                      ],
+                      "protocol_bindings": {
+                        "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                      },
+                      "sampling": {
+                        "temperature": 0.6,
+                        "top_p": 0.95,
+                        "top_k": 20,
+                        "seed": 0
+                      },
+                      "thinking": false,
+                      "max_new_tokens": 128,
+                      "harness": "single-turn",
+                      "max_turns": 1,
+                      "max_episode_tokens": 1024,
+                      "episode_timeout_seconds": 300,
+                      "interaction": "single_turn"
+                    },
+                    "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+                    "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+                    "protocol_bindings": {
+                      "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                    },
+                    "id": "order-a",
+                    "eval_id": "order-order-a",
+                    "client_ref": "checkpoint:0",
+                    "status": "delivered",
+                    "cancel_requested": false,
+                    "status_reason": null,
+                    "needs_attention": false,
+                    "complete": true,
+                    "progress": null,
+                    "created_at": "2027-01-15T07:59:50.000Z",
+                    "updated_at": "2027-01-15T08:00:00.100Z",
+                    "finished_at": "2027-01-15T08:00:00.100Z",
+                    "refunded_usd": 0,
+                    "summary": {
+                      "complete": true,
+                      "envs": {
+                        "test": {
+                          "n_problems": 2,
+                          "n_problems_graded": 2,
+                          "missing_problems": 0,
+                          "samples": 2,
+                          "expected_rows": 4,
+                          "graded_rows": 4,
+                          "ungraded_rows": 0,
+                          "missing_rows": 0,
+                          "requested_samples": 4,
+                          "attempted_samples": null,
+                          "completed_samples": 4,
+                          "graded_samples": 4,
+                          "complete": true,
+                          "pass@1": {
+                            "value": 0.5,
+                            "ci95": [
+                              0.1,
+                              0.9
+                            ]
+                          },
+                          "pass@k": {
+                            "1": 0.5,
+                            "2": 0.75
+                          },
+                          "mean_score": 0.5,
+                          "truncation_rate": 0.25,
+                          "format_failure_rate": 0,
+                          "mean_completion_tokens": 16,
+                          "mean_turns": null,
+                          "tool_calls_total": null,
+                          "stop_reasons": null
+                        }
+                      },
+                      "macro": {
+                        "envs": 1,
+                        "pass@1": 0.5,
+                        "pass@k": {
+                          "1": 0.5,
+                          "2": 0.75
+                        }
+                      }
+                    },
+                    "generation": {
+                      "model_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "rows": 4
+                    },
+                    "files": [
+                      {
+                        "name": "report.json",
+                        "size": 2220,
+                        "sha256": "4a53861f985ac2cdbbb2c20ab5742d4b7445224e83a98a67c47698e0b6fd0c3b",
+                        "url": "/api/v1/evaluations/order-a/files/report.json"
+                      },
+                      {
+                        "name": "graded.parquet",
+                        "size": 4,
+                        "sha256": "fbc62d3b511368ee275ddc74117d8689b430e1427220e25d30816201d89ca7b6",
+                        "url": "/api/v1/evaluations/order-a/files/graded.parquet"
+                      }
+                    ],
+                    "webhook_url": null
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "New reservation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                },
+                "example": {
+                  "evaluation": {
+                    "model": {
+                      "repo": "example/model",
+                      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "mode": "direct",
+                    "model_access": "public",
+                    "envs": [
+                      {
+                        "env": "test",
+                        "set_id": "fixed-set",
+                        "problems": 2,
+                        "samples": 2
+                      }
+                    ],
+                    "max_new_tokens": 128,
+                    "thinking": false,
+                    "sampling": {
+                      "temperature": 0.6,
+                      "top_p": 0.95,
+                      "top_k": 20,
+                      "seed": 0
+                    },
+                    "harness": "single-turn",
+                    "max_turns": 1,
+                    "max_episode_tokens": 1024,
+                    "episode_timeout_seconds": 300,
+                    "quote_id": "quote-a",
+                    "price_usd": 1,
+                    "gpu_count": 1,
+                    "protocol": {
+                      "schema": "reliquary/evaluation-request/v1",
+                      "sets": [
+                        {
+                          "env": "test",
+                          "set_id": "fixed-set",
+                          "problems": 2,
+                          "samples": 2
+                        }
+                      ],
+                      "protocol_bindings": {
+                        "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                      },
+                      "sampling": {
+                        "temperature": 0.6,
+                        "top_p": 0.95,
+                        "top_k": 20,
+                        "seed": 0
+                      },
+                      "thinking": false,
+                      "max_new_tokens": 128,
+                      "harness": "single-turn",
+                      "max_turns": 1,
+                      "max_episode_tokens": 1024,
+                      "episode_timeout_seconds": 300,
+                      "interaction": "single_turn"
+                    },
+                    "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+                    "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+                    "protocol_bindings": {
+                      "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                    },
+                    "id": "order-a",
+                    "eval_id": "order-order-a",
+                    "client_ref": "checkpoint:0",
+                    "status": "reserved",
+                    "cancel_requested": false,
+                    "status_reason": null,
+                    "needs_attention": false,
+                    "complete": null,
+                    "progress": null,
+                    "created_at": "2027-01-15T07:59:50.000Z",
+                    "updated_at": "2027-01-15T08:00:00.100Z",
+                    "finished_at": null,
+                    "refunded_usd": 0,
+                    "summary": null,
+                    "generation": {
+                      "model_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "rows": 4
+                    },
+                    "files": [],
+                    "webhook_url": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Quote expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations/{evaluationId}": {
+      "get": {
+        "operationId": "evaluationDetail",
+        "description": "Read the original owned state and result lineage, including explicit eval_id.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "parameters": [
+          {
+            "name": "evaluationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                },
+                "example": {
+                  "evaluation": {
+                    "model": {
+                      "repo": "example/model",
+                      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "mode": "direct",
+                    "model_access": "public",
+                    "envs": [
+                      {
+                        "env": "test",
+                        "set_id": "fixed-set",
+                        "problems": 2,
+                        "samples": 2
+                      }
+                    ],
+                    "max_new_tokens": 128,
+                    "thinking": false,
+                    "sampling": {
+                      "temperature": 0.6,
+                      "top_p": 0.95,
+                      "top_k": 20,
+                      "seed": 0
+                    },
+                    "harness": "single-turn",
+                    "max_turns": 1,
+                    "max_episode_tokens": 1024,
+                    "episode_timeout_seconds": 300,
+                    "quote_id": "quote-a",
+                    "price_usd": 1,
+                    "gpu_count": 1,
+                    "protocol": {
+                      "schema": "reliquary/evaluation-request/v1",
+                      "sets": [
+                        {
+                          "env": "test",
+                          "set_id": "fixed-set",
+                          "problems": 2,
+                          "samples": 2
+                        }
+                      ],
+                      "protocol_bindings": {
+                        "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                      },
+                      "sampling": {
+                        "temperature": 0.6,
+                        "top_p": 0.95,
+                        "top_k": 20,
+                        "seed": 0
+                      },
+                      "thinking": false,
+                      "max_new_tokens": 128,
+                      "harness": "single-turn",
+                      "max_turns": 1,
+                      "max_episode_tokens": 1024,
+                      "episode_timeout_seconds": 300,
+                      "interaction": "single_turn"
+                    },
+                    "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+                    "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+                    "protocol_bindings": {
+                      "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                    },
+                    "id": "order-a",
+                    "eval_id": "order-order-a",
+                    "client_ref": "checkpoint:0",
+                    "status": "delivered",
+                    "cancel_requested": false,
+                    "status_reason": null,
+                    "needs_attention": false,
+                    "complete": true,
+                    "progress": null,
+                    "created_at": "2027-01-15T07:59:50.000Z",
+                    "updated_at": "2027-01-15T08:00:00.100Z",
+                    "finished_at": "2027-01-15T08:00:00.100Z",
+                    "refunded_usd": 0,
+                    "summary": {
+                      "complete": true,
+                      "envs": {
+                        "test": {
+                          "n_problems": 2,
+                          "n_problems_graded": 2,
+                          "missing_problems": 0,
+                          "samples": 2,
+                          "expected_rows": 4,
+                          "graded_rows": 4,
+                          "ungraded_rows": 0,
+                          "missing_rows": 0,
+                          "requested_samples": 4,
+                          "attempted_samples": null,
+                          "completed_samples": 4,
+                          "graded_samples": 4,
+                          "complete": true,
+                          "pass@1": {
+                            "value": 0.5,
+                            "ci95": [
+                              0.1,
+                              0.9
+                            ]
+                          },
+                          "pass@k": {
+                            "1": 0.5,
+                            "2": 0.75
+                          },
+                          "mean_score": 0.5,
+                          "truncation_rate": 0.25,
+                          "format_failure_rate": 0,
+                          "mean_completion_tokens": 16,
+                          "mean_turns": null,
+                          "tool_calls_total": null,
+                          "stop_reasons": null
+                        }
+                      },
+                      "macro": {
+                        "envs": 1,
+                        "pass@1": 0.5,
+                        "pass@k": {
+                          "1": 0.5,
+                          "2": 0.75
+                        }
+                      }
+                    },
+                    "generation": {
+                      "model_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "rows": 4
+                    },
+                    "files": [
+                      {
+                        "name": "report.json",
+                        "size": 2220,
+                        "sha256": "4a53861f985ac2cdbbb2c20ab5742d4b7445224e83a98a67c47698e0b6fd0c3b",
+                        "url": "/api/v1/evaluations/order-a/files/report.json"
+                      },
+                      {
+                        "name": "graded.parquet",
+                        "size": 4,
+                        "sha256": "fbc62d3b511368ee275ddc74117d8689b430e1427220e25d30816201d89ca7b6",
+                        "url": "/api/v1/evaluations/order-a/files/graded.parquet"
+                      }
+                    ],
+                    "webhook_url": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations/{evaluationId}/cancel": {
+      "post": {
+        "operationId": "cancelEvaluation",
+        "description": "Cooperative state-specific cancellation. Acknowledgement may precede drain; inspect returned state. No automatic retry.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "parameters": [
+          {
+            "name": "evaluationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations/{evaluationId}/files/{fileName}": {
+      "get": {
+        "operationId": "evaluationFile",
+        "description": "Owned file download. Verify declared size and SHA-256 from the delivery receipt. graded.parquet contains actual per-problem sample rows; no derived rows are synthesized.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "parameters": [
+          {
+            "name": "evaluationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          },
+          {
+            "name": "fileName",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "^[\\w.()-]+$"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "pattern": "^bytes=[0-9]+-[0-9]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Bounded byte range",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluations/webhook-secret": {
+      "post": {
+        "operationId": "createEvaluationWebhookSecret",
+        "description": "Create or rotate the caller webhook secret; shown once. This is separate from checkpoint comparison.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "evaluations:write",
+        "responses": {
+          "201": {
+            "description": "Owned result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "secret": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "warning": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "secret",
+                    "warning"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or unsupported parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Workspace key required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Wrong scope, inactive account or evaluation grant missing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Owned resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Unavailable mode, conflicting idempotency or state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Model, harness, protocol or source budget unqualified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                }
+              },
+              "Retry-After": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Bounded diagnostic hint; never authorizes mutation replay."
+              }
+            }
+          },
+          "500": {
+            "description": "Server failure; mutation outcome can be unknown",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Upstream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "workspaceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Workspace key with evaluations:write scope. Never send it to native storage or model providers."
+      }
+    },
+    "schemas": {
+      "Model": {
+        "type": "object",
+        "properties": {
+          "repo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 194,
+            "pattern": "^[A-Za-z0-9][\\w.-]{0,95}/[A-Za-z0-9][\\w.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          }
+        },
+        "required": [
+          "repo",
+          "revision"
+        ],
+        "additionalProperties": false
+      },
+      "Sampling": {
+        "type": "object",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "const": -1
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000
+              }
+            ]
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "temperature",
+          "top_p",
+          "top_k",
+          "seed"
+        ],
+        "additionalProperties": false
+      },
+      "SetSelection": {
+        "type": "object",
+        "properties": {
+          "env": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w.-]+$"
+          },
+          "set_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[\\w.-]+$"
+          },
+          "problems": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        },
+        "required": [
+          "env",
+          "set_id",
+          "problems",
+          "samples"
+        ],
+        "additionalProperties": false
+      },
+      "QuoteInput": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 194,
+            "pattern": "^[A-Za-z0-9][\\w.-]{0,95}/[A-Za-z0-9][\\w.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "envs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetSelection"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean",
+            "default": false
+          },
+          "sampling": {
+            "type": "object",
+            "properties": {
+              "temperature": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "top_p": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 1
+              },
+              "top_k": {
+                "anyOf": [
+                  {
+                    "const": -1
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  }
+                ]
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "mode": {
+            "enum": [
+              "subnet",
+              "direct"
+            ],
+            "default": "subnet"
+          },
+          "model_access": {
+            "enum": [
+              "public",
+              "private"
+            ],
+            "default": "public"
+          },
+          "harness": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "max_turns": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 48
+          },
+          "max_episode_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65536
+          },
+          "episode_timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          }
+        },
+        "required": [
+          "model",
+          "revision",
+          "envs",
+          "max_new_tokens"
+        ],
+        "additionalProperties": false,
+        "description": "Pinned-client request requires explicit set_id. The server retains older optional-set requests; checkpoint comparisons must never select the newest set implicitly. New frozen protocols and private models currently require qualified direct mode; unsupported harness/turn/source bounds fail closed. max_new_tokens is per model turn; max_episode_tokens covers prompt/history/tool transcript. Seed must be explicit for checkpoint comparisons. telecom-episode-v1 requires explicit thinking:true for its pinned reasoning renderer and parser.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "harness": {
+                  "const": "telecom-episode-v1"
+                }
+              },
+              "required": [
+                "harness"
+              ]
+            },
+            "then": {
+              "properties": {
+                "thinking": {
+                  "const": true
+                }
+              },
+              "required": [
+                "thinking"
+              ]
+            }
+          }
+        ]
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "subnet",
+              "direct"
+            ]
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "model_access": {
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "envs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetSelection"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/Sampling"
+          },
+          "harness": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 48
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_episode_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65536
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "episode_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Immutable producer object. Verify protocol_json exact UTF-8 bytes and SHA-256; reject duplicate decoded keys. Do not reserialize as digest authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_json": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072,
+                "description": "Exact producer JSON text, at most64KiB UTF-8; duplicate keys forbidden."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_bindings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "maxProperties": 8,
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quote_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 9007199254740991
+          },
+          "est_price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "est_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "eta_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "max_hours": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gpu_count": {
+            "enum": [
+              1,
+              2,
+              4,
+              8
+            ]
+          },
+          "weight_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "pricing": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "mode",
+          "model",
+          "model_access",
+          "envs",
+          "max_new_tokens",
+          "thinking",
+          "sampling",
+          "harness",
+          "max_turns",
+          "max_episode_tokens",
+          "episode_timeout_seconds",
+          "protocol",
+          "protocol_json",
+          "protocol_sha256",
+          "protocol_bindings",
+          "quote_id",
+          "price_usd",
+          "est_price_usd",
+          "est_tokens",
+          "max_tokens",
+          "eta_hours",
+          "max_hours",
+          "expires_at",
+          "gpu_count",
+          "weight_bytes",
+          "pricing"
+        ],
+        "additionalProperties": false
+      },
+      "SetCard": {
+        "type": "object",
+        "properties": {
+          "set_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[\\w.-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "default_max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "qualified_support": {
+            "type": "boolean"
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Immutable producer object. Verify protocol_json exact UTF-8 bytes and SHA-256; reject duplicate decoded keys. Do not reserialize as digest authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_json": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072,
+                "description": "Exact producer JSON text, at most64KiB UTF-8; duplicate keys forbidden."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "set_id",
+          "name",
+          "description",
+          "count",
+          "default_max_new_tokens",
+          "thinking",
+          "qualified_support",
+          "protocol",
+          "protocol_json",
+          "protocol_sha256"
+        ],
+        "additionalProperties": false
+      },
+      "Catalog": {
+        "type": "object",
+        "properties": {
+          "ordering": {
+            "enum": [
+              "pilot",
+              "disabled"
+            ]
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "subnet",
+                "direct"
+              ]
+            },
+            "maxItems": 2
+          },
+          "default_mode": {
+            "enum": [
+              "subnet",
+              "direct"
+            ]
+          },
+          "max_problems_per_env": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000
+          },
+          "max_problems": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "gpu_counts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                1,
+                2,
+                4,
+                8
+              ]
+            },
+            "maxItems": 4
+          },
+          "envs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "env": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "sets": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SetCard"
+                  },
+                  "maxItems": 256
+                }
+              },
+              "required": [
+                "env",
+                "sets"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 128
+          }
+        },
+        "required": [
+          "ordering",
+          "modes",
+          "default_mode",
+          "max_problems_per_env",
+          "max_problems",
+          "gpu_counts",
+          "envs"
+        ],
+        "additionalProperties": false
+      },
+      "Metrics": {
+        "type": "object",
+        "properties": {
+          "n_problems": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "pass@1": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ci95": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "value",
+              "ci95"
+            ],
+            "additionalProperties": false
+          },
+          "pass@k": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "n_problems_graded": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_problems": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graded_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ungraded_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempted_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graded_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_calls_total": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_turns": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncation_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format_failure_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stop_reasons": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "n_problems",
+          "samples",
+          "complete",
+          "pass@1",
+          "pass@k"
+        ],
+        "additionalProperties": false,
+        "description": "mean_score is the native mean of each problem's mean graded score, denominator n_problems_graded. Completion-row counts remain separate. Absent observed turns/tools/attempts are null; never infer them or rename Avg@N as pass@N."
+      },
+      "Macro": {
+        "type": "object",
+        "properties": {
+          "pass@1": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "pass@k": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "required": [
+          "pass@1",
+          "pass@k"
+        ],
+        "additionalProperties": true
+      },
+      "Summary": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "envs": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Metrics"
+            }
+          },
+          "macro": {
+            "$ref": "#/components/schemas/Macro"
+          }
+        },
+        "required": [
+          "complete",
+          "envs",
+          "macro"
+        ],
+        "additionalProperties": false
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "subnet",
+              "direct"
+            ]
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "model_access": {
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "envs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetSelection"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/Sampling"
+          },
+          "harness": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 48
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_episode_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65536
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "episode_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Immutable producer object. Verify protocol_json exact UTF-8 bytes and SHA-256; reject duplicate decoded keys. Do not reserialize as digest authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_json": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072,
+                "description": "Exact producer JSON text, at most64KiB UTF-8; duplicate keys forbidden."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_bindings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "maxProperties": 8,
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "eval_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quote_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[\\w-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "provisioning",
+              "generating",
+              "qualifying",
+              "queued",
+              "running",
+              "draining",
+              "grading",
+              "delivered",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "gpu_count": {
+            "enum": [
+              1,
+              2,
+              4,
+              8
+            ]
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needs_attention": {
+            "type": "boolean"
+          },
+          "complete": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {},
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refunded_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Summary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/File"
+            },
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "mode",
+          "model",
+          "model_access",
+          "envs",
+          "max_new_tokens",
+          "thinking",
+          "sampling",
+          "harness",
+          "max_turns",
+          "max_episode_tokens",
+          "episode_timeout_seconds",
+          "protocol",
+          "protocol_json",
+          "protocol_sha256",
+          "protocol_bindings",
+          "id",
+          "eval_id",
+          "quote_id",
+          "client_ref",
+          "status",
+          "cancel_requested",
+          "gpu_count",
+          "price_usd",
+          "status_reason",
+          "needs_attention",
+          "complete",
+          "progress",
+          "webhook_url",
+          "created_at",
+          "updated_at",
+          "finished_at",
+          "refunded_usd",
+          "summary",
+          "generation",
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "OrderSummary": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "enum": [
+              "subnet",
+              "direct"
+            ]
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "model_access": {
+            "enum": [
+              "public",
+              "private"
+            ]
+          },
+          "envs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetSelection"
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072
+          },
+          "thinking": {
+            "type": "boolean"
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/Sampling"
+          },
+          "harness": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_turns": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 48
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_episode_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65536
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "episode_timeout_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Immutable producer object. Verify protocol_json exact UTF-8 bytes and SHA-256; reject duplicate decoded keys. Do not reserialize as digest authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_json": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072,
+                "description": "Exact producer JSON text, at most64KiB UTF-8; duplicate keys forbidden."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_bindings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "maxProperties": 8,
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "eval_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quote_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "pattern": "^[\\w-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "reserved",
+              "provisioning",
+              "generating",
+              "qualifying",
+              "queued",
+              "running",
+              "draining",
+              "grading",
+              "delivered",
+              "cancelled",
+              "failed"
+            ]
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "gpu_count": {
+            "enum": [
+              1,
+              2,
+              4,
+              8
+            ]
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "needs_attention": {
+            "type": "boolean"
+          },
+          "complete": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {},
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mode",
+          "model",
+          "model_access",
+          "envs",
+          "max_new_tokens",
+          "thinking",
+          "sampling",
+          "harness",
+          "max_turns",
+          "max_episode_tokens",
+          "episode_timeout_seconds",
+          "protocol",
+          "protocol_json",
+          "protocol_sha256",
+          "protocol_bindings",
+          "id",
+          "eval_id",
+          "quote_id",
+          "client_ref",
+          "status",
+          "cancel_requested",
+          "gpu_count",
+          "price_usd",
+          "status_reason",
+          "needs_attention",
+          "complete",
+          "progress",
+          "webhook_url",
+          "created_at",
+          "updated_at",
+          "finished_at"
+        ],
+        "additionalProperties": false
+      },
+      "OrderResponse": {
+        "type": "object",
+        "properties": {
+          "evaluation": {
+            "$ref": "#/components/schemas/Order"
+          }
+        },
+        "required": [
+          "evaluation"
+        ],
+        "additionalProperties": false
+      },
+      "OrdersResponse": {
+        "type": "object",
+        "properties": {
+          "evaluations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderSummary"
+            },
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "evaluations"
+        ],
+        "additionalProperties": false
+      },
+      "CreateInput": {
+        "type": "object",
+        "properties": {
+          "quote_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "client_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$"
+          },
+          "webhook_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "quote_id"
+        ],
+        "additionalProperties": false
+      },
+      "File": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[\\w.()-]+$"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^/api/v1/evaluations/[\\w-]+/files/[^/]+$"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "sha256",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,79}$"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": true
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "const": "reliquary/eval-report/v2"
+          },
+          "eval_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "created_at": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Actual native report production Unix seconds. Convert to milliseconds for benchmark export; never use HTTP retrieval or order timestamps."
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "envs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "malformed_rows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "unexpected_rows": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "malformed_rows",
+              "unexpected_rows"
+            ],
+            "additionalProperties": false
+          },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "protocol": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Immutable producer object. Verify protocol_json exact UTF-8 bytes and SHA-256; reject duplicate decoded keys. Do not reserialize as digest authority."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_json": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 131072,
+                "description": "Exact producer JSON text, at most64KiB UTF-8; duplicate keys forbidden."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_bindings": {
+            "anyOf": [
+              {
+                "type": "object",
+                "maxProperties": 8,
+                "additionalProperties": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "macro": {
+            "$ref": "#/components/schemas/Macro"
+          }
+        },
+        "required": [
+          "schema",
+          "eval_id",
+          "complete",
+          "envs",
+          "counts",
+          "provenance",
+          "macro"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "examples": {
+      "quoteInput": {
+        "value": {
+          "model": "example/model",
+          "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mode": "direct",
+          "model_access": "public",
+          "envs": [
+            {
+              "env": "test",
+              "set_id": "fixed-set",
+              "problems": 2,
+              "samples": 2
+            }
+          ],
+          "max_new_tokens": 128,
+          "thinking": false,
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "seed": 0
+          },
+          "harness": "single-turn",
+          "max_turns": 1,
+          "max_episode_tokens": 1024,
+          "episode_timeout_seconds": 300
+        }
+      },
+      "quote": {
+        "value": {
+          "model": {
+            "repo": "example/model",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "mode": "direct",
+          "model_access": "public",
+          "envs": [
+            {
+              "env": "test",
+              "set_id": "fixed-set",
+              "problems": 2,
+              "samples": 2
+            }
+          ],
+          "max_new_tokens": 128,
+          "thinking": false,
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "seed": 0
+          },
+          "harness": "single-turn",
+          "max_turns": 1,
+          "max_episode_tokens": 1024,
+          "episode_timeout_seconds": 300,
+          "quote_id": "quote-a",
+          "price_usd": 1,
+          "est_price_usd": 0.5,
+          "est_tokens": 256,
+          "max_tokens": 512,
+          "eta_hours": 0.1,
+          "max_hours": 0.2,
+          "expires_at": "2027-01-16T08:00:00.000Z",
+          "gpu_count": 1,
+          "weight_bytes": 1024,
+          "pricing": {
+            "mode": "direct"
+          },
+          "protocol": {
+            "schema": "reliquary/evaluation-request/v1",
+            "sets": [
+              {
+                "env": "test",
+                "set_id": "fixed-set",
+                "problems": 2,
+                "samples": 2
+              }
+            ],
+            "protocol_bindings": {
+              "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+            },
+            "sampling": {
+              "temperature": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "seed": 0
+            },
+            "thinking": false,
+            "max_new_tokens": 128,
+            "harness": "single-turn",
+            "max_turns": 1,
+            "max_episode_tokens": 1024,
+            "episode_timeout_seconds": 300,
+            "interaction": "single_turn"
+          },
+          "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+          "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+          "protocol_bindings": {
+            "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+          }
+        }
+      },
+      "catalog": {
+        "value": {
+          "ordering": "pilot",
+          "modes": [
+            "subnet",
+            "direct"
+          ],
+          "default_mode": "subnet",
+          "max_problems_per_env": 5000,
+          "max_problems": 10000,
+          "gpu_counts": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "envs": [
+            {
+              "env": "test",
+              "sets": [
+                {
+                  "set_id": "fixed-set",
+                  "name": "Frozen test set",
+                  "description": "Synthetic held-out examples.",
+                  "count": 20,
+                  "default_max_new_tokens": 128,
+                  "thinking": false,
+                  "qualified_support": true,
+                  "protocol": {
+                    "schema": "reliquary/evaluation-protocol/v1",
+                    "set": {
+                      "set_id": "fixed-set",
+                      "count": 20,
+                      "prompts_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                      "grading_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                    },
+                    "source": {
+                      "id": "frozen-test",
+                      "kind": "registry",
+                      "split": "held_out",
+                      "environment_manifest_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                      "taskset": null,
+                      "data": {},
+                      "licenses": [],
+                      "grader_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+                    },
+                    "disjointness": {
+                      "disjoint": true,
+                      "evidence_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+                    },
+                    "harness": {
+                      "id": "single-turn",
+                      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+                      "max_turns": 1
+                    }
+                  },
+                  "protocol_json": "{\"disjointness\":{\"disjoint\":true,\"evidence_sha256\":\"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\"},\"harness\":{\"id\":\"single-turn\",\"max_turns\":1,\"sha256\":\"1111111111111111111111111111111111111111111111111111111111111111\"},\"schema\":\"reliquary/evaluation-protocol/v1\",\"set\":{\"count\":20,\"grading_sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"prompts_sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"set_id\":\"fixed-set\"},\"source\":{\"data\":{},\"environment_manifest_sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"grader_sha256\":\"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\",\"id\":\"frozen-test\",\"kind\":\"registry\",\"licenses\":[],\"split\":\"held_out\",\"taskset\":null}}",
+                  "protocol_sha256": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "order": {
+        "value": {
+          "evaluation": {
+            "model": {
+              "repo": "example/model",
+              "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "mode": "direct",
+            "model_access": "public",
+            "envs": [
+              {
+                "env": "test",
+                "set_id": "fixed-set",
+                "problems": 2,
+                "samples": 2
+              }
+            ],
+            "max_new_tokens": 128,
+            "thinking": false,
+            "sampling": {
+              "temperature": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "seed": 0
+            },
+            "harness": "single-turn",
+            "max_turns": 1,
+            "max_episode_tokens": 1024,
+            "episode_timeout_seconds": 300,
+            "quote_id": "quote-a",
+            "price_usd": 1,
+            "gpu_count": 1,
+            "protocol": {
+              "schema": "reliquary/evaluation-request/v1",
+              "sets": [
+                {
+                  "env": "test",
+                  "set_id": "fixed-set",
+                  "problems": 2,
+                  "samples": 2
+                }
+              ],
+              "protocol_bindings": {
+                "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+              },
+              "sampling": {
+                "temperature": 0.6,
+                "top_p": 0.95,
+                "top_k": 20,
+                "seed": 0
+              },
+              "thinking": false,
+              "max_new_tokens": 128,
+              "harness": "single-turn",
+              "max_turns": 1,
+              "max_episode_tokens": 1024,
+              "episode_timeout_seconds": 300,
+              "interaction": "single_turn"
+            },
+            "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+            "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+            "protocol_bindings": {
+              "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+            },
+            "id": "order-a",
+            "eval_id": "order-order-a",
+            "client_ref": "checkpoint:0",
+            "status": "delivered",
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "complete": true,
+            "progress": null,
+            "created_at": "2027-01-15T07:59:50.000Z",
+            "updated_at": "2027-01-15T08:00:00.100Z",
+            "finished_at": "2027-01-15T08:00:00.100Z",
+            "refunded_usd": 0,
+            "summary": {
+              "complete": true,
+              "envs": {
+                "test": {
+                  "n_problems": 2,
+                  "n_problems_graded": 2,
+                  "missing_problems": 0,
+                  "samples": 2,
+                  "expected_rows": 4,
+                  "graded_rows": 4,
+                  "ungraded_rows": 0,
+                  "missing_rows": 0,
+                  "requested_samples": 4,
+                  "attempted_samples": null,
+                  "completed_samples": 4,
+                  "graded_samples": 4,
+                  "complete": true,
+                  "pass@1": {
+                    "value": 0.5,
+                    "ci95": [
+                      0.1,
+                      0.9
+                    ]
+                  },
+                  "pass@k": {
+                    "1": 0.5,
+                    "2": 0.75
+                  },
+                  "mean_score": 0.5,
+                  "truncation_rate": 0.25,
+                  "format_failure_rate": 0,
+                  "mean_completion_tokens": 16,
+                  "mean_turns": null,
+                  "tool_calls_total": null,
+                  "stop_reasons": null
+                }
+              },
+              "macro": {
+                "envs": 1,
+                "pass@1": 0.5,
+                "pass@k": {
+                  "1": 0.5,
+                  "2": 0.75
+                }
+              }
+            },
+            "generation": {
+              "model_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "rows": 4
+            },
+            "files": [
+              {
+                "name": "report.json",
+                "size": 2220,
+                "sha256": "4a53861f985ac2cdbbb2c20ab5742d4b7445224e83a98a67c47698e0b6fd0c3b",
+                "url": "/api/v1/evaluations/order-a/files/report.json"
+              },
+              {
+                "name": "graded.parquet",
+                "size": 4,
+                "sha256": "fbc62d3b511368ee275ddc74117d8689b430e1427220e25d30816201d89ca7b6",
+                "url": "/api/v1/evaluations/order-a/files/graded.parquet"
+              }
+            ],
+            "webhook_url": null
+          }
+        }
+      },
+      "report": {
+        "value": {
+          "schema": "reliquary/eval-report/v2",
+          "eval_id": "order-order-a",
+          "created_at": 1800000000,
+          "complete": true,
+          "envs": {
+            "test": {
+              "n_problems": 2,
+              "n_problems_graded": 2,
+              "missing_problems": 0,
+              "samples": 2,
+              "expected_rows": 4,
+              "graded_rows": 4,
+              "ungraded_rows": 0,
+              "missing_rows": 0,
+              "requested_samples": 4,
+              "attempted_samples": null,
+              "completed_samples": 4,
+              "graded_samples": 4,
+              "complete": true,
+              "pass@1": {
+                "value": 0.5,
+                "ci95": [
+                  0.1,
+                  0.9
+                ]
+              },
+              "pass@k": {
+                "1": {
+                  "value": 0.5,
+                  "n_problems": 2
+                },
+                "2": {
+                  "value": 0.75,
+                  "n_problems": 2
+                }
+              },
+              "mean_score": 0.5,
+              "truncation_rate": 0.25,
+              "format_failure_rate": 0,
+              "mean_completion_tokens": 16,
+              "mean_turns": null,
+              "tool_calls_total": null,
+              "stop_reasons": null
+            }
+          },
+          "counts": {
+            "malformed_rows": 0,
+            "unexpected_rows": 0
+          },
+          "provenance": {
+            "model": "example/model",
+            "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "model_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "model_access": "public",
+            "sets": [
+              {
+                "env": "test",
+                "set_id": "fixed-set",
+                "problems": 2,
+                "samples": 2,
+                "protocol_sha256": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+              }
+            ]
+          },
+          "protocol": {
+            "schema": "reliquary/evaluation-request/v1",
+            "sets": [
+              {
+                "env": "test",
+                "set_id": "fixed-set",
+                "problems": 2,
+                "samples": 2
+              }
+            ],
+            "protocol_bindings": {
+              "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+            },
+            "sampling": {
+              "temperature": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "seed": 0
+            },
+            "thinking": false,
+            "max_new_tokens": 128,
+            "harness": "single-turn",
+            "max_turns": 1,
+            "max_episode_tokens": 1024,
+            "episode_timeout_seconds": 300,
+            "interaction": "single_turn"
+          },
+          "protocol_json": "{\"episode_timeout_seconds\":300,\"harness\":\"single-turn\",\"interaction\":\"single_turn\",\"max_episode_tokens\":1024,\"max_new_tokens\":128,\"max_turns\":1,\"protocol_bindings\":{\"fixed-set\":\"09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1\"},\"sampling\":{\"seed\":0,\"temperature\":0.6,\"top_k\":20,\"top_p\":0.95},\"schema\":\"reliquary/evaluation-request/v1\",\"sets\":[{\"env\":\"test\",\"problems\":2,\"samples\":2,\"set_id\":\"fixed-set\"}],\"thinking\":false}",
+          "protocol_sha256": "e284a93cef8e5b2276d44389f984ec2ac34e374599114dbfeedd5a4d39aeefb3",
+          "protocol_bindings": {
+            "fixed-set": "09abc48729843754bcb78821f179316e114fd49ec0c35c53632229df42a485f1"
+          },
+          "macro": {
+            "envs": 1,
+            "pass@1": 0.5,
+            "pass@k": {
+              "1": 0.5,
+              "2": 0.75
+            }
+          }
+        }
+      }
+    }
+  }
+}

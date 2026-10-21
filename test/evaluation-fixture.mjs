@@ -1,0 +1,32 @@
+import { createHash } from 'node:crypto';
+import { canonicalEvaluationJson } from '../dist/index.js';
+export const sha = text => createHash('sha256').update(text).digest('hex');
+export function fixture({ revision = 'a'.repeat(40), step = 10, at = Date.now() - 1000 } = {}) {
+  const setProtocol = {
+    schema: 'reliquary/evaluation-protocol/v1', set: { set_id: 'fixed-set', count: 20, prompts_sha256: 'b'.repeat(64), grading_sha256: 'c'.repeat(64) },
+    source: { id: 'frozen-test', kind: 'registry', split: 'held_out', environment_manifest_sha256: 'd'.repeat(64), taskset: null, data: {}, licenses: [], grader_sha256: 'e'.repeat(64) },
+    disjointness: { disjoint: true, evidence_sha256: 'f'.repeat(64) }, harness: { id: 'single-turn', sha256: '1'.repeat(64), max_turns: 1 },
+  };
+  const setJson = canonicalEvaluationJson(setProtocol), setSha = sha(setJson);
+  const set = { set_id: 'fixed-set', name: 'Frozen test set', description: 'Synthetic held-out examples.', count: 20, default_max_new_tokens: 128, thinking: false, qualified_support: true, protocol: setProtocol, protocol_json: setJson, protocol_sha256: setSha };
+  const input = { model: 'example/model', revision, mode: 'direct', model_access: 'public', envs: [{ env: 'test', set_id: set.set_id, problems: 2, samples: 2 }], max_new_tokens: 128, thinking: false, sampling: { temperature: 0.6, top_p: 0.95, top_k: 20, seed: 0 }, harness: 'single-turn', max_turns: 1, max_episode_tokens: 1024, episode_timeout_seconds: 300 };
+  const protocol = { schema: 'reliquary/evaluation-request/v1', sets: input.envs, protocol_bindings: { [set.set_id]: setSha }, sampling: input.sampling, thinking: input.thinking, max_new_tokens: input.max_new_tokens, harness: input.harness, max_turns: 1, max_episode_tokens: 1024, episode_timeout_seconds: 300, interaction: 'single_turn' };
+  const protocol_json = canonicalEvaluationJson(protocol), protocol_sha256 = sha(protocol_json), protocol_bindings = protocol.protocol_bindings;
+  const { revision: unusedRevision, ...quoteInput } = input;
+  const quote = { ...quoteInput, model: { repo: input.model, revision }, quote_id: 'quote-a', price_usd: 1, est_price_usd: 0.5, est_tokens: 256, max_tokens: 512, eta_hours: 0.1, max_hours: 0.2, expires_at: new Date(at + 86400000).toISOString(), gpu_count: 1, weight_bytes: 1024, pricing: { mode: 'direct' }, protocol, protocol_json, protocol_sha256, protocol_bindings };
+  const metrics = { n_problems: 2, n_problems_graded: 2, missing_problems: 0, samples: 2, expected_rows: 4, graded_rows: 4, ungraded_rows: 0, missing_rows: 0, requested_samples: 4, attempted_samples: null, completed_samples: 4, graded_samples: 4, complete: true, 'pass@1': { value: 0.5, ci95: [0.1, 0.9] }, 'pass@k': { 1: { value: 0.5, n_problems: 2 }, 2: { value: 0.75, n_problems: 2 } }, mean_score: 0.5, truncation_rate: 0.25, format_failure_rate: 0, mean_completion_tokens: 16, mean_turns: null, tool_calls_total: null, stop_reasons: null };
+  const report = { schema: 'reliquary/eval-report/v2', eval_id: 'order-order-a', created_at: at / 1000, complete: true, envs: { test: metrics }, counts: { malformed_rows: 0, unexpected_rows: 0 }, provenance: { model: input.model, revision, model_sha: revision, model_access: 'public', sets: input.envs.map(e => ({ ...e, protocol_sha256: setSha })) }, protocol, protocol_json, protocol_sha256, protocol_bindings, macro: { envs: 1, 'pass@1': 0.5, 'pass@k': { 1: 0.5, 2: 0.75 } } };
+  const reportJson = JSON.stringify(report), reportSha = sha(reportJson);
+  const order = { ...quote, id: 'order-a', eval_id: report.eval_id, quote_id: quote.quote_id, client_ref: 'checkpoint:0', status: 'delivered', cancel_requested: false, status_reason: null, needs_attention: false, complete: true, progress: null, created_at: new Date(at - 10000).toISOString(), updated_at: new Date(at + 100).toISOString(), finished_at: new Date(at + 100).toISOString(), refunded_usd: 0, summary: { complete: true, envs: { test: { ...metrics, 'pass@k': { 1: 0.5, 2: 0.75 } } }, macro: report.macro }, generation: { model_sha: revision, rows: 4 }, files: [{ name: 'report.json', size: Buffer.byteLength(reportJson), sha256: reportSha, url: '/api/v1/evaluations/order-a/files/report.json' }, { name: 'graded.parquet', size: 4, sha256: sha('PAR1'), url: '/api/v1/evaluations/order-a/files/graded.parquet' }] };
+  for (const key of ['est_price_usd', 'est_tokens', 'max_tokens', 'eta_hours', 'max_hours', 'expires_at', 'weight_bytes', 'pricing']) delete order[key];
+  order.webhook_url = null;
+  const catalog = { ordering: 'pilot', modes: ['subnet', 'direct'], default_mode: 'subnet', max_problems_per_env: 5000, max_problems: 10000, gpu_counts: [1, 2, 4, 8], envs: [{ env: 'test', sets: [set] }] };
+  const config = { schema_version: 1, trainer_run_id: 'trainer-a', checkpoint_step: step, client_ref: 'checkpoint', max_total_usd: 1, requests: [input] };
+  const target = { schema_version: 1, entity: 'example', project: 'benchmarks', evaluation_run_id: 'evaluation-a', trainer_run_id: 'trainer-a', approved: true };
+  const checkpoint = { schema_version: 1, config, entries: [{ input, set, quote, client_ref: order.client_ref, request_key: '12345678-1234-4234-8234-123456789abc', phase: 'delivered', order_id: order.id, result: { order, report, report_json: reportJson, report_sha256: reportSha } }] };
+  const profile_json = JSON.stringify({ schema_version: 2, training_run_id: 'native-training-a', lr_schedule_step: step });
+  const publication_json = JSON.stringify({ publication_id: '1'.repeat(32), parent_revision: 'f'.repeat(40), manifest: { repo_id: input.model, training_run_id: 'native-training-a', checkpoint_n: 7 }, files: { 'reliquary_protocol_profile.json': { size: Buffer.byteLength(profile_json), sha256: sha(profile_json) } } });
+  const base = `https://huggingface.co/${input.model}/resolve/${revision}/`;
+  const publicationEvidence = { approved: true, trainer_run_id: config.trainer_run_id, repo_id: input.model, revision, publication_source: base + 'reliquary_publication.json', profile_source: base + 'reliquary_protocol_profile.json', publication_json, publication_sha256: sha(publication_json), profile_json, profile_sha256: sha(profile_json) };
+  return { input, set, catalog, protocol, quote, metrics, report, reportJson, order, config, target, checkpoint, publicationEvidence };
+}

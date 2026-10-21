@@ -1,5 +1,6 @@
 import { GenerationApiError, generationRequests, MAX_FILE_CHUNK_BYTES, type FileRange, type GenerationJsonTransport } from './generation.js';
 import { responseDiagnostics } from './error-diagnostics.js';
+import { evaluationRequests } from './evaluations.js';
 
 export type GenerationFileChunk = { bytes: Uint8Array; contentType: string; contentRange: string | null };
 export type GenerationTransportOptions = {
@@ -29,7 +30,7 @@ async function boundedBody(response: Response, limit: number): Promise<Uint8Arra
 }
 
 /** Scoped customer key transport. Browser callers inject their existing session transport instead. */
-export function createGenerationTransport(options: GenerationTransportOptions = {}) {
+function createOrderTransport(options: GenerationTransportOptions, evaluation: boolean) {
   let origin: URL;
   try { origin = new URL(options.origin ?? 'https://api.reliqua.ai'); } catch { throw new GenerationApiError('invalid_origin'); }
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
@@ -44,9 +45,15 @@ export function createGenerationTransport(options: GenerationTransportOptions = 
     const url = new URL(path, origin);
     const method = init.method ?? 'GET';
     const mutating = method !== 'GET';
-    const allowed = /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
-    const publicRead = url.pathname === '/api/v1/generation/catalog' && method === 'GET';
-    if (!path.startsWith('/api/v1/') || path !== url.pathname || url.origin !== origin.origin || url.hash || url.search ||
+    const allowed = evaluation
+      ? /^\/api\/v1\/evaluations(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/files\/[^/]{1,200})?)?$/.test(url.pathname)
+      : /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
+    const publicRead = url.pathname === (evaluation ? '/api/v1/evaluations/catalog' : '/api/v1/generation/catalog') && method === 'GET';
+    const filteredList = evaluation && method === 'GET' && url.pathname === '/api/v1/evaluations' &&
+      [...url.searchParams.keys()].every(k => ['quote_id', 'client_ref'].includes(k)) &&
+      [...url.searchParams.keys()].every(k => url.searchParams.getAll(k).length === 1) &&
+      [...url.searchParams].every(([k, v]) => k === 'quote_id' ? /^[\w-]{1,64}$/.test(v) : /^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$/.test(v));
+    if (!path.startsWith('/api/v1/') || path !== url.pathname + url.search || url.origin !== origin.origin || url.hash || (url.search && !filteredList) ||
         (!allowed && !publicRead) || !['GET', 'POST'].includes(method)) throw new GenerationApiError('invalid_route');
     if (!publicRead && !key) throw new GenerationApiError('credential_required');
     const headers = new Headers(init.headers);
@@ -102,8 +109,7 @@ export function createGenerationTransport(options: GenerationTransportOptions = 
   };
   return {
     request,
-    download: async (orderId: string, deliveryId: string, name: string, range: FileRange = { offset: 0, maxBytes: MAX_FILE_CHUNK_BYTES }, signal?: AbortSignal): Promise<GenerationFileChunk> => {
-      const descriptor = generationRequests().download(orderId, deliveryId, name, range);
+    download: async (descriptor: { path: string; headers?: Record<string, string> }, range: FileRange, signal?: AbortSignal): Promise<GenerationFileChunk> => {
       const { response, bytes } = await exchange(descriptor.path, { headers: descriptor.headers, ...(signal ? { signal } : {}) }, range.maxBytes);
       if (response.status === 206) {
         const contentRange = response.headers.get('Content-Range');
@@ -114,5 +120,22 @@ export function createGenerationTransport(options: GenerationTransportOptions = 
       } else if (response.status !== 200 || range.offset !== 0) throw new GenerationApiError('invalid_file_range');
       return { bytes, contentType: response.headers.get('Content-Type') ?? 'application/octet-stream', contentRange: response.headers.get('Content-Range') };
     },
+  };
+}
+
+export function createGenerationTransport(options: GenerationTransportOptions = {}) {
+  const transport = createOrderTransport(options, false);
+  return { request: transport.request,
+    download: (orderId: string, deliveryId: string, name: string, range: FileRange = { offset: 0, maxBytes: MAX_FILE_CHUNK_BYTES }, signal?: AbortSignal) =>
+      transport.download(generationRequests().download(orderId, deliveryId, name, range), range, signal),
+  };
+}
+
+/** Evaluation routes retain their own allowlist and the same bounded exchange. */
+export function createEvaluationTransport(options: GenerationTransportOptions = {}) {
+  const transport = createOrderTransport(options, true);
+  return { request: transport.request,
+    download: (orderId: string, name: string, range: FileRange = { offset: 0, maxBytes: MAX_FILE_CHUNK_BYTES }, signal?: AbortSignal) =>
+      transport.download(evaluationRequests().download(orderId, name, range), range, signal),
   };
 }
