@@ -18,7 +18,7 @@ export function parseCheckpointConfig(value) {
   requireValue(value && typeof value === 'object' && !Array.isArray(value), 'A checkpoint configuration is required.');
   requireValue(Object.keys(value).every(k => ['schema_version', 'trainer_run_id', 'checkpoint_step', 'client_ref', 'max_total_usd', 'requests'].includes(k)), 'Unknown configuration field.');
   requireValue(value.schema_version === 1 && safeRef(value.trainer_run_id) && safeRef(value.client_ref), 'Use schema_version1 and safe trainer_run_id/client_ref identifiers.');
-  requireValue(Number.isSafeInteger(value.checkpoint_step) && value.checkpoint_step >= 0 && value.checkpoint_step <= 1e12, 'An explicit optimizer checkpoint_step in0..1e12 is required.');
+  requireValue(value.checkpoint_step === null || Number.isSafeInteger(value.checkpoint_step) && value.checkpoint_step >= 0 && value.checkpoint_step <= 1e12, 'Use an explicit optimizer checkpoint_step in0..1e12, or null when unknown.');
   requireValue(typeof value.max_total_usd === 'number' && Number.isFinite(value.max_total_usd) && value.max_total_usd >= 0, 'An explicit approved max_total_usd is required.');
   requireValue(Array.isArray(value.requests) && value.requests.length >= 1 && value.requests.length <= 8, 'Choose1..8 fixed-set evaluation requests.');
   const requests = value.requests.map(input => {

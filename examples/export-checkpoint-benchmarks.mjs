@@ -20,10 +20,19 @@ export function parseExportTarget(value) {
 }
 
 /** Reviewed copies of the native immutable publication receipt and embedded profile. */
-export function verifyCheckpointPublication(evidence, config) {
+export function verifyCheckpointPublication(evidence, config, target) {
   requireValue(evidence && evidence.approved === true && evidence.trainer_run_id === config.trainer_run_id, 'Export needs reviewed checkpoint publication evidence for the actual trainer.');
   const request = config.requests[0];
   requireValue(evidence.repo_id === request.model && evidence.revision === request.revision, 'Checkpoint publication repository or immutable revision differs.');
+  if (config.checkpoint_step === null) {
+    requireValue(target?.baseline_checkpoint === `${request.model}@${request.revision}`, 'An unknown optimizer step may only be exported as the explicitly approved baseline.');
+    requireValue(evidence.checkpoint_source === `https://huggingface.co/api/models/${request.model}/revision/${request.revision}?blobs=true`, 'Review the exact immutable baseline snapshot metadata.');
+    const raw = evidence.checkpoint_json;
+    requireValue(typeof raw === 'string' && Buffer.byteLength(raw) <= 1024 * 1024 && /^[a-f0-9]{64}$/.test(evidence.checkpoint_sha256) && digest(raw) === evidence.checkpoint_sha256, 'Baseline snapshot bytes or source digest changed.');
+    const snapshot = parseEvaluationProtocolJson(raw);
+    requireValue(snapshot.id === request.model && snapshot.sha === request.revision && Array.isArray(snapshot.siblings) && snapshot.siblings.some(file => typeof file.rfilename === 'string' && file.rfilename.endsWith('.safetensors') && /^[a-f0-9]{64}$/.test(file.lfs?.sha256) && Number.isSafeInteger(file.size) && file.size > 0), 'Baseline metadata must pin the model snapshot and weight artifact.');
+    return { repo_id: request.model, revision: request.revision, trainer_run_id: config.trainer_run_id, optimizer_step: null, checkpoint_sha256: evidence.checkpoint_sha256 };
+  }
   const base = `https://huggingface.co/${request.model}/resolve/${request.revision}/`;
   requireValue(evidence.publication_source === base + 'reliquary_publication.json' && evidence.profile_source === base + 'reliquary_protocol_profile.json', 'Review the exact immutable checkpoint publication sources.');
   const read = name => {
@@ -49,15 +58,15 @@ function sanitizeEnvelope(value, runId, now) {
   requireValue(value.schema === 'reliquary.run-benchmarks.v1' && value.run_id === runId && value.scope === 'held_out' && Array.isArray(value.benchmarks) && value.benchmarks.length <= 24, 'Invalid retained benchmark envelope.');
   requireValue(Number.isFinite(value.observed_at) && value.observed_at >= 0 && value.observed_at <= now + 5000, 'Invalid retained producer clock.');
   const label = (text, max = 160) => { requireValue(typeof text === 'string' && text.trim() && text.length <= max && !/[\x00-\x1f\x7f]/.test(text), 'Invalid retained benchmark label.'); return text; };
-  const point = p => {
-    requireValue(p && Number.isSafeInteger(p.step) && p.step >= 0 && p.step <= 1e12 && Number.isFinite(p.at) && p.at >= 0 && p.at <= value.observed_at && Number.isSafeInteger(p.samples) && p.samples >= 0 && (p.score === null || Number.isFinite(p.score) && p.score >= 0 && p.score <= 1 && p.samples >= 1) && p.cost_usd == null && p.gpu_hours == null, 'Invalid retained benchmark point.');
+  const point = (p, baseline = false) => {
+    requireValue(p && (baseline && p.step === null || Number.isSafeInteger(p.step) && p.step >= 0 && p.step <= 1e12) && Number.isFinite(p.at) && p.at >= 0 && p.at <= value.observed_at && Number.isSafeInteger(p.samples) && p.samples >= 0 && (p.score === null || Number.isFinite(p.score) && p.score >= 0 && p.score <= 1 && p.samples >= 1) && p.cost_usd == null && p.gpu_hours == null, 'Invalid retained benchmark point.');
     return { checkpoint: label(p.checkpoint), step: p.step, at: p.at, score: p.score, samples: p.samples, cost_usd: null, gpu_hours: null };
   };
   const benchmarks = value.benchmarks.map(b => {
     requireValue(b.metric === 'accuracy' && Array.isArray(b.checkpoints) && b.checkpoints.length <= 120 && Number.isSafeInteger(b.protocol?.attempts) && b.protocol.attempts >= 1 && b.protocol.attempts <= 1024 && Number.isSafeInteger(b.protocol.max_output_tokens) && b.protocol.max_output_tokens >= 1 && b.protocol.max_output_tokens <= 10000000, 'Invalid retained benchmark series.');
-    const checkpoints = b.checkpoints.map(point);
+    const checkpoints = b.checkpoints.map(p => point(p));
     requireValue(checkpoints.every((p, i) => !i || p.step > checkpoints[i - 1].step && p.at >= checkpoints[i - 1].at) && new Set(checkpoints.map(p => p.checkpoint)).size === checkpoints.length, 'Retained checkpoints are not ordered or unique.');
-    return { id: label(b.id, 96), label: label(b.label), metric: b.metric, protocol: { id: label(b.protocol.id), dataset: label(b.protocol.dataset), revision: label(b.protocol.revision), harness: label(b.protocol.harness), attempts: b.protocol.attempts, max_output_tokens: b.protocol.max_output_tokens }, baseline: b.baseline == null ? null : point(b.baseline), checkpoints };
+    return { id: label(b.id, 96), label: label(b.label), metric: b.metric, protocol: { id: label(b.protocol.id), dataset: label(b.protocol.dataset), revision: label(b.protocol.revision), harness: label(b.protocol.harness), attempts: b.protocol.attempts, max_output_tokens: b.protocol.max_output_tokens }, baseline: b.baseline == null ? null : point(b.baseline, true), checkpoints };
   });
   requireValue(new Set(benchmarks.map(b => b.id)).size === benchmarks.length, 'Duplicate retained benchmark protocols.');
   return { schema: value.schema, run_id: runId, observed_at: value.observed_at, scope: 'held_out', benchmarks };
@@ -66,7 +75,7 @@ function sanitizeEnvelope(value, runId, now) {
 /** Scores come only from verified, complete native per-problem reports. */
 export function appendCheckpointBenchmarks(previous, checkpoint, targetValue, now = Date.now(), publicationEvidence) {
   const target = parseExportTarget(targetValue), config = parseCheckpointConfig(checkpoint.config);
-  verifyCheckpointPublication(publicationEvidence, config);
+  verifyCheckpointPublication(publicationEvidence, config, target);
   requireValue(config.trainer_run_id === target.trainer_run_id && Array.isArray(checkpoint.entries) && checkpoint.entries.length === config.requests.length, 'Checkpoint belongs to another trainer or is incomplete.');
   const envelope = previous ? sanitizeEnvelope(previous, target.trainer_run_id, now) : { schema: 'reliquary.run-benchmarks.v1', run_id: target.trainer_run_id, observed_at: 0, scope: 'held_out', benchmarks: [] };
   requireValue(envelope.schema === 'reliquary.run-benchmarks.v1' && envelope.run_id === target.trainer_run_id && envelope.scope === 'held_out' && Array.isArray(envelope.benchmarks), 'Existing export belongs to another run or scope.');
@@ -96,6 +105,7 @@ export function appendCheckpointBenchmarks(previous, checkpoint, targetValue, no
     }
     requireValue(equal(series.protocol, protocol) && series.metric === 'accuracy', 'An immutable protocol or metric was reused with different values.');
     const isBaseline = target.baseline_checkpoint === checkpointId;
+    requireValue(isBaseline || config.checkpoint_step !== null, 'Trajectory checkpoints require a verified optimizer step.');
     const existing = isBaseline ? series.baseline : series.checkpoints.find(p => p.checkpoint === checkpointId || p.step === point.step);
     if (existing) requireValue(equal(existing, point), 'A checkpoint or optimizer step already has a different approved result.');
     else if (isBaseline) series.baseline = point;
@@ -136,7 +146,7 @@ export async function exportCheckpointBenchmarks(targetValue, checkpoint, { jour
       state = JSON.parse(await readFile(journalPath, 'utf8'));
       requireValue(state.schema_version === 1 && equal(state.target, target), 'The export journal belongs to another dedicated run or approval.');
     } catch (error) { if (error.code !== 'ENOENT') throw error; state = { schema_version: 1, target, published: null, pending: null }; }
-    const lineage = verifyCheckpointPublication(publicationEvidence, parseCheckpointConfig(checkpoint.config));
+    const lineage = verifyCheckpointPublication(publicationEvidence, parseCheckpointConfig(checkpoint.config), target);
     state.checkpoint_sources ??= {};
     const sourceId = `${lineage.repo_id}@${lineage.revision}`;
     requireValue(!state.checkpoint_sources[sourceId] || equal(state.checkpoint_sources[sourceId], lineage), 'Retained checkpoint publication evidence changed.');

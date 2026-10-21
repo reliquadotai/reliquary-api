@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createEvaluationClient, GenerationApiError, verifyEvaluationProtocol } from '../dist/index.js';
-import { runCheckpointEvaluation, boundedRead, downloadEvaluationReport } from '../examples/evaluate-checkpoint.mjs';
+import { parseCheckpointConfig, runCheckpointEvaluation, boundedRead, downloadEvaluationReport } from '../examples/evaluate-checkpoint.mjs';
 import { appendCheckpointBenchmarks, exportCheckpointBenchmarks, verifyCheckpointPublication } from '../examples/export-checkpoint-benchmarks.mjs';
 import { fixture, sha } from './evaluation-fixture.mjs';
 
@@ -180,4 +180,30 @@ test('export requires immutable native publication bytes and the actual optimize
     assert.throws(() => verifyCheckpointPublication(evidence, f.config));
   }
   assert.throws(() => verifyCheckpointPublication(f.publicationEvidence, { ...f.config, checkpoint_step: 7 }), /Optimizer step/);
+});
+
+test('a baseline preserves an unknown optimizer step without admitting unknown trajectory steps', () => {
+  const f = fixture({ step: null }), now = Date.now();
+  assert.equal(parseCheckpointConfig(f.config).checkpoint_step, null);
+  assert.throws(() => parseCheckpointConfig({ ...f.config, checkpoint_step: undefined }));
+  const checkpoint_json = JSON.stringify({ id: f.input.model, sha: f.input.revision,
+    siblings: [{ rfilename: 'model.safetensors', size: 1000, lfs: { sha256: 'a'.repeat(64) } }] });
+  const evidence = { approved: true, trainer_run_id: f.config.trainer_run_id,
+    repo_id: f.input.model, revision: f.input.revision,
+    checkpoint_source: `https://huggingface.co/api/models/${f.input.model}/revision/${f.input.revision}?blobs=true`,
+    checkpoint_json, checkpoint_sha256: sha(checkpoint_json) };
+  const target = { ...f.target, baseline_checkpoint: `${f.input.model}@${f.input.revision}` };
+  const envelope = appendCheckpointBenchmarks(null, f.checkpoint, target, now, evidence);
+  assert.equal(envelope.benchmarks[0].baseline.step, null);
+  assert.deepEqual(envelope.benchmarks[0].checkpoints, []);
+  assert.deepEqual(appendCheckpointBenchmarks(envelope, f.checkpoint, target, now, evidence), envelope);
+  assert.throws(() => appendCheckpointBenchmarks(null, f.checkpoint, f.target, now, evidence), /explicitly approved baseline/);
+  assert.throws(() => appendCheckpointBenchmarks(null, f.checkpoint, { ...target, baseline_checkpoint: `other/model@${f.input.revision}` }, now, evidence), /explicitly approved baseline/);
+  assert.throws(() => appendCheckpointBenchmarks(null, f.checkpoint, target, now, { ...evidence, checkpoint_json: checkpoint_json + ' ' }), /source digest/);
+  const next = fixture({ revision: 'b'.repeat(40), step: 20, at: now });
+  const appended = appendCheckpointBenchmarks(envelope, next.checkpoint, target, now, next.publicationEvidence);
+  assert.equal(appended.benchmarks[0].baseline.step, null);
+  assert.equal(appended.benchmarks[0].checkpoints[0].step, 20);
+  const invalid = structuredClone(appended); invalid.benchmarks[0].checkpoints[0].step = null;
+  assert.throws(() => appendCheckpointBenchmarks(invalid, next.checkpoint, target, now, next.publicationEvidence), /Invalid retained benchmark point/);
 });

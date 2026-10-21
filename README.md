@@ -242,6 +242,17 @@ These reviewed source copies are evidence inputs, not an online authenticity
 check; no HF or object-storage credentials are requested. Missing publication
 metadata prevents benchmark export while evaluation remains usable.
 
+Standalone evaluations may set `checkpoint_step: null` when the optimizer step
+is unknown. A null step can be exported only when `baseline_checkpoint` exactly
+matches that model and revision. For that baseline, the reviewed evidence file
+retains `approved`, `trainer_run_id`, `repo_id`, `revision`, `checkpoint_source`
+(`https://huggingface.co/api/models/<repo>/revision/<revision>?blobs=true`),
+the exact metadata bytes as `checkpoint_json` and their `checkpoint_sha256`.
+The metadata must bind the snapshot and a weight artifact. The baseline keeps
+`step: null`; it does not acquire an invented training counter or trainer lineage.
+Trajectory checkpoints still require the native publication and optimizer step
+described above.
+
 Use one export journal and one exporter for an already-created dedicated W&B
 run in the trainer's entity/project. That run must have `job_type="evaluation"`
 and a different ID from the actual trainer. The optional Python bridge uses the
