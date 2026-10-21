@@ -1,8 +1,10 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.1 contains generation, job and evaluation contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. The [evaluation contract](contracts/evaluations.openapi.json) adds pinned checkpoint workflows. All use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
+Private `@reliquary/api` 0.3.2 contains generation, job and evaluation contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. The [evaluation contract](contracts/evaluations.openapi.json) adds pinned checkpoint workflows. All use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
 
-Pin the reviewed `vendor/api-client-0.3.1.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
+Pin the reviewed `vendor/api-client-0.3.2.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
+
+Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds. Verified reports use digest-pinned sidecar files to keep the journal bounded. API contracts and client exports retain their existing formats; each selected set still requires its own source and harness qualification.
 
 Customer transports default to `https://api.reliqua.ai`. Set `origin: 'https://app.reliqua.ai'` to use the existing application proxy, or supply another reviewed HTTPS origin. Browser clients retain their injected same-origin session transport.
 
@@ -140,11 +142,11 @@ identity across checkpoints. Model repository, revision and access intent are
 separate immutable pins. Older unpinned reports remain readable; they cannot
 qualify a pinned checkpoint comparison.
 
-`examples/evaluate-checkpoint.mjs` accepts one fixed set per request and one
-model checkpoint per owner-only journal. It requires explicit set IDs,
-40-character model revisions, sampling seeds, source-qualified harness/turn
-bounds and transcript/time budgets. Current frozen comparisons require
-qualified direct mode. Unsupported multi-turn sources fail closed.
+`examples/evaluate-checkpoint.mjs` accepts 1–24 distinct fixed-set requests and
+one model checkpoint per owner-only journal, with one fixed set per request.
+It requires explicit set IDs, 40-character model revisions, sampling seeds,
+source-qualified harness/turn bounds and transcript/time budgets. Current frozen
+comparisons require qualified direct mode. Unsupported multi-turn sources fail closed.
 `telecom-episode-v1` requires explicit `thinking: true` because its pinned
 renderer and response parser use the reasoning format.
 `max_new_tokens` limits each model turn; `max_episode_tokens` includes the full
@@ -188,9 +190,10 @@ node examples/evaluate-checkpoint.mjs checkpoint.json /private/state/checkpoint.
 
 Preparation retains the exact quote IDs, prices, expiry and protocol, without
 placing an order. After reviewing those quotes, set the approved numeric
-`max_total_usd` ceiling and explicitly add `--confirm`. The ceiling covers this
-checkpoint's selected requests only. The journal records that exact approval
-before any order POST. Once confirmation was attempted, changing the ceiling,
+`max_total_usd` ceiling and explicitly add `--confirm`. The ceiling covers the
+sum of all selected requests in that journal, checked before any order POST;
+separate journals have separate ceilings. The journal records that exact
+approval before any order POST. Once confirmation was attempted, changing the ceiling,
 quote, checkpoint, set, seed or other input is refused. No key or quote is
 replaced after an unknown outcome. An expired quote requires reconciliation
 and a new reviewed intent; this journal does not silently refresh it.
@@ -200,7 +203,8 @@ acknowledgement it queries the original quote and client reference; explicit
 `--confirm` may replay the unchanged original confirmation when no receipt was
 found. A401/403 does not establish that the earlier order was absent. Read
 retries honor bounded `Retry-After` hints, with at most five attempts; ordinary
-polling stops after30 rounds or90 seconds. Timeout never cancels or submits
+polling reads pending orders immediately, then every 30 seconds, and stops
+after 30 rounds or 90 seconds. Timeout never cancels or submits
 another order. Exit2 means results remain pending or were not delivered.
 
 The journal uses atomic replacement, mode0600 and a local exclusive lock. It
@@ -208,6 +212,15 @@ binds the normalized API origin and a local credential fingerprint without
 storing the key. A rotated key requires operator reconciliation; there is no
 credential bypass. Following a process crash, verify that process stopped
 before removing its stale `.lock` file. This is a local single-writer journal.
+
+Verified reports retain their exact UTF-8 bytes in digest-named mode0600 files
+inside the owner-only mode0700 `<journal>.reports` directory. Each report is
+bounded to 8 MiB and durably published before its journal reference; parsed
+reports are hydrated in memory rather than duplicated in the journal. Keep the
+journal and its report directory together outside source repositories. Resume
+and export verify the filename, size, SHA-256 and report schema; missing,
+modified or symbolic-link reports stop without automatic downloads or order
+retries. Existing bounded journals with inline reports remain readable.
 
 The script verifies the report's bytes, size, digest, evaluation ID, checkpoint,
 set provenance and frozen protocol. Machine output retains unique graded

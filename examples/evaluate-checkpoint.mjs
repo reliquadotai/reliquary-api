@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { open, readFile, rename, unlink, stat } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { open, readFile, rename, unlink, stat, mkdir, lstat, link } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -20,7 +21,7 @@ export function parseCheckpointConfig(value) {
   requireValue(value.schema_version === 1 && safeRef(value.trainer_run_id) && safeRef(value.client_ref), 'Use schema_version1 and safe trainer_run_id/client_ref identifiers.');
   requireValue(value.checkpoint_step === null || Number.isSafeInteger(value.checkpoint_step) && value.checkpoint_step >= 0 && value.checkpoint_step <= 1e12, 'Use an explicit optimizer checkpoint_step in0..1e12, or null when unknown.');
   requireValue(typeof value.max_total_usd === 'number' && Number.isFinite(value.max_total_usd) && value.max_total_usd >= 0, 'An explicit approved max_total_usd is required.');
-  requireValue(Array.isArray(value.requests) && value.requests.length >= 1 && value.requests.length <= 8, 'Choose1..8 fixed-set evaluation requests.');
+  requireValue(Array.isArray(value.requests) && value.requests.length >= 1 && value.requests.length <= 24, 'Choose 1..24 fixed-set evaluation requests.');
   const requests = value.requests.map(input => {
     const parsed = parseEvaluationQuoteInput(input);
     requireValue(parsed.mode === 'direct', 'Frozen checkpoint evaluations currently require explicitly qualified direct mode.');
@@ -34,12 +35,81 @@ export function parseCheckpointConfig(value) {
 }
 
 export async function writeJournal(path, value) {
+  const retained = Array.isArray(value.entries) ? { ...value, entries: value.entries.map(entry => {
+    if (!entry.result?.report_file) return entry;
+    const { report, report_json, ...result } = entry.result;
+    return { ...entry, result };
+  }) } : value;
   const temporary = `${path}.${randomUUID()}.tmp`;
   const handle = await open(temporary, 'wx', 0o600);
-  try { await handle.writeFile(JSON.stringify(value, null, 2) + '\n'); await handle.sync(); }
+  try { await handle.writeFile(JSON.stringify(retained, null, 2) + '\n'); await handle.sync(); }
   finally { await handle.close(); }
   try { await rename(temporary, path); const directory = await open(dirname(path), 'r'); try { await directory.sync(); } finally { await directory.close(); } }
   finally { await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
+}
+
+async function readReportSidecar(journalPath, digest) {
+  requireValue(/^[a-f0-9]{64}$/.test(digest), 'Invalid retained report digest.');
+  const directory = `${journalPath}.reports`, info = await lstat(directory);
+  requireValue(info.isDirectory() && !info.isSymbolicLink() && (info.mode & 0o077) === 0, 'Report directory must be owner-only and not a symbolic link.');
+  const handle = await open(`${directory}/${digest}.json`, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const file = await handle.stat();
+    requireValue(file.isFile() && (file.mode & 0o077) === 0 && file.size > 0 && file.size <= MAX_REPORT_BYTES, 'Retained report must be a bounded owner-only file.');
+    const bytes = Buffer.alloc(file.size + 1); let offset = 0;
+    while (offset < bytes.length) {
+      const { bytesRead } = await handle.read(bytes, offset, bytes.length - offset, offset);
+      if (!bytesRead) break;
+      offset += bytesRead;
+    }
+    requireValue(offset === file.size && hash(bytes.subarray(0, offset)) === digest, 'Retained report bytes or digest changed.');
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, offset));
+  } finally { await handle.close(); }
+}
+
+async function writeReportSidecar(journalPath, raw, digest) {
+  const bytes = Buffer.from(raw, 'utf8');
+  requireValue(bytes.length > 0 && bytes.length <= MAX_REPORT_BYTES && hash(bytes) === digest, 'Invalid verified report bytes.');
+  const directory = `${journalPath}.reports`;
+  try { await mkdir(directory, { mode: 0o700 }); } catch (error) { if (error.code !== 'EEXIST') throw error; }
+  const info = await lstat(directory);
+  requireValue(info.isDirectory() && !info.isSymbolicLink() && (info.mode & 0o077) === 0, 'Report directory must be owner-only and not a symbolic link.');
+  const name = `${digest}.json`, temporary = `${directory}/${digest}.${randomUUID()}.tmp`;
+  const handle = await open(temporary, 'wx', 0o600);
+  try {
+    try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
+    try { await link(temporary, `${directory}/${name}`); }
+    catch (error) { if (error.code !== 'EEXIST') throw error; await readReportSidecar(journalPath, digest); }
+  } finally { await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
+  const parent = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try { await parent.sync(); } finally { await parent.close(); }
+  return name;
+}
+
+export async function readCheckpointJournal(path) {
+  const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  let state;
+  try {
+    const info = await handle.stat();
+    requireValue(info.isFile() && (info.mode & 0o077) === 0 && info.size <= 80 * 1024 * 1024, 'Journal must be a bounded owner-only file.');
+    state = JSON.parse(await handle.readFile('utf8'));
+  } finally { await handle.close(); }
+  requireValue(state && Array.isArray(state.entries) && state.entries.length >= 1 && state.entries.length <= 24, 'Invalid checkpoint journal.');
+  for (const entry of state.entries) {
+    if (!entry.result) continue;
+    const result = entry.result;
+    let raw = result.report_json;
+    if (Object.hasOwn(result, 'report_file')) {
+      requireValue(result.report_file === `${result.report_sha256}.json` && /^[a-f0-9]{64}$/.test(result.report_sha256), 'Invalid retained report filename.');
+      try { raw = await readReportSidecar(path, result.report_sha256); }
+      catch { throw new Error('Retained report is missing or invalid. Preserve the journal and reconcile its original report; no automatic download or order retry is permitted.'); }
+    }
+    const file = result.order.files?.find(file => file.name === 'report.json');
+    requireValue(typeof raw === 'string' && Buffer.byteLength(raw, 'utf8') <= MAX_REPORT_BYTES && Buffer.byteLength(raw, 'utf8') === file?.size && hash(raw) === result.report_sha256 && file.sha256 === result.report_sha256, 'Retained report bytes differ from the delivery receipt.');
+    result.report = parseEvaluationReport(JSON.parse(raw), result.order);
+    result.report_json = raw;
+  }
+  return state;
 }
 
 export async function withJournalLock(path, action) {
@@ -126,9 +196,7 @@ export async function runCheckpointEvaluation(configValue, options) {
   return withJournalLock(journalPath, async () => {
     let state;
     try {
-      const info = await stat(journalPath);
-      requireValue(info.isFile() && (info.mode & 0o077) === 0 && info.size <= 80 * 1024 * 1024, 'Journal must be a bounded owner-only file.');
-      state = JSON.parse(await readFile(journalPath, 'utf8'));
+      state = await readCheckpointJournal(journalPath);
       requireValue(state.schema_version === 1 && state.config_sha256 === configHash && equal(intent(state.config), intent(config)) && state.credential_context === credentialContext, 'This journal belongs to a different checkpoint, configuration or API credential.');
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
@@ -192,12 +260,14 @@ export async function runCheckpointEvaluation(configValue, options) {
         assertOrder(order, entry); entry.status = order.status; await save();
         if (order.status === 'delivered') {
           const verified = await downloadEvaluationReport(transport, order, signal, sleep);
-          entry.result = { order, ...verified, verified_at: Date.now(), report_sha256: order.files.find(f => f.name === 'report.json').sha256 };
+          const report_sha256 = order.files.find(f => f.name === 'report.json').sha256;
+          const report_file = await writeReportSidecar(journalPath, verified.report_json, report_sha256);
+          entry.result = { order, ...verified, verified_at: Date.now(), report_sha256, report_file };
           entry.phase = 'delivered'; await save();
         } else if (!['cancelled', 'failed'].includes(order.status)) pending = true;
       }
       if (!pending || waitSeconds === 0) break;
-      try { await sleep(3000, undefined, { signal }); }
+      try { await sleep(30000, undefined, { signal }); }
       catch (error) { if (!signal.aborted) throw error; break; }
     } } catch (error) { if (!signal.aborted) throw error; }
     return state;
