@@ -23,6 +23,16 @@ test('quote input rejects floating revisions, unset sets, budget overflow and un
     assert.throws(() => parseEvaluationQuoteInput({ ...input, ...change }));
 });
 
+test('Telecom episode quotes require explicit thinking without changing other harnesses', () => {
+  const { input } = fixture();
+  const telecom = { ...input, mode: 'direct', harness: 'telecom-episode-v1', thinking: true };
+  assert.equal(parseEvaluationQuoteInput(telecom).thinking, true);
+  for (const thinking of [false, undefined])
+    assert.throws(() => parseEvaluationQuoteInput({ ...telecom, thinking }));
+  for (const harness of ['single-turn', 'signed-bash-v1'])
+    assert.equal(parseEvaluationQuoteInput({ ...input, mode: 'direct', harness, thinking: false }).thinking, false);
+});
+
 test('raw producer protocol bytes are authoritative across integral floats and non-ASCII', async () => {
   const f = fixture();
   f.quote.protocol.sampling.temperature = 1;

@@ -156,6 +156,7 @@ export function parseEvaluationQuoteInput(value: unknown): EvaluationQuoteInput 
     if (mode === 'subnet' && parsed.temperature <= 0) fail();
   }
   if (v['harness'] !== undefined) text(v['harness'], 200);
+  if (v['harness'] === 'telecom-episode-v1' && v['thinking'] !== true) fail();
   if (v['max_turns'] !== undefined) integer(v['max_turns'], 1, 48);
   if (v['max_episode_tokens'] !== undefined) integer(v['max_episode_tokens'], 1, 65536);
   if (typeof v['max_episode_tokens'] === 'number' && v['max_episode_tokens'] < Number(v['max_new_tokens'])) fail();

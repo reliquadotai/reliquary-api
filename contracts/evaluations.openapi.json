@@ -2035,7 +2035,31 @@
           "max_new_tokens"
         ],
         "additionalProperties": false,
-        "description": "Pinned-client request requires explicit set_id. The server retains older optional-set requests; checkpoint comparisons must never select the newest set implicitly. New frozen protocols and private models currently require qualified direct mode; unsupported harness/turn/source bounds fail closed. max_new_tokens is per model turn; max_episode_tokens covers prompt/history/tool transcript. Seed must be explicit for checkpoint comparisons."
+        "description": "Pinned-client request requires explicit set_id. The server retains older optional-set requests; checkpoint comparisons must never select the newest set implicitly. New frozen protocols and private models currently require qualified direct mode; unsupported harness/turn/source bounds fail closed. max_new_tokens is per model turn; max_episode_tokens covers prompt/history/tool transcript. Seed must be explicit for checkpoint comparisons. telecom-episode-v1 requires explicit thinking:true for its pinned reasoning renderer and parser.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "harness": {
+                  "const": "telecom-episode-v1"
+                }
+              },
+              "required": [
+                "harness"
+              ]
+            },
+            "then": {
+              "properties": {
+                "thinking": {
+                  "const": true
+                }
+              },
+              "required": [
+                "thinking"
+              ]
+            }
+          }
+        ]
       },
       "Quote": {
         "type": "object",

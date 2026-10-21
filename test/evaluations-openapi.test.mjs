@@ -43,6 +43,9 @@ test('OpenAPI preserves bounded lifecycle, fixed inputs and measured optional di
   assert.equal(spec.components.schemas.QuoteInput.properties.max_turns.maximum, 48);
   assert.equal(spec.components.schemas.QuoteInput.properties.max_episode_tokens.maximum, 65536);
   assert.equal(spec.components.schemas.QuoteInput.properties.episode_timeout_seconds.maximum, 3600);
+  const telecom = spec.components.schemas.QuoteInput.allOf.find(rule => rule.if.properties.harness.const === 'telecom-episode-v1');
+  assert.deepEqual(telecom.if.required, ['harness']);
+  assert.deepEqual(telecom.then, { properties: { thinking: { const: true } }, required: ['thinking'] });
   assert.equal(spec.components.schemas.OrdersResponse.properties.evaluations.maxItems, 100);
   assert.deepEqual(spec.paths['/api/v1/evaluations'].get.parameters.map(p => p.name), ['quote_id', 'client_ref']);
   assert.ok(spec.paths['/api/v1/evaluations'].post.parameters.some(p => p.name === 'Idempotency-Key' && p.required));

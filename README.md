@@ -145,6 +145,8 @@ model checkpoint per owner-only journal. It requires explicit set IDs,
 40-character model revisions, sampling seeds, source-qualified harness/turn
 bounds and transcript/time budgets. Current frozen comparisons require
 qualified direct mode. Unsupported multi-turn sources fail closed.
+`telecom-episode-v1` requires explicit `thinking: true` because its pinned
+renderer and response parser use the reasoning format.
 `max_new_tokens` limits each model turn; `max_episode_tokens` includes the full
 prompt, history and tool transcript. A small model context can require a lower
 episode budget than the default offered by the server.
