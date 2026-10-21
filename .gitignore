@@ -12,3 +12,4 @@ dist/
 /test-results/
 
 /coverage/
+/examples/__pycache__/
