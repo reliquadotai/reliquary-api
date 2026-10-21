@@ -240,6 +240,10 @@ native `training_run_id` to W&B trainer mapping before approving the file.
 The exporter verifies the native receipt pins the profile, both native run IDs
 agree, and `lr_schedule_step` equals the configured optimizer step. It never
 uses `checkpoint_n`, a filename or W&B history step as an optimizer step.
+An `async_hf_backup` publication also binds the same `async_checkpoint_run`
+and `async_task_id` in its manifest and profile. Its first commit may retain
+`parent_revision: null`; other publication kinds still require an immutable
+parent revision. The uploaded checkpoint revision remains mandatory in every case.
 These reviewed source copies are evidence inputs, not an online authenticity
 check; no HF or object-storage credentials are requested. Missing publication
 metadata prevents benchmark export while evaluation remains usable.

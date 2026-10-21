@@ -41,7 +41,14 @@ export function verifyCheckpointPublication(evidence, config, target) {
     return parseEvaluationProtocolJson(raw);
   };
   const publication = read('publication'), profile = read('profile');
-  requireValue(/^[a-f0-9]{32}$/.test(publication.publication_id) && /^[a-f0-9]{40}$/.test(publication.parent_revision) && publication.manifest?.repo_id === request.model && typeof publication.manifest.training_run_id === 'string' && publication.manifest.training_run_id.length > 0 && profile.training_run_id === publication.manifest.training_run_id, 'Native publication and profile do not bind the same training run.');
+  if (publication.manifest?.publication_kind === 'async_hf_backup') {
+    for (const field of ['async_checkpoint_run', 'async_task_id'])
+      requireValue(typeof publication.manifest[field] === 'string' && publication.manifest[field].length > 0 && profile[field] === publication.manifest[field], 'Async publication and profile do not bind the same run and task.');
+  }
+  const validParent = publication.parent_revision === null
+    ? publication.manifest?.publication_kind === 'async_hf_backup'
+    : /^[a-f0-9]{40}$/.test(publication.parent_revision);
+  requireValue(/^[a-f0-9]{32}$/.test(publication.publication_id) && validParent && publication.manifest?.repo_id === request.model && typeof publication.manifest.training_run_id === 'string' && publication.manifest.training_run_id.length > 0 && profile.training_run_id === publication.manifest.training_run_id, 'Native publication and profile do not bind the same training run.');
   requireValue(Number.isSafeInteger(profile.lr_schedule_step) && profile.lr_schedule_step >= 0 && profile.lr_schedule_step === config.checkpoint_step, 'Optimizer step differs from the native checkpoint profile.');
   const file = publication.files?.['reliquary_protocol_profile.json'];
   requireValue(file?.sha256 === evidence.profile_sha256 && file.size === Buffer.byteLength(evidence.profile_json), 'The native publication receipt does not pin the checkpoint profile.');

@@ -182,6 +182,43 @@ test('export requires immutable native publication bytes and the actual optimize
   assert.throws(() => verifyCheckpointPublication(f.publicationEvidence, { ...f.config, checkpoint_step: 7 }), /Optimizer step/);
 });
 
+test('an async root publication retains its real null parent and immutable checkpoint binding', () => {
+  const f = fixture(), evidence = structuredClone(f.publicationEvidence);
+  const publication = JSON.parse(evidence.publication_json);
+  publication.parent_revision = null;
+  Object.assign(publication.manifest, { publication_kind: 'async_hf_backup', async_checkpoint_run: 'async-run', async_task_id: 'task-a', checkpoint_n: 99 });
+  const profile = { ...JSON.parse(evidence.profile_json), async_checkpoint_run: 'async-run', async_task_id: 'task-a' };
+  evidence.profile_json = JSON.stringify(profile);
+  evidence.profile_sha256 = sha(evidence.profile_json);
+  Object.assign(publication.files['reliquary_protocol_profile.json'], { sha256: evidence.profile_sha256, size: Buffer.byteLength(evidence.profile_json) });
+  const retain = () => {
+    evidence.publication_json = JSON.stringify(publication);
+    evidence.publication_sha256 = sha(evidence.publication_json);
+  };
+  retain();
+  assert.equal(verifyCheckpointPublication(evidence, f.config).optimizer_step, 10);
+  assert.equal(appendCheckpointBenchmarks(null, f.checkpoint, f.target, Date.now(), evidence).benchmarks[0].checkpoints[0].step, 10);
+  for (const parent of [undefined, '', 'main', 'a'.repeat(39)]) {
+    publication.parent_revision = parent; retain();
+    assert.throws(() => verifyCheckpointPublication(evidence, f.config));
+  }
+  publication.parent_revision = null;
+  delete publication.manifest.publication_kind; retain();
+  assert.throws(() => verifyCheckpointPublication(evidence, f.config));
+  publication.manifest.publication_kind = 'unknown'; retain();
+  assert.throws(() => verifyCheckpointPublication(evidence, f.config));
+  publication.manifest.publication_kind = 'async_hf_backup'; retain();
+  for (const field of ['async_checkpoint_run', 'async_task_id']) {
+    publication.manifest[field] = 'other'; retain();
+    assert.throws(() => verifyCheckpointPublication(evidence, f.config), /same run and task/);
+    delete publication.manifest[field]; retain();
+    assert.throws(() => verifyCheckpointPublication(evidence, f.config), /same run and task/);
+    publication.manifest[field] = profile[field]; retain();
+  }
+  assert.throws(() => verifyCheckpointPublication({ ...evidence, revision: 'b'.repeat(40) }, f.config));
+  assert.throws(() => verifyCheckpointPublication(evidence, { ...f.config, checkpoint_step: 11 }));
+});
+
 test('a baseline preserves an unknown optimizer step without admitting unknown trajectory steps', () => {
   const f = fixture({ step: null }), now = Date.now();
   assert.equal(parseCheckpointConfig(f.config).checkpoint_step, null);
