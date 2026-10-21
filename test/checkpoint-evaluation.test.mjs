@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm, chmod } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, chmod, stat, writeFile, rename, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { canonicalEvaluationJson, createEvaluationClient, GenerationApiError, verifyEvaluationProtocol } from '../dist/index.js';
-import { parseCheckpointConfig, runCheckpointEvaluation, boundedRead, downloadEvaluationReport } from '../examples/evaluate-checkpoint.mjs';
+import { createEvaluationClient, GenerationApiError, verifyEvaluationProtocol } from '../dist/index.js';
+import { parseCheckpointConfig, readCheckpointJournal, runCheckpointEvaluation, boundedRead, downloadEvaluationReport, writeJournal } from '../examples/evaluate-checkpoint.mjs';
 import { appendCheckpointBenchmarks, exportCheckpointBenchmarks, verifyCheckpointPublication } from '../examples/export-checkpoint-benchmarks.mjs';
 import { fixture, sha } from './evaluation-fixture.mjs';
 
@@ -40,16 +40,10 @@ test('checkpoint configurations allow up to 24 distinct fixed sets for one model
 test('twelve fixed sets retain one aggregate approval and poll pending orders every 30 seconds', async t => {
   const dir = await privateDirectory(t), journalPath = join(dir, 'suite.private.json'), f = fixture();
   const suites = Array.from({ length: 12 }, (_, index) => {
-    const setId = `fixed-set-${index}`;
-    const input = { ...f.input, envs: [{ ...f.input.envs[0], set_id: setId }] };
-    const setProtocol = { ...f.set.protocol, set: { ...f.set.protocol.set, set_id: setId } };
-    const setJson = canonicalEvaluationJson(setProtocol), setSha = sha(setJson);
-    const set = { ...f.set, set_id: setId, protocol: setProtocol, protocol_json: setJson, protocol_sha256: setSha };
-    const protocol = { ...f.protocol, sets: input.envs, protocol_bindings: { [setId]: setSha } };
-    const raw = canonicalEvaluationJson(protocol);
-    const quote = { ...f.quote, quote_id: `quote-${index}`, price_usd: 0.1, envs: input.envs, protocol, protocol_json: raw, protocol_sha256: sha(raw), protocol_bindings: protocol.protocol_bindings };
-    const order = { ...f.order, id: `order-${index}`, quote_id: quote.quote_id, client_ref: `${f.config.client_ref}:${index}`, envs: input.envs, protocol, protocol_json: raw, protocol_sha256: quote.protocol_sha256, protocol_bindings: quote.protocol_bindings, price_usd: quote.price_usd, status: 'provisioning', complete: null, finished_at: null, summary: null, generation: null, files: [] };
-    return { input, set, quote, order };
+    const suite = fixture({ setId: `fixed-set-${index}`, suffix: String(index), clientRef: `${f.config.client_ref}:${index}` });
+    suite.quote.price_usd = 0.1;
+    Object.assign(suite.order, { price_usd: 0.1, status: 'provisioning', complete: null, finished_at: null, summary: null, generation: null, files: [] });
+    return suite;
   });
   const config = { ...f.config, requests: suites.map(suite => suite.input), max_total_usd: 1.19 };
   const quoteIds = suites.map(suite => suite.quote.quote_id), keys = [];
@@ -89,6 +83,93 @@ test('twelve fixed sets retain one aggregate approval and poll pending orders ev
   assert.deepEqual(sleeps, [30000]);
   assert.equal(detailReads, 24, 'one resumed polling round reads each pending order once');
   assert.equal(creates, 12); assert.equal(quotes, 12);
+});
+
+test('twelve large verified reports resume and export through bounded digest-pinned sidecars', async t => {
+  const dir = await privateDirectory(t), journalPath = join(dir, 'large.private.json');
+  const suites = Array.from({ length: 12 }, (_, index) => {
+    const f = fixture({ setId: `fixed-set-${index}`, suffix: String(index), clientRef: `checkpoint:${index}` });
+    f.report.provenance.notes = 'x'.repeat(4 * 1024 * 1024);
+    f.reportJson = JSON.stringify(f.report);
+    Object.assign(f.order.files[0], { size: Buffer.byteLength(f.reportJson), sha256: sha(f.reportJson) });
+    return f;
+  });
+  const config = { ...suites[0].config, max_total_usd: 12, requests: suites.map(f => f.input) };
+  const client = createEvaluationClient(async (path, init = {}) => {
+    if (path.endsWith('/catalog')) return { ...suites[0].catalog, envs: [{ env: 'test', sets: suites.map(f => f.set) }] };
+    if (path.endsWith('/quotes')) return suites.find(f => f.set.set_id === JSON.parse(init.body).envs[0].set_id).quote;
+    if (init.method === 'POST') return { evaluation: suites.find(f => f.quote.quote_id === JSON.parse(init.body).quote_id).order };
+    return { evaluation: suites.find(f => path.endsWith('/' + f.order.id)).order };
+  });
+  const transport = { download: async (id, name, { offset, maxBytes }) => ({ bytes: Buffer.from(suites.find(f => f.order.id === id).reportJson).subarray(offset, offset + maxBytes) }) };
+  const options = { journalPath, client, transport, credentialContext: context, waitSeconds: 0 };
+  await runCheckpointEvaluation(config, { ...options, confirm: true });
+  assert.ok((await stat(journalPath)).size < 1024 * 1024, 'large reports do not inflate the confirmation journal');
+  assert.equal((await stat(`${journalPath}.reports`)).mode & 0o777, 0o700);
+  const stored = JSON.parse(await readFile(journalPath, 'utf8'));
+  for (const [index, entry] of stored.entries.entries()) {
+    assert.equal(entry.result.report, undefined); assert.equal(entry.result.report_json, undefined);
+    assert.equal(entry.result.report_file, `${entry.result.report_sha256}.json`);
+    const path = join(`${journalPath}.reports`, entry.result.report_file);
+    assert.equal((await stat(path)).mode & 0o777, 0o600);
+    assert.equal(await readFile(path, 'utf8'), suites[index].reportJson);
+  }
+  const offline = new Proxy({}, { get: () => () => assert.fail('retained reports must not make API or download calls') });
+  const resumed = await runCheckpointEvaluation(config, { ...options, client: offline, transport: offline });
+  assert.equal(resumed.entries.length, 12);
+  assert.ok(resumed.entries.every(entry => entry.result.report.envs.test.n_problems_graded === 2));
+  const loaded = await readCheckpointJournal(journalPath);
+  const envelope = await exportCheckpointBenchmarks(suites[0].target, loaded, {
+    journalPath: join(dir, 'export.private.json'), publicationEvidence: suites[0].publicationEvidence,
+    publisher: async payload => ({ verified: true, evaluation_run_id: suites[0].target.evaluation_run_id, envelope_sha256: payload.envelope_sha256 }),
+  });
+  assert.equal(envelope.benchmarks.length, 12);
+  assert.ok(envelope.benchmarks.every(series => series.checkpoints[0].samples === 2));
+});
+
+test('missing, tampered or redirected reports preserve the original approval without automatic requests', async t => {
+  const dir = await privateDirectory(t), journalPath = join(dir, 'retained.private.json'), f = fixture();
+  const client = createEvaluationClient(async (path, init = {}) => {
+    if (path.endsWith('/catalog')) return f.catalog;
+    if (path.endsWith('/quotes')) return f.quote;
+    return { evaluation: f.order };
+  });
+  const options = { journalPath, client, transport: fileTransport(f), credentialContext: context, waitSeconds: 0 };
+  await runCheckpointEvaluation(f.config, { ...options, confirm: true });
+  const original = await readFile(journalPath, 'utf8'), stored = JSON.parse(original);
+  const reportPath = join(`${journalPath}.reports`, stored.entries[0].result.report_file);
+  const offline = new Proxy({}, { get: () => () => assert.fail('invalid retained reports must not make requests') });
+  for (const bytes of [null, 'tampered report']) {
+    if (bytes === null) await rm(reportPath); else await writeFile(reportPath, bytes, { mode: 0o600 });
+    await assert.rejects(runCheckpointEvaluation(f.config, { ...options, client: offline, transport: offline, confirm: true }), /Retained report/);
+    await assert.rejects(readCheckpointJournal(journalPath), /Retained report/);
+    assert.equal(await readFile(journalPath, 'utf8'), original);
+  }
+  await writeFile(reportPath, f.reportJson, { mode: 0o600 });
+  const backup = join(dir, 'report-backup.private.json');
+  await rename(reportPath, backup); await symlink(backup, reportPath);
+  await assert.rejects(readCheckpointJournal(journalPath), /Retained report/);
+  await rm(reportPath); await rename(backup, reportPath);
+  stored.entries[0].result.report_file = '../report-backup.private.json';
+  await writeJournal(journalPath, stored);
+  await assert.rejects(readCheckpointJournal(journalPath), /Invalid retained report filename/);
+  await writeFile(journalPath, original, { mode: 0o600 });
+  const inline = await readCheckpointJournal(journalPath);
+  delete inline.entries[0].result.report_file;
+  await writeJournal(journalPath, inline);
+  await rm(`${journalPath}.reports`, { recursive: true });
+  const resumed = await runCheckpointEvaluation(f.config, { ...options, client: offline, transport: offline });
+  assert.equal(resumed.entries[0].result.report_json, f.reportJson, 'legacy inline reports remain readable');
+  assert.equal(resumed.entries[0].result.report.envs.test.n_problems_graded, 2);
+});
+
+test('checkpoint journal entry bounds are checked before report hydration', async t => {
+  const dir = await privateDirectory(t), path = join(dir, 'invalid.private.json');
+  for (const count of [0, 25]) {
+    const result = { report_sha256: 'a'.repeat(64), report_file: 'a'.repeat(64) + '.json' };
+    await writeJournal(path, { entries: Array.from({ length: count }, () => ({ result })) });
+    await assert.rejects(readCheckpointJournal(path), /Invalid checkpoint journal/);
+  }
 });
 
 test('lost create acknowledgement restarts through exact owned receipt, without another POST', async t => {

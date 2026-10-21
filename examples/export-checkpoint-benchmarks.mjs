@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { canonicalEvaluationJson, parseEvaluationReport, parseEvaluationProtocolJson } from '../dist/index.js';
-import { withJournalLock, writeJournal, parseCheckpointConfig } from './evaluate-checkpoint.mjs';
+import { withJournalLock, writeJournal, readCheckpointJournal, parseCheckpointConfig } from './evaluate-checkpoint.mjs';
 
 const requireValue = (condition, message) => { if (!condition) throw new Error(message); };
 const equal = (a, b) => canonicalEvaluationJson(a) === canonicalEvaluationJson(b);
@@ -176,9 +176,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     const targetInfo = await stat(process.argv[2]);
     requireValue(targetInfo.isFile() && targetInfo.size >= 1 && targetInfo.size <= 65536, 'Target must be a bounded JSON file.');
     const target = JSON.parse(await readFile(process.argv[2], 'utf8'));
-    const sourceInfo = await stat(process.argv[4]);
-    requireValue(sourceInfo.isFile() && (sourceInfo.mode & 0o077) === 0 && sourceInfo.size <= 80 * 1024 * 1024, 'Checkpoint journal must be bounded and owner-only.');
-    const checkpoint = JSON.parse(await readFile(process.argv[4], 'utf8'));
+    const checkpoint = await readCheckpointJournal(resolve(process.argv[4]));
     const evidenceInfo = await stat(process.argv[5]);
     requireValue(evidenceInfo.isFile() && (evidenceInfo.mode & 0o077) === 0 && evidenceInfo.size <= 3 * 1024 * 1024, 'Publication evidence must be bounded and owner-only.');
     const publicationEvidence = JSON.parse(await readFile(process.argv[5], 'utf8'));

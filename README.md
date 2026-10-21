@@ -4,7 +4,7 @@ Private `@reliquary/api` 0.3.2 contains generation, job and evaluation contracts
 
 Pin the reviewed `vendor/api-client-0.3.2.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
 
-Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds. API contracts and client exports retain their existing formats; each selected set still requires its own source and harness qualification.
+Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds. Verified reports use digest-pinned sidecar files to keep the journal bounded. API contracts and client exports retain their existing formats; each selected set still requires its own source and harness qualification.
 
 Customer transports default to `https://api.reliqua.ai`. Set `origin: 'https://app.reliqua.ai'` to use the existing application proxy, or supply another reviewed HTTPS origin. Browser clients retain their injected same-origin session transport.
 
@@ -212,6 +212,15 @@ binds the normalized API origin and a local credential fingerprint without
 storing the key. A rotated key requires operator reconciliation; there is no
 credential bypass. Following a process crash, verify that process stopped
 before removing its stale `.lock` file. This is a local single-writer journal.
+
+Verified reports retain their exact UTF-8 bytes in digest-named mode0600 files
+inside the owner-only mode0700 `<journal>.reports` directory. Each report is
+bounded to 8 MiB and durably published before its journal reference; parsed
+reports are hydrated in memory rather than duplicated in the journal. Keep the
+journal and its report directory together outside source repositories. Resume
+and export verify the filename, size, SHA-256 and report schema; missing,
+modified or symbolic-link reports stop without automatic downloads or order
+retries. Existing bounded journals with inline reports remain readable.
 
 The script verifies the report's bytes, size, digest, evaluation ID, checkpoint,
 set provenance and frozen protocol. Machine output retains unique graded
