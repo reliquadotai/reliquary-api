@@ -1,8 +1,8 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.0 contains generation, job and evaluation contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. The [evaluation contract](contracts/evaluations.openapi.json) adds pinned checkpoint workflows. All use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
+Private `@reliquary/api` 0.3.1 contains generation, job and evaluation contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. The [evaluation contract](contracts/evaluations.openapi.json) adds pinned checkpoint workflows. All use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
 
-Pin the reviewed `vendor/api-client-0.3.0.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
+Pin the reviewed `vendor/api-client-0.3.1.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
 
 Customer transports default to `https://api.reliqua.ai`. Set `origin: 'https://app.reliqua.ai'` to use the existing application proxy, or supply another reviewed HTTPS origin. Browser clients retain their injected same-origin session transport.
 
