@@ -1,12 +1,57 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.2 contains generation, job and evaluation contracts, runtime validators, request-injected TypeScript clients and bounded fetch transports. The [generation contract](contracts/generation.openapi.json) retains its 0.1.0 protocol and the [job contract](contracts/jobs.openapi.json) its 0.2.0 protocol. The [evaluation contract](contracts/evaluations.openapi.json) adds pinned checkpoint workflows. All use OpenAPI 3.1.1 / JSON Schema 2020-12; job payloads use schema version 1.
+Private `@reliquary/api` 0.3.2 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
-Pin the reviewed `vendor/api-client-0.3.2.tgz` artifact in the consumer's package manifest and lockfile. Updating the package requires an explicit version and integrity update; this release does not depend on a public registry. The CLI and quickstart require Node.js 22 or later.
+Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
 
-Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds. Verified reports use digest-pinned sidecar files to keep the journal bounded. API contracts and client exports retain their existing formats; each selected set still requires its own source and harness qualification.
+## Start here
 
-Customer transports default to `https://api.reliqua.ai`. Set `origin: 'https://app.reliqua.ai'` to use the existing application proxy, or supply another reviewed HTTPS origin. Browser clients retain their injected same-origin session transport.
+| Need | Reference |
+| --- | --- |
+| Base URL, credentials, installed version and availability | [Connection and version boundaries](#connection-and-version-boundaries) |
+| Generate datasets from a catalogue or pinned model | [Generation](#generation) |
+| Upload and validate an owned dataset | [Jobs](#jobs), [CPU quickstart](#cpu-quickstart), [CLI](#cli) |
+| Compare exact model checkpoints on frozen sets | [Pinned checkpoint evaluations](#pinned-checkpoint-evaluations) |
+| Export approved, verified benchmark results | [Approved benchmark publication](#approved-benchmark-publication) |
+| Request/response schemas and audience-specific paths | [Contract index](contracts/README.md) |
+
+## Connection and version boundaries
+
+Customer fetch transports default to `https://api.reliqua.ai`. Pass an origin only, without `/api`, a path, query or fragment. `https://app.reliqua.ai` is the existing application proxy. Other reviewed HTTPS origins and HTTP loopback development origins are accepted. Browser clients inject their existing same-origin session transport instead of a workspace key.
+
+| Audience / surface | Credential | Additional authority and availability |
+| --- | --- | --- |
+| Generation or evaluation catalogue | None | Discovery does not authorize ordering or establish qualified capacity. |
+| Owned generation orders, quotes and files | Bearer workspace key with `orders:write` | Account approval, source/model support, credit and dispatch gates are checked by the service. |
+| Owned CPU job, capability, event, artifact and worker reads | Bearer workspace key with `resources:read` | Active account and owner isolation. |
+| CPU job/input/worker writes | Bearer workspace key with `resources:write` | Upload, create, resume and worker enrollment also require the dataset or training submission grant. |
+| Owned evaluations, quotes and files | Bearer workspace key with `evaluations:write` | Evaluation approval, frozen-set/harness support, credit and execution gates remain server checks. |
+| Browser generation and jobs | Existing session transport | It owns cookies, approved origins and XSRF; native projections additionally require fresh administrator verification. |
+| Native subnet operator client | Existing administrator browser transport | Wallet verification and exact-action proofs; customer workspace keys do not authorize these operations. |
+
+Keys stay in a server-side environment or secret store. The bundled key transports omit browser cookies, refuse redirects, restrict requests to their own route allowlists and never retry mutations automatically. `timeoutMs` defaults to 60,000 and accepts 1–120,000 milliseconds; `fetch` can be injected for a reviewed transport or local tests.
+
+The package version, each wire protocol and the artifact installed by a consumer are independent:
+
+| Package / consumer | Covered contract artifacts | Meaning |
+| --- | --- | --- |
+| This source package, `0.3.2` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| Platform dependency `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | The platform's existing pin does not acquire the newer evaluation exports by reading this README. |
+| A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
+
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.2.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+
+Public run/RL monitoring, training orchestration, account/key management, and worker lease/heartbeat protocols are outside this package's customer clients and OpenAPI contracts. Use the [monitoring](https://app.reliqua.ai/docs/api-reference/monitoring) and [training](https://app.reliqua.ai/docs/api-reference/training) HTTP references for those supported platform endpoints. There is no monitoring or training SDK export here; native operator helpers retain their separate authorization boundary.
+
+## Generation
+
+Start with a public discovery request; it creates no order and needs no credential:
+
+```sh
+curl --fail-with-body --silent --show-error https://api.reliqua.ai/api/v1/generation/catalog
+```
+
+For an approved private package installation, the equivalent client request is:
 
 ```ts
 import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
@@ -18,6 +63,22 @@ const transport = createGenerationTransport({
 const generation = createGenerationClient(transport.request);
 const catalog = await generation.catalog();
 ```
+
+To inspect owned history without creating work, call `await generation.orders()` and then `await generation.detail(ownedOrderId)` with an ID from that response. To request a quote, select an exact model ID and one of that model's source IDs from the returned catalogue:
+
+```ts
+const quote = await generation.quote({
+  model: 'MODEL_ID_FROM_CATALOG',
+  source: 'SOURCE_ID_FROM_THAT_MODEL',
+  prompt_count: 1,
+  samples_per_prompt: 1,
+  max_new_tokens: 128,
+  thinking: false,
+});
+console.log({ quoteId: quote.quote_id, priceUsd: quote.price_usd, expiresAt: quote.expires_at });
+```
+
+Replace the two identifiers with reviewed catalogue values. A quote does not create an order or reserve credit. Pinned-model requests instead use an exact `model` repository, 40-character `revision` and `env`; see the [generation schema examples](contracts/generation.openapi.json).
 
 The client provides `catalog`, `quote`, `create`, `orders`, `detail`, `cancel` and `downloadPath`. Public catalogue reads need no key. An approved account reviews the quote's configuration, price and expiry before explicitly calling `create(quoteId, originalRequestKey)`. Preserve that quote and its 16–80 character `Idempotency-Key` if the result is ambiguous. The transport never retries mutations automatically. Cancellation can remain asynchronous; read the resulting order state.
 
@@ -113,6 +174,8 @@ response bodies are not uploaded. Maintained tests and fixtures remain versioned
 
 ## Pinned checkpoint evaluations
 
+**Service compatibility:** this section describes the `0.3.2` package protocol, not a currently installed platform release. The reviewed platform revision `be0216be` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
+
 The evaluation client uses the existing `/api/v1/evaluations` order API and an
 `evaluations:write` workspace key. Evaluation approval, current qualified sets,
 pricing and execution availability remain server gates. These examples do not
@@ -133,6 +196,7 @@ receipts before an explicit retry. Mutations are sent once; an ambiguous result
 retains the original quote, key and request. Cancellation is a separate explicit
 action. The [evaluation OpenAPI](contracts/evaluations.openapi.json) describes
 the wire contract and synthetic examples.
+The contract also describes webhook-secret creation/rotation as an HTTP-only operation; the evaluation client and bounded transport do not expose it.
 
 Qualified set cards retain `protocol`, exact `protocol_json`, its SHA-256 and
 `qualified_support`. Producer JSON bytes are the digest authority; duplicate

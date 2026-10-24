@@ -8,10 +8,12 @@
   },
   "servers": [
     {
-      "url": "https://api.reliqua.ai"
+      "url": "https://api.reliqua.ai",
+      "description": "Canonical customer API origin."
     },
     {
-      "url": "https://app.reliqua.ai"
+      "url": "https://app.reliqua.ai",
+      "description": "Existing application proxy. This contract describes customer workspace-key routes."
     }
   ],
   "paths": {
@@ -198,7 +200,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Read public frozen-set discovery and availability"
       }
     },
     "/api/v1/evaluations/quotes": {
@@ -410,7 +413,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Quote an exact pinned-model evaluation request"
       }
     },
     "/api/v1/evaluations": {
@@ -641,7 +645,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "List the newest matching owned evaluations"
       },
       "post": {
         "operationId": "createEvaluation",
@@ -1049,7 +1054,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Confirm a reviewed quote and reserve its price"
       }
     },
     "/api/v1/evaluations/{evaluationId}": {
@@ -1334,7 +1340,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Read owned evaluation progress and result lineage"
       }
     },
     "/api/v1/evaluations/{evaluationId}/cancel": {
@@ -1499,7 +1506,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Request cooperative cancellation of an owned evaluation"
       }
     },
     "/api/v1/evaluations/{evaluationId}/files/{fileName}": {
@@ -1679,7 +1687,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Read an owned evaluation file or finite byte range"
       }
     },
     "/api/v1/evaluations/webhook-secret": {
@@ -1823,7 +1832,8 @@
               }
             }
           }
-        }
+        },
+        "summary": "Create or rotate an owned webhook secret"
       }
     }
   },

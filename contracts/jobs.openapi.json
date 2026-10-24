@@ -108,7 +108,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "List an owned page of jobs"
       },
       "post": {
         "operationId": "keyCreateJob",
@@ -219,7 +220,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Create an owned CPU validation job"
       }
     },
     "/api/v1/jobs/capabilities": {
@@ -306,7 +308,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "Read owner-scoped permissions and observed capacity"
       }
     },
     "/api/v1/jobs/{jobId}": {
@@ -397,7 +400,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "Read owned job state and revision"
       }
     },
     "/api/v1/jobs/{jobId}/events": {
@@ -494,7 +498,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "Read an owned page of job events"
       }
     },
     "/api/v1/jobs/{jobId}/artifacts/{artifactId}": {
@@ -588,7 +593,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "Read a frozen validation report artifact"
       }
     },
     "/api/v1/jobs/{jobId}/pause": {
@@ -706,7 +712,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Pause an owned CPU job at its reviewed revision"
       }
     },
     "/api/v1/jobs/{jobId}/resume": {
@@ -825,7 +832,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Resume an owned CPU job at its reviewed revision"
       }
     },
     "/api/v1/jobs/{jobId}/cancel": {
@@ -943,7 +951,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Cancel an owned CPU job at its reviewed revision"
       }
     },
     "/api/v1/job-inputs": {
@@ -1056,7 +1065,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Upload a bounded immutable validation input"
       }
     },
     "/api/v1/job-workers": {
@@ -1143,7 +1153,8 @@
             "$ref": "#/components/responses/RateLimited"
           }
         },
-        "x-required-api-key-scope": "resources:read"
+        "x-required-api-key-scope": "resources:read",
+        "summary": "List owned enrolled CPU workers"
       },
       "post": {
         "operationId": "keyEnrollJobWorker",
@@ -1254,7 +1265,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Enroll an owned CPU worker and reveal its token once"
       }
     },
     "/api/v1/job-workers/{workerId}/revoke": {
@@ -1359,7 +1371,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Revoke an owned CPU worker"
       }
     },
     "/api/jobs": {
@@ -1452,7 +1465,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "List an owned page of jobs"
       },
       "post": {
         "operationId": "browserCreateJob",
@@ -1568,7 +1582,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Create an owned CPU validation job"
       }
     },
     "/api/jobs/capabilities": {
@@ -1654,7 +1669,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "Read owner-scoped permissions and observed capacity"
       }
     },
     "/api/jobs/{jobId}": {
@@ -1744,7 +1760,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "Read owned job state and revision"
       }
     },
     "/api/jobs/{jobId}/events": {
@@ -1840,7 +1857,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "Read an owned page of job events"
       }
     },
     "/api/jobs/{jobId}/artifacts/{artifactId}": {
@@ -1933,7 +1951,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "Read a frozen validation report artifact"
       }
     },
     "/api/jobs/{jobId}/pause": {
@@ -2056,7 +2075,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Pause an owned job at its reviewed revision"
       }
     },
     "/api/jobs/{jobId}/resume": {
@@ -2180,7 +2200,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Resume an owned job at its reviewed revision"
       }
     },
     "/api/jobs/{jobId}/cancel": {
@@ -2303,7 +2324,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Cancel an owned job at its reviewed revision"
       }
     },
     "/api/job-inputs": {
@@ -2421,7 +2443,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Upload a bounded immutable validation input"
       }
     },
     "/api/job-workers": {
@@ -2507,7 +2530,8 @@
           "429": {
             "$ref": "#/components/responses/RateLimited"
           }
-        }
+        },
+        "summary": "List owned enrolled CPU workers"
       },
       "post": {
         "operationId": "browserEnrollJobWorker",
@@ -2623,7 +2647,8 @@
           }
         },
         "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
-        "x-required-account-grant": "datasets:submit or training:submit"
+        "x-required-account-grant": "datasets:submit or training:submit",
+        "summary": "Enroll an owned CPU worker and reveal its token once"
       }
     },
     "/api/job-workers/{workerId}/revoke": {
@@ -2733,7 +2758,8 @@
             }
           }
         },
-        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried."
+        "description": "Explicit action only. Preserve the original idempotency key and input on an unknown outcome; mutations are never automatically retried.",
+        "summary": "Revoke an owned CPU worker"
       }
     }
   },
@@ -4430,13 +4456,13 @@
       "workspaceKey": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Customer key. Native job projections and operator actions are not key-authorized."
+        "description": "Customer workspace key: resources:read for reads and resources:write for writes. Native job projections and operator actions are not key-authorized."
       },
       "browserSession": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "session",
-        "description": "Existing browser session. Native projections additionally require fresh administrator wallet verification."
+        "name": "__Host-reliquary_session",
+        "description": "Existing HTTPS browser session. Local HTTP development uses reliquary_session through its configured transport. Native projections additionally require fresh administrator wallet verification."
       }
     },
     "responses": {
