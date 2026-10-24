@@ -77,6 +77,8 @@ test('evaluation transport remains route-scoped, bounded and redirect-safe', asy
   assert.equal(seen[1].init.redirect, 'manual');
   for (const path of ['/api/v1/dataset-orders', '/api/admin/subnet/tasks', '/api/v1/evaluations?quote_id=a&quote_id=b', '/api/v1/evaluations?unexpected=x', '/api/v1/evaluations/order-a?client_ref=x'])
     await assert.rejects(transport.request(path), e => e.code === 'invalid_route');
+  await assert.rejects(transport.request('/api/v1/evaluations/webhook-secret', { method: 'POST', body: '{}' }), e => e.code === 'invalid_route');
+  assert.equal(seen.length, 2);
   const redirect = createEvaluationTransport({ apiKey: 'secret', fetch: async () => new Response(null, { status: 302, headers: { Location: 'https://elsewhere.test' } }) });
   await assert.rejects(redirect.request('/api/v1/evaluations'), e => e.code === 'redirect_refused');
 });

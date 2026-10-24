@@ -1,6 +1,6 @@
 # Contract reference
 
-This index describes the private `@reliquary/api` 0.3.2 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
+This index describes the private `@reliquary/api` 0.3.3 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
 
 All three documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info.version` is the individual wire protocol version, not the npm package version. Examples are synthetic and validate against the shipped runtime parsers.
 
@@ -20,11 +20,11 @@ import evaluationContract from '@reliquary/api/evaluations/openapi' with { type:
 console.log(generationContract.info.version, jobsContract.info.version, evaluationContract.info.version);
 ```
 
-The platform's existing `vendor/api-client-0.2.2.tgz` exposes generation and jobs, not the newer evaluation exports. Its job schema has an older browser-cookie label; the actual HTTPS session cookie is `__Host-reliquary_session` (`reliquary_session` on local HTTP). Reuse the platform session transport instead of constructing cookie authentication from that older schema. Updating this repository does not replace an installed artifact or change its integrity pin.
+The older platform artifact `vendor/api-client-0.2.2.tgz` exposes generation and jobs, not the newer evaluation exports. Its job schema has an older browser-cookie label; the actual HTTPS session cookie is `__Host-reliquary_session` (`reliquary_session` on local HTTP). Reuse the platform session transport instead of constructing cookie authentication from that older schema. Updating this repository does not replace an installed artifact or change its integrity pin.
 
 ## Route and client coverage
 
-**Evaluation compatibility:** the evaluation rows and lifecycle below describe the `0.3.2` package contract. Platform revision `be0216be`, which still vendors `0.2.2`, does not implement `client_ref` creation or exact `quote_id` / `client_ref` history filters, and rejects the newer quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. Its history is the newest 100 owned evaluations without those filters. The checkpoint helper requires compatible quote, receipt and reconciliation behavior on the actual service; do not infer that compatibility from this package's presence or schema.
+**Evaluation compatibility:** the evaluation rows and lifecycle below describe the `0.3.3` package contract. The platform baseline at revision `813fa18`, which vendors `0.2.2`, does not implement `client_ref` creation or exact `quote_id` / `client_ref` history filters, and rejects the newer quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. Its history is the newest 100 owned evaluations without those filters. The checkpoint helper requires compatible quote, receipt and reconciliation behavior on the actual service; do not infer that compatibility from this package's presence or schema.
 
 | Surface / audience | Routes | Access | Client coverage |
 | --- | --- | --- | --- |
