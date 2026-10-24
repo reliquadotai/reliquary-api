@@ -174,6 +174,8 @@ response bodies are not uploaded. Maintained tests and fixtures remain versioned
 
 ## Pinned checkpoint evaluations
 
+**Service compatibility:** this section describes the `0.3.2` package protocol, not a currently installed platform release. The reviewed platform revision `be0216be` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
+
 The evaluation client uses the existing `/api/v1/evaluations` order API and an
 `evaluations:write` workspace key. Evaluation approval, current qualified sets,
 pricing and execution availability remain server gates. These examples do not

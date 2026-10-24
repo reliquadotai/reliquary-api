@@ -24,6 +24,8 @@ The platform's existing `vendor/api-client-0.2.2.tgz` exposes generation and job
 
 ## Route and client coverage
 
+**Evaluation compatibility:** the evaluation rows and lifecycle below describe the `0.3.2` package contract. Platform revision `be0216be`, which still vendors `0.2.2`, does not implement `client_ref` creation or exact `quote_id` / `client_ref` history filters, and rejects the newer quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. Its history is the newest 100 owned evaluations without those filters. The checkpoint helper requires compatible quote, receipt and reconciliation behavior on the actual service; do not infer that compatibility from this package's presence or schema.
+
 | Surface / audience | Routes | Access | Client coverage |
 | --- | --- | --- | --- |
 | Public generation discovery | `GET /api/v1/generation/catalog`, `GET /api/batch/catalog` | No key | `generation.catalog()`; key audience is the default. |
