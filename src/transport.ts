@@ -46,7 +46,7 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
     const method = init.method ?? 'GET';
     const mutating = method !== 'GET';
     const allowed = evaluation
-      ? /^\/api\/v1\/evaluations(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/files\/[^/]{1,200})?)?$/.test(url.pathname)
+      ? url.pathname !== '/api/v1/evaluations/webhook-secret' && /^\/api\/v1\/evaluations(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/files\/[^/]{1,200})?)?$/.test(url.pathname)
       : /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
     const publicRead = url.pathname === (evaluation ? '/api/v1/evaluations/catalog' : '/api/v1/generation/catalog') && method === 'GET';
     const filteredList = evaluation && method === 'GET' && url.pathname === '/api/v1/evaluations' &&
@@ -78,7 +78,7 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
       }
       const bytes = await boundedBody(response, response.ok && fileLimit !== undefined ? fileLimit : 4 * 1024 * 1024);
       if (!response.ok) {
-        if (mutating && response.status >= 500) throw failure('outcome_unknown');
+        if (mutating && (response.status >= 500 || response.status === 408)) throw failure('outcome_unknown');
         let code = `http_${response.status}`;
         try {
           const value: unknown = JSON.parse(new TextDecoder().decode(bytes));

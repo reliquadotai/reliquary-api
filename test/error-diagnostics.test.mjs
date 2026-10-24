@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { responseDiagnostics } from '../dist/error-diagnostics.js';
-import { createGenerationTransport, createGenerationClient, createJobsTransport, createJobsClient, GenerationApiError, JobApiError } from '../dist/index.js';
+import { createGenerationTransport, createGenerationClient, createEvaluationTransport, createJobsTransport, createJobsClient, GenerationApiError, JobApiError } from '../dist/index.js';
 
 const key = '55555555-5555-4555-8555-555555555555';
 const diagnostics = { 'X-Request-ID': 'request-a:123', 'Retry-After': '17' };
@@ -50,6 +50,24 @@ for (const surface of [jobs, generation]) {
     }
     const transport = surface.transport({ apiKey: 'fixture-key', fetch: async () => new Response('', { status: 503, headers: { 'X-Request-ID': 'unsafe id', 'Retry-After': '86401' } }) });
     await assert.rejects(transport.request(surface.read), error => error.status === 503 && error.requestId === undefined && error.retryAfterSeconds === undefined);
+  });
+}
+
+for (const [name, createTransport, path] of [
+  ['generation', createGenerationTransport, '/api/v1/dataset-orders'],
+  ['evaluation', createEvaluationTransport, '/api/v1/evaluations'],
+]) {
+  test(`${name} direct transport treats a mutation timeout as unknown without retrying`, async () => {
+    let calls = 0;
+    const transport = createTransport({ apiKey: 'fixture-key', fetch: async () => {
+      calls++;
+      return new Response('{"error":{"code":"request_timeout"}}', { status: 408, headers: diagnostics });
+    } });
+    await assert.rejects(transport.request(path, {
+      method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ quote_id: 'quote-a' }),
+    }), error => error instanceof GenerationApiError && error.code === 'outcome_unknown' && error.status === 408 &&
+      error.retryKey === key && error.requestId === 'request-a:123' && error.retryAfterSeconds === 17);
+    assert.equal(calls, 1);
   });
 }
 

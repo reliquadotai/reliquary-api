@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.2 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Private `@reliquary/api` 0.3.3 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
 
@@ -35,11 +35,13 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.3.2` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
-| Platform dependency `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | The platform's existing pin does not acquire the newer evaluation exports by reading this README. |
+| This source package, `0.3.3` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.2.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. Version 0.3.2 lets the checkpoint helper retain up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.3.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+
+Version 0.3.3 preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
 Public run/RL monitoring, training orchestration, account/key management, and worker lease/heartbeat protocols are outside this package's customer clients and OpenAPI contracts. Use the [monitoring](https://app.reliqua.ai/docs/api-reference/monitoring) and [training](https://app.reliqua.ai/docs/api-reference/training) HTTP references for those supported platform endpoints. There is no monitoring or training SDK export here; native operator helpers retain their separate authorization boundary.
 
@@ -174,7 +176,7 @@ response bodies are not uploaded. Maintained tests and fixtures remain versioned
 
 ## Pinned checkpoint evaluations
 
-**Service compatibility:** this section describes the `0.3.2` package protocol, not a currently installed platform release. The reviewed platform revision `be0216be` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
+**Service compatibility:** this section describes the `0.3.3` package protocol, not a currently installed platform release. The platform baseline at revision `813fa18` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
 
 The evaluation client uses the existing `/api/v1/evaluations` order API and an
 `evaluations:write` workspace key. Evaluation approval, current qualified sets,
