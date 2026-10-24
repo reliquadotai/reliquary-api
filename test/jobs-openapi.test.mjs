@@ -13,6 +13,8 @@ test('job OpenAPI names only the implemented common customer routes and complete
   assert.equal(spec.jsonSchemaDialect, 'https://json-schema.org/draft/2020-12/schema');
   assert.equal(spec.info.version, '0.2.0');
   assert.deepEqual(spec.servers.map(s => s.url), ['https://api.reliqua.ai', 'https://app.reliqua.ai']);
+  assert.equal(spec.components.securitySchemes.browserSession.name, '__Host-reliquary_session');
+  assert.match(spec.components.securitySchemes.browserSession.description, /Local HTTP development uses reliquary_session/);
   const walk = value => {
     if (!value || typeof value !== 'object') return;
     if (value.$ref) resolve(value.$ref);
