@@ -1,19 +1,38 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.3 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+`@reliquary/api` 0.3.4 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
-Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
+Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The source is [MIT licensed](LICENSE). Installation uses a reviewed checkout and a locally built tarball; the package retains `private: true` to prevent npm registry publication.
 
 ## Start here
 
 | Need | Reference |
 | --- | --- |
+| Build the source and install a local package | [Build and install](#build-and-install) |
 | Base URL, credentials, installed version and availability | [Connection and version boundaries](#connection-and-version-boundaries) |
 | Generate datasets from a catalogue or pinned model | [Generation](#generation) |
 | Upload and validate an owned dataset | [Jobs](#jobs), [CPU quickstart](#cpu-quickstart), [CLI](#cli) |
 | Compare exact model checkpoints on frozen sets | [Pinned checkpoint evaluations](#pinned-checkpoint-evaluations) |
 | Export approved, verified benchmark results | [Approved benchmark publication](#approved-benchmark-publication) |
 | Request/response schemas and audience-specific paths | [Contract index](contracts/README.md) |
+
+## Build and install
+
+Use Node.js 22 or later. From a reviewed checkout:
+
+```sh
+npm ci
+npm test
+npm pack
+```
+
+This produces `reliquary-api-0.3.4.tgz`. Copy the reviewed tarball into the consuming project's `vendor/` directory as `api-client-0.3.4.tgz`, then run from that project:
+
+```sh
+npm install --save-exact ./vendor/api-client-0.3.4.tgz
+```
+
+Commit the consumer's manifest and lockfile together so the version and integrity pin agree. Repository visibility, installed consumer versions and deployed service compatibility remain separate release decisions. Security reports belong in the private channels described in [SECURITY.md](SECURITY.md).
 
 ## Connection and version boundaries
 
@@ -35,11 +54,11 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.3.3` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.3.4` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.3.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.4.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
 Version 0.3.3 preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
@@ -53,7 +72,7 @@ Start with a public discovery request; it creates no order and needs no credenti
 curl --fail-with-body --silent --show-error https://api.reliqua.ai/api/v1/generation/catalog
 ```
 
-For an approved private package installation, the equivalent client request is:
+After installing the reviewed package, the equivalent client request is:
 
 ```ts
 import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
@@ -176,7 +195,7 @@ response bodies are not uploaded. Maintained tests and fixtures remain versioned
 
 ## Pinned checkpoint evaluations
 
-**Service compatibility:** this section describes the `0.3.3` package protocol, not a currently installed platform release. The platform baseline at revision `813fa18` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
+**Service compatibility:** this section describes the `0.3.4` package protocol, not a currently installed platform release. The platform baseline at revision `813fa18` (with vendor `0.2.2`) does not implement `client_ref` on order creation, exact `quote_id` / `client_ref` list filtering, or quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. It rejects those additional create/quote fields and returns unfiltered newest-100 history. Do not run the checkpoint helper against that service until compatible quote, receipt and reconciliation behavior is implemented and deployed. Check the [current HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) and the actual service compatibility before using these helpers; installing this package alone is insufficient.
 
 The evaluation client uses the existing `/api/v1/evaluations` order API and an
 `evaluations:write` workspace key. Evaluation approval, current qualified sets,

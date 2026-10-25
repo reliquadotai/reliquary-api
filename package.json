@@ -1,8 +1,8 @@
 {
   "name": "@reliquary/api",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -49,7 +49,9 @@
     "contracts",
     "bin",
     "examples",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
