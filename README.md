@@ -264,6 +264,24 @@ quote, checkpoint, set, seed or other input is refused. No key or quote is
 replaced after an unknown outcome. An expired quote requires reconciliation
 and a new reviewed intent; this journal does not silently refresh it.
 
+For a matched baseline/candidate run, first prepare the baseline journal and
+retain each quote's model-independent `protocol_sha256`. Copy its requests into
+a separate candidate configuration, changing only the model revision and actual
+checkpoint metadata, and add `comparison_protocols`, keyed by every selected
+`set_id`, with those reviewed quote digests. For example:
+
+```json
+"comparison_protocols": {
+  "fixed-heldout-set": "<64-character baseline quote protocol_sha256>"
+}
+```
+
+Every selected set must have exactly one pin. The candidate refuses a changed
+set, grader, sampler/seed, thinking mode, harness or budget before any order
+confirmation. Retained quotes are checked again on resume and export. Keep the
+baseline's original journal intact; pins are part of the candidate's new intent.
+Without this optional field, standalone evaluations retain their existing flow.
+
 A rerun without `--confirm` reconciles and reads only. After a lost
 acknowledgement it queries the original quote and client reference; explicit
 `--confirm` may replay the unchanged original confirmation when no receipt was
@@ -294,6 +312,11 @@ problem counts separately from requested/completed/graded sample rows.
 `mean_score` is the native per-problem mean, with `n_problems_graded` as its
 denominator. `pass@1`, `pass@k`, truncation and format metrics retain their
 native names; absent observed turns, tool calls or attempts remain null.
+Correct/wrong sample grades remain in `graded.parquet`; capped outputs retain
+termination/truncation diagnostics. Missing or ungraded rows are execution or
+grading gaps, and must not be described as measured wrong answers. The
+conservative headline `pass@1` includes those gaps in its denominator; benchmark
+export requires complete graded coverage.
 `graded.parquet` is the existing actual per-problem sample artifact. Its owned
 file descriptor is returned alongside the report; download it through the same
 authenticated, range-bounded API and verify the complete file digest. No R2
@@ -306,7 +329,8 @@ reports whose frozen set has reviewed `disjointness.disjoint: true` and an
 `evidence_sha256`. Unknown overlap or training data cannot become `held_out`
 through a CLI flag. Results must retain actual native producer `created_at`
 clocks, converted from seconds to milliseconds; fetch and order timestamps are
-never substitutes.
+never substitutes. Export revalidates each original request against its retained
+quote, then the order against that quote, before accepting the verified report.
 
 Export additionally requires an owner-only reviewed publication evidence file.
 It retains `approved: true`, the actual W&B `trainer_run_id`, `repo_id` and exact

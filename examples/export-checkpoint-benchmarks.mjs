@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { canonicalEvaluationJson, parseEvaluationReport, parseEvaluationProtocolJson } from '../dist/index.js';
-import { withJournalLock, writeJournal, readCheckpointJournal, parseCheckpointConfig } from './evaluate-checkpoint.mjs';
+import { withJournalLock, writeJournal, readCheckpointJournal, parseCheckpointConfig, assertFrozenQuote, assertOrder } from './evaluate-checkpoint.mjs';
 
 const requireValue = (condition, message) => { if (!condition) throw new Error(message); };
 const equal = (a, b) => canonicalEvaluationJson(a) === canonicalEvaluationJson(b);
@@ -90,7 +90,9 @@ export function appendCheckpointBenchmarks(previous, checkpoint, targetValue, no
     requireValue(equal(entry.input, config.requests[index]) && entry.result && entry.phase === 'delivered', 'Only a verified delivered checkpoint can be exported.');
     requireValue(entry.set?.qualified_support === true && typeof entry.set.protocol_json === 'string' && digest(entry.set.protocol_json) === entry.set.protocol_sha256 && equal(parseEvaluationProtocolJson(entry.set.protocol_json), entry.set.protocol), 'The retained set protocol bytes changed.');
     requireValue(reviewedHeldOut(entry.set), 'Held-out export needs explicit reviewed disjointness evidence; unknown or training overlap cannot be exported.');
+    assertFrozenQuote(entry.quote, entry.input, entry.set, config.comparison_protocols?.[entry.input.envs[0].set_id]);
     const { order } = entry.result;
+    assertOrder(order, entry);
     requireValue(order.files?.find(f => f.name === 'report.json')?.sha256 === entry.result.report_sha256, 'The report digest differs from its retained delivery receipt.');
     requireValue(typeof entry.result.report_json === 'string' && digest(entry.result.report_json) === entry.result.report_sha256, 'The retained native report bytes changed.');
     const report = parseEvaluationReport(JSON.parse(entry.result.report_json), order);
