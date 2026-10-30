@@ -12,8 +12,8 @@ Usage: reliqua <command> [options]
   capabilities                             Public product and execution gates
   doctor                                   Check connectivity and local setup
   jobs capabilities|list|status|events|report  Read owned CPU jobs
-  skills list                              List official read-only skills
-  skills install --directory DIRECTORY      Install skills without overwriting edits
+  skills list [--skill ID]                  List official workflow metadata
+  skills install --directory DIRECTORY [--skill ID]  Install selected or all skills
 
 Options: --json, --origin HTTPS_ORIGIN, --timeout 1..60000 (milliseconds)
 Job options: --id ID, --cursor CURSOR, --limit 1..100, --artifact ID
@@ -30,7 +30,7 @@ const allowed = {
   'compute list': ['gpu', 'limit'], inventory: [], network: [], capabilities: [], doctor: [],
   'jobs capabilities': [], 'jobs list': ['cursor', 'limit'], 'jobs status': ['id'],
   'jobs events': ['id', 'cursor', 'limit'], 'jobs report': ['id', 'artifact'],
-  'skills list': [], 'skills install': ['directory'],
+  'skills list': ['skill'], 'skills install': ['directory', 'skill'],
 };
 const clean = value => String(value ?? 'unknown').replace(/[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 300);
 try {
@@ -63,14 +63,16 @@ try {
   let output;
   let kind = 'json';
   if (command.startsWith('skills ')) {
-    if (command === 'skills list') output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false, skills: OFFICIAL_SKILLS };
+    const selectedSkills = options.has('skill') ? OFFICIAL_SKILLS.filter(skill => skill.id === required('skill')) : OFFICIAL_SKILLS;
+    if (!selectedSkills.length) fail('Unknown skill ID. Run reliqua skills list.');
+    if (command === 'skills list') output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false, skills: selectedSkills };
     else {
       const directory = resolve(required('directory'));
       await mkdir(directory, { recursive: true });
       const root = await realpath(directory);
       // Preflight every destination before writing any skill.
       const prepared = [];
-      for (const skill of OFFICIAL_SKILLS) {
+      for (const skill of selectedSkills) {
         const target = join(root, skill.id);
         try { const info = await lstat(target); if (!info.isDirectory() || info.isSymbolicLink()) fail('A skill destination must be a real directory.'); }
         catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -91,7 +93,7 @@ try {
         const file = await open(item.path, 'wx', 0o644);
         try { await file.writeFile(item.content); } finally { await file.close(); }
       }
-      output = { version: DEVELOPER_PREVIEW.version, directory: root, installed: OFFICIAL_SKILLS.map(skill => skill.id) };
+      output = { version: DEVELOPER_PREVIEW.version, directory: root, installed: selectedSkills.map(skill => skill.id) };
     }
   } else if (command.startsWith('jobs ')) {
     const page = { limit, ...(options.has('cursor') ? { cursor: required('cursor') } : {}) };
