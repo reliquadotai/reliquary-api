@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -54,7 +54,7 @@
     "skills"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/build-skills.mjs",
     "test": "npm run build && node --test test/*.test.mjs",
     "check": "npm test",
     "prepack": "npm run build"
