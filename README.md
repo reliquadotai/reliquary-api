@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Private `@reliquary/api` 0.3.3 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Controlled `@reliquary/api` 0.4.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
 
@@ -14,6 +14,26 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 | Compare exact model checkpoints on frozen sets | [Pinned checkpoint evaluations](#pinned-checkpoint-evaluations) |
 | Export approved, verified benchmark results | [Approved benchmark publication](#approved-benchmark-publication) |
 | Request/response schemas and audience-specific paths | [Contract index](contracts/README.md) |
+
+## Customer developer preview
+
+The package also ships the lightweight `reliqua` CLI and two official read-only skills. Node.js 22 or later is required. Download the pinned client from [the developer hub](https://app.reliqua.ai/developers), verify its checksum against the release manifest, and install the local tarball:
+
+```sh
+npm install --global ./reliquary-client-0.4.0.tgz
+reliqua doctor
+reliqua compute list --gpu H200 --limit 20 --json
+reliqua inventory --json
+reliqua network --json
+reliqua capabilities --json
+reliqua skills install --directory "$HOME/.agents/skills"
+```
+
+Public reads use the existing APIs without sending credentials. `createPublicClient` provides the same fixed public GET routes with bounded responses and deadlines; it never follows redirects or retries. `OFFICIAL_SKILLS` supplies the shared workflow manifest. The preview CLI has no execution commands. Existing `jobctl` functionality and API wire contracts remain unchanged.
+
+For owned job reads, set `RELIQUARY_RESOURCES_KEY` privately in your environment (`JOBS_API_KEY` is also supported), then use `reliqua jobs capabilities`, `list`, `status`, `events` or `report`. Run `reliqua --help` for required arguments. `doctor` reports configured credentials without claiming to validate them. Account permission and qualified worker availability are separate.
+
+Use `--json` for machine output. Errors are structured JSON on stderr with safe request diagnostics. Exit codes are 0 for a successful read (including empty/unavailable catalogs), 1 for a failed command/request and 2 for invalid arguments. `--origin`/`RELIQUARY_API_URL` support HTTPS origins and loopback HTTP; `--timeout` is a bounded request deadline in milliseconds. Skill installation is repeatable and refuses to overwrite local edits or symlink destinations. Remove the chosen skill folders separately; `npm uninstall --global @reliquary/api` removes the client.
 
 ## Connection and version boundaries
 
@@ -35,11 +55,11 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.3.3` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.4.0` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.3.3.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.4.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
 Version 0.3.3 preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
