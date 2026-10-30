@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -8,7 +8,8 @@
     "node": ">=22"
   },
   "bin": {
-    "jobctl": "bin/jobctl.mjs"
+    "jobctl": "bin/jobctl.mjs",
+    "reliqua": "bin/reliqua.mjs"
   },
   "description": "Versioned generation, job and evaluation contracts and clients",
   "exports": {
@@ -49,7 +50,8 @@
     "contracts",
     "bin",
     "examples",
-    "README.md"
+    "README.md",
+    "skills"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
