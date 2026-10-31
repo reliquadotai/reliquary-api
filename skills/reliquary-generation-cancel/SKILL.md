@@ -15,7 +15,7 @@ Expected result: A cancellation request result with honest remaining work and re
 
 ## Interfaces and limits
 
-Supported interfaces: mcp, http. The lightweight `reliqua` CLI 0.5.0 remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: mcp, http. The lightweight `reliqua` CLI 0.6.0 remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_generation_order_get`, `reliquary_generation_cancel`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 

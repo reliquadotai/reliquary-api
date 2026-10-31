@@ -10,9 +10,13 @@ Usage: reliqua <command> [options]
   inventory                                Published models and objects
   network                                  Published network observations
   capabilities                             Public product and execution gates
+  generation catalog | evaluations catalog Public product discovery
+  monitoring health|snapshot                Published observation freshness
+  runs list | runs inspect [--run ID]        Public run catalog and telemetry
   doctor                                   Check connectivity and local setup
   jobs capabilities|list|status|events|report  Read owned CPU jobs
-  skills list [--skill ID]                  List official workflow metadata
+  skills list [--skill ID] [--search TEXT] [--category ID] [--interface cli|mcp|http] [--access LEVEL]
+  skills show --skill ID                    Read packaged instructions
   skills install --directory DIRECTORY [--skill ID]  Install selected or all skills
 
 Options: --json, --origin HTTPS_ORIGIN, --timeout 1..60000 (milliseconds)
@@ -30,13 +34,14 @@ const allowed = {
   'compute list': ['gpu', 'limit'], inventory: [], network: [], capabilities: [], doctor: [],
   'jobs capabilities': [], 'jobs list': ['cursor', 'limit'], 'jobs status': ['id'],
   'jobs events': ['id', 'cursor', 'limit'], 'jobs report': ['id', 'artifact'],
-  'skills list': ['skill'], 'skills install': ['directory', 'skill'],
+  'skills list': ['skill', 'search', 'category', 'interface', 'access'], 'skills show': ['skill'], 'skills install': ['directory', 'skill'],
+  'generation catalog': [], 'evaluations catalog': [], 'monitoring health': [], 'monitoring snapshot': [], 'runs list': [], 'runs inspect': ['run'],
 };
 const clean = value => String(value ?? 'unknown').replace(/[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 300);
 try {
   if (!args.length || args[0] === '--help' || args[0] === 'help') { process.stdout.write(help); process.exit(0); }
   if (args[0] === '--version') { process.stdout.write(DEVELOPER_PREVIEW.version + '\n'); process.exit(0); }
-  const command = ['compute', 'jobs', 'skills'].includes(args[0]) ? `${args.shift()} ${args.shift()}` : args.shift();
+  const command = ['compute', 'jobs', 'skills', 'generation', 'evaluations', 'monitoring', 'runs'].includes(args[0]) ? `${args.shift()} ${args.shift()}` : args.shift();
   if (!Object.hasOwn(allowed, command)) fail('Unknown command. Run reliqua --help.');
   const options = new Map();
   while (args.length) {
@@ -63,10 +68,26 @@ try {
   let output;
   let kind = 'json';
   if (command.startsWith('skills ')) {
-    const selectedSkills = options.has('skill') ? OFFICIAL_SKILLS.filter(skill => skill.id === required('skill')) : OFFICIAL_SKILLS;
+    let selectedSkills = options.has('skill') ? OFFICIAL_SKILLS.filter(skill => skill.id === required('skill')) : OFFICIAL_SKILLS;
     if (!selectedSkills.length) fail('Unknown skill ID. Run reliqua skills list.');
-    if (command === 'skills list') output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false, skills: selectedSkills };
-    else {
+    if (command === 'skills list') {
+      for (const [name, choices] of [['interface', ['cli', 'mcp', 'http']], ['access', ['public-read', 'authenticated-read', 'approval-required']]])
+        if (options.has(name) && !choices.includes(required(name))) fail(`Invalid --${name}.`);
+      const search = options.get('search')?.trim().toLowerCase();
+      if (options.has('search') && (!search || search.length > 160)) fail('--search must contain 1..160 characters.');
+      selectedSkills = selectedSkills.filter(skill =>
+        (!search || [skill.id, skill.title, skill.description, ...skill.mcpTools, ...skill.apiRoutes.map(route => route.path)].join(' ').toLowerCase().includes(search)) &&
+        (!options.has('category') || skill.category === required('category')) &&
+        (!options.has('interface') || skill.interfaces.includes(required('interface'))) &&
+        (!options.has('access') || skill.access === required('access')));
+      output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false, skills: selectedSkills };
+    } else if (command === 'skills show') {
+      required('skill');
+      const skill = selectedSkills[0];
+      const instructions = await readFile(new URL(`../skills/${skill.id}/SKILL.md`, import.meta.url), 'utf8');
+      output = { version: DEVELOPER_PREVIEW.version, skill, instructions };
+      if (!json) kind = 'instructions';
+    } else {
       const directory = resolve(required('directory'));
       await mkdir(directory, { recursive: true });
       const root = await realpath(directory);
@@ -108,6 +129,16 @@ try {
   } else {
     const client = createPublicClient({ origin, timeoutMs });
     switch (command) {
+      case 'generation catalog': output = await client.generation(); break;
+      case 'evaluations catalog': output = await client.read('evaluations'); break;
+      case 'monitoring health': output = await client.read('monitoringHealth'); break;
+      case 'monitoring snapshot': output = await client.read('monitoringSnapshot'); break;
+      case 'runs list': output = await client.read('runs'); break;
+      case 'runs inspect': {
+        const run = options.get('run');
+        if (run !== undefined && (!/^[a-zA-Z0-9_.-]{1,128}$/.test(run) || run === '.' || run === '..')) fail('Choose an ID from runs list.');
+        output = await client.run(run); break;
+      }
       case 'inventory': output = await client.inventory(); kind = 'inventory'; break;
       case 'network': output = await client.read('network'); break;
       case 'compute list': {
@@ -135,7 +166,8 @@ try {
       }
     }
   }
-  if (!json && kind === 'compute') {
+  if (kind === 'instructions') process.stdout.write(output.instructions);
+  else if (!json && kind === 'compute') {
     process.stdout.write('Provider observations · no booking or execution\n');
     process.stdout.write('Provider\tGPU\tGPUs/package\tUSD/package-hour\tObserved\n');
     for (const offer of output.offers) process.stdout.write([offer.provider, offer.gpu, offer.gpuCount, (offer.priceMicroUsdPerHour / 1_000_000).toFixed(4), offer.observedAt ?? 'unknown'].map(clean).join('\t') + '\n');

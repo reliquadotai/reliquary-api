@@ -55,7 +55,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A connection diagnosis and the exact next supported discovery step.",
     "docs": "/docs/agents/connect",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua doctor --json"
   },
   {
@@ -92,7 +92,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A bounded GPU shortlist with package and per-GPU rates, observation clocks and an explicit booking boundary.",
     "docs": "/docs/agents/compute",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua compute list --gpu H200 --limit 20 --json"
   },
   {
@@ -133,7 +133,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A source-qualified checkpoint summary with exact revision, publication time and limits of what it proves.",
     "docs": "/docs/agents/observe",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua inventory --json"
   },
   {
@@ -189,7 +189,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A product-by-product readiness explanation grounded in returned gates.",
     "docs": "/docs/agents/product-readiness",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua capabilities --json"
   },
   {
@@ -199,6 +199,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     "prompt": "Is Reliquary monitoring fresh, and which observations are missing?",
     "category": "observability",
     "interfaces": [
+      "cli",
       "mcp",
       "http"
     ],
@@ -229,7 +230,8 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A freshness and coverage diagnosis without changing collection services.",
     "docs": "/docs/agents/monitoring-health",
-    "version": "0.5.0"
+    "version": "0.6.0",
+    "command": "reliqua monitoring health --json"
   },
   {
     "id": "reliquary-network-history",
@@ -263,7 +265,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A dated historical comparison with visible retention and coverage gaps.",
     "docs": "/docs/agents/network-history",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-network-analytics",
@@ -297,7 +299,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A focused interpretation of one published analytics view with units and provenance.",
     "docs": "/docs/agents/network-analytics",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-generation-discover",
@@ -306,6 +308,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     "prompt": "Which dataset generation sources and models can I use?",
     "category": "generation",
     "interfaces": [
+      "cli",
       "mcp",
       "http"
     ],
@@ -330,7 +333,8 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An actionable list of supported generation choices and current gates.",
     "docs": "/docs/agents/generation-discover",
-    "version": "0.5.0"
+    "version": "0.6.0",
+    "command": "reliqua generation catalog --json"
   },
   {
     "id": "reliquary-generation-quote",
@@ -372,7 +376,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A server-issued estimate with exact inputs, maximum cost and expiry; no order.",
     "docs": "/docs/agents/generation-quote",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-generation-order",
@@ -413,7 +417,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One submitted order or a precise refusal/unknown outcome with its original request identity.",
     "docs": "/docs/agents/generation-order",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-generation-track",
@@ -453,7 +457,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned order status with progress, delivered-file metadata and billing distinctions.",
     "docs": "/docs/agents/generation-track",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-generation-delivery",
@@ -494,7 +498,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Verified delivery metadata and the requested bounded file content.",
     "docs": "/docs/agents/generation-delivery",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-generation-cancel",
@@ -534,7 +538,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A cancellation request result with honest remaining work and refund status.",
     "docs": "/docs/agents/generation-cancel",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-evaluation-discover",
@@ -543,6 +547,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     "prompt": "Which held-out evaluation sets and modes are available?",
     "category": "evaluation",
     "interfaces": [
+      "cli",
       "mcp",
       "http"
     ],
@@ -567,7 +572,8 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A source-backed choice of qualified evaluation sets and execution modes.",
     "docs": "/docs/agents/evaluation-discover",
-    "version": "0.5.0"
+    "version": "0.6.0",
+    "command": "reliqua evaluations catalog --json"
   },
   {
     "id": "reliquary-evaluation-quote",
@@ -608,7 +614,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A quoted bounded evaluation configuration ready for a separate execution decision.",
     "docs": "/docs/agents/evaluation-quote",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-evaluation-order",
@@ -649,7 +655,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One owned evaluation order with the approved configuration and request identity.",
     "docs": "/docs/agents/evaluation-order",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-evaluation-review",
@@ -695,7 +701,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A qualified evaluation interpretation with exact configuration and any incomplete grading.",
     "docs": "/docs/agents/evaluation-review",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-evaluation-cancel",
@@ -735,7 +741,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A server cancellation result with remaining work and refund uncertainty.",
     "docs": "/docs/agents/evaluation-cancel",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-readiness",
@@ -771,7 +777,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An account-specific training readiness result with exact profiles and unresolved gates.",
     "docs": "/docs/agents/training-readiness",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-datasets",
@@ -824,7 +830,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Owned file metadata or requested bounded content, or an authorized compatible upload receipt; no training run.",
     "docs": "/docs/agents/training-datasets",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-import",
@@ -871,7 +877,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A verified delivered shard saved as an owned training-library file.",
     "docs": "/docs/agents/training-import",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-draft",
@@ -923,7 +929,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A saved exact-profile draft ID/revision ready for separate quoting and launch approval.",
     "docs": "/docs/agents/training-draft",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-quote",
@@ -970,7 +976,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A current server training quote with allocation, rate, expiry and billing policy.",
     "docs": "/docs/agents/training-quote",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-start",
@@ -1022,7 +1028,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One approved run submission or a precise refusal/unknown outcome with original request identity.",
     "docs": "/docs/agents/training-start",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-progress",
@@ -1062,7 +1068,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned training progress snapshot with pinned configuration and billing distinctions.",
     "docs": "/docs/agents/training-progress",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-artifacts",
@@ -1103,7 +1109,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Owned artifact metadata and the requested bounded content, with completeness limits.",
     "docs": "/docs/agents/training-artifacts",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-cancel",
@@ -1144,7 +1150,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A cancellation result with confirmed or unresolved remaining execution and billing.",
     "docs": "/docs/agents/training-cancel",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-training-dataset-lifecycle",
@@ -1190,7 +1196,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "The requested dataset availability change or a precise dependency/permission refusal.",
     "docs": "/docs/agents/training-dataset-lifecycle",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-credits",
@@ -1230,7 +1236,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A scoped balance/ledger explanation with currency, timestamps and settlement limits.",
     "docs": "/docs/agents/credits",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-resource-drafts",
@@ -1287,7 +1293,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An inspected or saved owned draft with exact revision and no implicit launch.",
     "docs": "/docs/agents/resource-drafts",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-cpu-readiness",
@@ -1324,7 +1330,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An account-specific CPU readiness diagnosis with permission and live-worker distinctions.",
     "docs": "/docs/agents/cpu-readiness",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua jobs capabilities --json"
   },
   {
@@ -1372,7 +1378,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned bounded CPU validation job tied to an immutable approved dataset receipt.",
     "docs": "/docs/agents/cpu-validate",
-    "version": "0.5.0"
+    "version": "0.6.0"
   },
   {
     "id": "reliquary-cpu-progress",
@@ -1419,7 +1425,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A bounded owned CPU progress snapshot with attempts and relevant events.",
     "docs": "/docs/agents/cpu-progress",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua jobs list --limit 20 --json"
   },
   {
@@ -1462,7 +1468,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A digest-verified frozen report interpretation with explicit dataset-validation limits.",
     "docs": "/docs/agents/cpu-report",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "command": "reliqua jobs report --id JOB_ID --artifact ARTIFACT_ID --json"
   },
   {
@@ -1509,14 +1515,204 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A revision-bound CPU control result with remaining work and any uncertainty.",
     "docs": "/docs/agents/cpu-control",
-    "version": "0.5.0"
+    "version": "0.6.0"
+  },
+  {
+    "id": "reliquary-run-catalog",
+    "title": "Find a published training run",
+    "description": "Find the current or historical public run to inspect, using published identifiers and availability.",
+    "prompt": "Which public training runs can I inspect, and which one is current?",
+    "category": "observability",
+    "interfaces": [
+      "cli",
+      "mcp",
+      "http"
+    ],
+    "access": "public-read",
+    "state": "available",
+    "stateReason": "Documented public read workflow; stored availability, source freshness and metric qualification still apply.",
+    "requiredScopes": [],
+    "apiRoutes": [
+      {
+        "method": "GET",
+        "path": "/api/monitoring/runs"
+      }
+    ],
+    "mcpTools": [
+      "reliquary_connection",
+      "reliquary_run_catalog"
+    ],
+    "guidance": [
+      "Read the public run catalog once. Preserve each published identifier, kind, availability, current selection and source timestamps; unavailable history remains unavailable.",
+      "Use an identifier returned by the catalog with `reliqua runs inspect --run ID --json` or reliquary_run_monitor. Do not substitute private customer task IDs or guess W&B paths.",
+      "Report which run was selected and whether its stored observations can be read. Catalog publication does not authorize training or qualify a customer runtime."
+    ],
+    "expectedResult": "A published run selection with its actual availability and source time.",
+    "docs": "/docs/agents/run-catalog",
+    "version": "0.6.0",
+    "command": "reliqua runs list --json"
+  },
+  {
+    "id": "reliquary-run-monitor",
+    "title": "Inspect live RL progress",
+    "description": "Read stored public trainer and controller observations, keeping checkpoint progress, collection freshness and missing data distinct.",
+    "prompt": "Is the current RL run progressing, and which observations are fresh?",
+    "category": "observability",
+    "interfaces": [
+      "cli",
+      "mcp",
+      "http"
+    ],
+    "access": "public-read",
+    "state": "available",
+    "stateReason": "Documented public read workflow; stored availability, source freshness and metric qualification still apply.",
+    "requiredScopes": [],
+    "apiRoutes": [
+      {
+        "method": "GET",
+        "path": "/api/monitoring/runs"
+      },
+      {
+        "method": "GET",
+        "path": "/api/monitoring/run"
+      }
+    ],
+    "mcpTools": [
+      "reliquary_connection",
+      "reliquary_run_catalog",
+      "reliquary_run_monitor"
+    ],
+    "guidance": [
+      "Read the selected public run once through `reliqua runs inspect --json` or reliquary_run_monitor. Select another published run only when requested.",
+      "Inspect mode, availability, sources, source timestamps and collection times before interpreting progress. Report unavailable, stale and missing fields explicitly; a fresh collection is not a new optimizer step.",
+      "Keep trainer logged step, batch policy checkpoint, optimizer coordinate, controller leases, publication and held-out evaluation separate. Explain only the progress established by returned observations.",
+      "Do not restart, pause, cancel, redeploy or change the trainer, collector or miners. This workflow reads public stored telemetry and grants no operator authority."
+    ],
+    "expectedResult": "A source-dated progress report with actual coordinates, freshness and unresolved gaps.",
+    "docs": "/docs/agents/run-monitor",
+    "version": "0.6.0",
+    "command": "reliqua runs inspect --json"
+  },
+  {
+    "id": "reliquary-run-benchmarks",
+    "title": "Compare published benchmark results",
+    "description": "Compare published held-out evaluation observations from a public run, preserving the set, checkpoint, sample count and comparison limits.",
+    "prompt": "How did the published benchmark results change from the baseline?",
+    "category": "observability",
+    "interfaces": [
+      "cli",
+      "mcp",
+      "http"
+    ],
+    "access": "public-read",
+    "state": "available",
+    "stateReason": "Documented public read workflow; stored availability, source freshness and metric qualification still apply.",
+    "requiredScopes": [],
+    "apiRoutes": [
+      {
+        "method": "GET",
+        "path": "/api/monitoring/run"
+      }
+    ],
+    "mcpTools": [
+      "reliquary_connection",
+      "reliquary_run_monitor"
+    ],
+    "guidance": [
+      "Read the requested public run snapshot once. Locate its published benchmarks; preserve benchmark identity, baseline, checkpoint or optimizer coordinate, sample count and evaluation source timestamp.",
+      "Compare only compatible reported observations. Keep missing scores unknown and retain publication or grading limitations; do not combine different harnesses or fixed sets as equivalent.",
+      "Report absolute scores and percentage-point changes separately. A descriptive mean across benchmarks is not pooled accuracy or proof of customer model performance.",
+      "This workflow does not order evaluations or approve benchmark publication. If comparison evidence is missing, state the gap without inferring model improvement from operational progress."
+    ],
+    "expectedResult": "A benchmark comparison with explicit coordinate, provenance and comparability limits.",
+    "docs": "/docs/agents/run-benchmarks",
+    "version": "0.6.0",
+    "command": "reliqua runs inspect --json"
+  },
+  {
+    "id": "reliquary-run-token-mix",
+    "title": "Inspect response-token composition",
+    "description": "Inspect actual raw response-token volume by environment from complete trainer observations, separately from prompt counts and PPO weights.",
+    "prompt": "Show the actual response-token mix by environment for the latest complete observation.",
+    "category": "observability",
+    "interfaces": [
+      "cli",
+      "mcp",
+      "http"
+    ],
+    "access": "public-read",
+    "state": "available",
+    "stateReason": "Documented public read workflow; stored availability, source freshness and metric qualification still apply.",
+    "requiredScopes": [],
+    "apiRoutes": [
+      {
+        "method": "GET",
+        "path": "/api/monitoring/run"
+      }
+    ],
+    "mcpTools": [
+      "reliquary_connection",
+      "reliquary_run_monitor"
+    ],
+    "guidance": [
+      "Read analytics.tokenComposition from the selected public run snapshot. Use complete same-event trainer observations and preserve source timestamps and logged-step coordinates.",
+      "Report recorded token counts and shares by environment. Preserve actual zero and missing values; never estimate token volume from prompt groups, mean response lengths or the newest checkpoint.",
+      "Compare share changes between adjacent complete reported observations. Sampling gaps remain gaps. Do not sum sampled observations into a cumulative run total.",
+      "These are raw response-token lengths, not PPO loss weights or verified training consumption. If tokenComposition is absent, report unavailable; promptComposition is a separate count view."
+    ],
+    "expectedResult": "Measured per-environment response-token counts and shares with original source time.",
+    "docs": "/docs/agents/run-token-mix",
+    "version": "0.6.0",
+    "command": "reliqua runs inspect --json"
+  },
+  {
+    "id": "reliquary-run-gpu-fleet",
+    "title": "Compare declared GPU participation",
+    "description": "Compare public GPU model participation and qualified quality windows while preserving declarations, unavailable metrics and source clocks.",
+    "prompt": "Which declared GPU models are participating, and is their quality comparison qualified?",
+    "category": "observability",
+    "interfaces": [
+      "cli",
+      "mcp",
+      "http"
+    ],
+    "access": "public-read",
+    "state": "available",
+    "stateReason": "Documented public read workflow; stored availability, source freshness and metric qualification still apply.",
+    "requiredScopes": [],
+    "apiRoutes": [
+      {
+        "method": "GET",
+        "path": "/api/monitoring/run"
+      }
+    ],
+    "mcpTools": [
+      "reliquary_connection",
+      "reliquary_run_monitor"
+    ],
+    "guidance": [
+      "Read the selected public run snapshot once and inspect its declared GPU fleet, available card metrics, observation windows and source timestamps.",
+      "Label GPU model and device counts as miner declarations. Missing card-window mappings, token shares, rejection rates or correspondence remain unknown, never zero.",
+      "Compare only qualified, compatible cohorts in the returned time window; preserve sample counts and aggregation meanings. A declared card label is not hardware attestation or a causal performance comparison.",
+      "Report what is observed, what remains unqualified and the timestamps. Do not provision workers, rent GPUs, change miners or infer chain settlement from telemetry."
+    ],
+    "expectedResult": "A bounded declared-fleet comparison with qualified metrics and explicit unknowns.",
+    "docs": "/docs/agents/run-gpu-fleet",
+    "version": "0.6.0",
+    "command": "reliqua runs inspect --json"
   }
 ];
 
 export const DEVELOPER_PREVIEW = {
-  version: '0.5.0',
+  version: '0.6.0',
+  releaseManifest: '/releases/0.6.0.json',
   cli: 'reliqua',
   executionEnabled: false,
   docsOrigin: 'https://app.reliqua.ai',
   apiOrigin: 'https://api.reliqua.ai',
 } as const;
+
+/** Immutable instruction location for the installed catalog release. */
+export function skillInstructionsPath(skill: Pick<OfficialSkill, 'id' | 'version'>): string {
+  return `/skills/${skill.version}/${skill.id}/SKILL.md`;
+}
