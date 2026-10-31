@@ -12,6 +12,7 @@ for (const skill of OFFICIAL_SKILLS) {
     `# ${skill.title}`, '',
     ...skill.guidance.flatMap(step => [step, '']),
     `Expected result: ${skill.expectedResult}`, '',
+    ...(skill.command ? ['CLI read: `' + skill.command + '`', ''] : []),
     '## Interfaces and limits', '',
     `Supported interfaces: ${skill.interfaces.join(', ')}. The lightweight \`reliqua\` CLI ${skill.version} remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.`, '',
     'For MCP call `reliquary_connection` first, then use the task-relevant registered tools: ' + skill.mcpTools.filter(tool => tool !== 'reliquary_connection').map(tool => `\`${tool}\``).join(', ') + '. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.', '',

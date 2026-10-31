@@ -6,6 +6,8 @@ const paths = {
   health: '/api/health', readiness: '/api/ready', inventory: '/api/inventory',
   compute: '/api/compute/catalog', network: '/api/network',
   generation: '/api/v1/generation/catalog', evaluations: '/api/v1/evaluations/catalog',
+  monitoringHealth: '/api/monitoring/health', monitoringSnapshot: '/api/monitoring/snapshot',
+  runs: '/api/monitoring/runs', run: '/api/monitoring/run',
 } as const;
 export type PublicRead = keyof typeof paths;
 export type PublicClientOptions = { origin?: string; timeoutMs?: number; fetch?: typeof fetch };
@@ -21,14 +23,17 @@ export function createPublicClient(options: PublicClientOptions = {}) {
     throw new GenerationApiError('invalid_origin');
   const timeoutMs = options.timeoutMs ?? 15_000;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) throw new GenerationApiError('invalid_timeout');
-  const read = async (name: PublicRead, callerSignal?: AbortSignal): Promise<Record<string, unknown>> => {
+  const read = async (name: PublicRead, callerSignal?: AbortSignal, run?: string): Promise<Record<string, unknown>> => {
     if (!Object.hasOwn(paths, name)) throw new GenerationApiError('invalid_route');
+    if (run !== undefined && (name !== 'run' || !/^[a-zA-Z0-9_.-]{1,128}$/.test(run) || run === '.' || run === '..')) throw new GenerationApiError('invalid_run');
+    const url = new URL(paths[name], origin);
+    if (run !== undefined) url.searchParams.set('run', run);
     const signal = callerSignal ? AbortSignal.any([callerSignal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
     let status: number | undefined;
     let diagnostics: ReturnType<typeof responseDiagnostics> = { requestId: undefined, retryAfterSeconds: undefined };
     const failure = (code: string) => new GenerationApiError(code, status, undefined, undefined, diagnostics.requestId, diagnostics.retryAfterSeconds);
     try {
-      const response = await (options.fetch ?? fetch)(new URL(paths[name], origin), {
+      const response = await (options.fetch ?? fetch)(url, {
         method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit', redirect: 'manual', signal,
       });
       status = response.status;
@@ -66,7 +71,8 @@ export function createPublicClient(options: PublicClientOptions = {}) {
     }
   };
   return {
-    read,
+    read: (name: PublicRead, signal?: AbortSignal) => read(name, signal),
+    run: (run?: string, signal?: AbortSignal) => read('run', signal, run),
     inventory: async (signal?: AbortSignal) => parseProductInventory(await read('inventory', signal)),
     generation: async (signal?: AbortSignal) => parseGenerationCatalog(await read('generation', signal)),
     compute: async (signal?: AbortSignal) => {

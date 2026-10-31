@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, readdir, writeFile, mkdir, symlink, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { createPublicClient, OFFICIAL_SKILLS } from '../dist/index.js';
+import { createPublicClient, OFFICIAL_SKILLS, DEVELOPER_PREVIEW, skillInstructionsPath } from '../dist/index.js';
 
 const root = resolve(import.meta.dirname, '..');
 const run = (command, args, options = {}) => new Promise((resolve, reject) => {
@@ -57,6 +57,9 @@ test('clean packed installation supports public discovery, preserves skill edits
     res.setHeader('Content-Type', 'application/json');
     if (req.url === '/api/compute/catalog') res.end(JSON.stringify(catalog));
     else if (req.url === '/api/inventory') res.end(JSON.stringify({ schemaVersion: 1, revision: 'public-1', fetchedAt: now, objects: [], sources: [], generation: null }));
+    else if (req.url === '/api/monitoring/runs') res.end(JSON.stringify({ runs: [{ id: 'published-run', available: true }], collectedAt: now }));
+    else if (req.url === '/api/monitoring/run' || req.url === '/api/monitoring/run?run=published-run') res.end(JSON.stringify({ mode: 'stale', collectedAt: now, analytics: { tokenComposition: { observedAt: '2026-10-29T10:00:00Z', counts: [0, null, 9007199254740991] } } }));
+    else if (req.url === '/api/monitoring/health' || req.url === '/api/monitoring/snapshot') res.end(JSON.stringify({ observedAt: now, missing: null }));
     else if (req.url === '/api/health') res.end('{"ok":true}');
     else { res.statusCode = 429; res.setHeader('Retry-After', '30'); res.setHeader('X-Request-ID', 'fixture-429'); res.end('{"error":{"code":"rate_limited"}}'); }
   });
@@ -88,6 +91,16 @@ test('clean packed installation supports public discovery, preserves skill edits
     const inventory = await cli(['inventory', '--json']);
     assert.equal(inventory.code, 0, inventory.stderr);
     assert.deepEqual(JSON.parse(inventory.stdout).objects, []);
+    for (const args of [['runs', 'list'], ['runs', 'inspect'], ['runs', 'inspect', '--run', 'published-run'], ['monitoring', 'health'], ['monitoring', 'snapshot']]) {
+      const result = await cli([...args, '--json']);
+      assert.equal(result.code, 0, result.stderr);
+      const data = JSON.parse(result.stdout);
+      if (args[1] === 'inspect') {
+        assert.equal(data.mode, 'stale');
+        assert.equal(data.analytics.tokenComposition.observedAt, '2026-10-29T10:00:00Z');
+        assert.deepEqual(data.analytics.tokenComposition.counts, [0, null, 9007199254740991]);
+      }
+    }
     const denied = await cli(['network', '--json']);
     assert.equal(denied.code, 1);
     assert.equal(denied.stdout, '');
@@ -95,7 +108,8 @@ test('clean packed installation supports public discovery, preserves skill edits
     const before = requests.length;
     for (const args of [['train', 'start'], ['jobs', 'submit'], ['jobs', 'status', '--id', 'nope'], ['jobs', 'list', '--cursor', 'has space'],
       ['jobs', 'report', '--id', 'cpu:12345678-1234-4234-8234-123456789abc', '--artifact', 'has space'],
-      ['compute', 'rent'], ['inventory', '--limit', '5'], ['compute', 'list', '--limit', 'Infinity'], ['compute', 'list', '--gpu', '\u001b']]) {
+      ['runs', 'inspect', '--run', '../private'], ['runs', 'inspect', '--run', 'x?key=secret'], ['runs', 'list', '--run', 'current'],
+      ['skills', 'show'], ['skills', 'list', '--interface', 'shell'], ['skills', 'list', '--access', 'admin'], ['skills', 'list', '--search', '  '], ['compute', 'rent'], ['inventory', '--limit', '5'], ['compute', 'list', '--limit', 'Infinity'], ['compute', 'list', '--gpu', '\u001b']]) {
       const output = await cli(args);
       assert.equal(output.code, 2, output.stderr);
     }
@@ -104,10 +118,19 @@ test('clean packed installation supports public discovery, preserves skill edits
     const listed = await cli(['skills', 'list', '--json']);
     assert.equal(listed.code, 0, listed.stderr);
     const manifest = JSON.parse(listed.stdout);
-    assert.equal(manifest.version, '0.5.0');
+    assert.equal(manifest.version, '0.6.0');
     assert.equal(manifest.executionEnabled, false);
     assert.deepEqual(manifest.skills, OFFICIAL_SKILLS);
     assert.ok(manifest.skills.some(skill => skill.access === 'approval-required' && !skill.interfaces.includes('cli')));
+    const searched = await cli(['skills', 'list', '--search', 'TOKEN', '--category', 'observability', '--interface', 'cli', '--access', 'public-read', '--json']);
+    const found = JSON.parse(searched.stdout).skills;
+    assert(found.some(skill => skill.id === 'reliquary-run-token-mix'));
+    assert(found.every(skill => skill.category === 'observability' && skill.interfaces.includes('cli') && skill.access === 'public-read'));
+    assert.deepEqual(JSON.parse((await cli(['skills', 'list', '--category', 'unknown', '--json'])).stdout).skills, []);
+    const instructions = await cli(['skills', 'show', '--skill', 'reliquary-run-token-mix', '--json']);
+    assert.equal(instructions.code, 0, instructions.stderr);
+    assert.equal(JSON.parse(instructions.stdout).instructions, await readFile(join(temp, 'install/node_modules/@reliquary/api/skills/reliquary-run-token-mix/SKILL.md'), 'utf8'));
+    assert.equal((await cli(['skills', 'show', '--skill', 'reliquary-run-token-mix'])).stdout, JSON.parse(instructions.stdout).instructions);
     const selectedId = 'reliquary-training-start';
     const filtered = await cli(['skills', 'list', '--skill', selectedId, '--json']);
     assert.deepEqual(JSON.parse(filtered.stdout).skills.map(skill => skill.id), [selectedId]);
@@ -135,4 +158,19 @@ test('clean packed installation supports public discovery, preserves skill edits
     assert.equal(legacy.code, 0);
     assert.match(legacy.stdout, /Usage: jobctl/);
   } finally { await new Promise(resolve => server.close(resolve)); await rm(temp, { recursive: true, force: true }); }
+});
+
+test('public run selector refuses alternate routes before fetch and keeps release instructions pinned', async () => {
+  let calls = 0;
+  const client = createPublicClient({ fetch: async (url, init) => {
+    calls++;
+    assert.equal(url.href, 'https://api.reliqua.ai/api/monitoring/run?run=published-run');
+    assert.equal(init.credentials, 'omit');
+    return Response.json({ mode: 'unavailable', analytics: null });
+  } });
+  for (const id of ['', '.', '..', 'x/y', 'x?key=value', 'x'.repeat(129)]) await assert.rejects(client.run(id), e => e.code === 'invalid_run');
+  assert.equal(calls, 0);
+  assert.deepEqual(await client.run('published-run'), { mode: 'unavailable', analytics: null });
+  assert.equal(calls, 1);
+  assert.equal(skillInstructionsPath(OFFICIAL_SKILLS[0]), `/skills/${DEVELOPER_PREVIEW.version}/${OFFICIAL_SKILLS[0].id}/SKILL.md`);
 });

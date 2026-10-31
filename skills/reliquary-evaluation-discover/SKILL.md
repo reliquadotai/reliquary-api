@@ -13,9 +13,11 @@ Catalog discovery creates no evaluation and does not establish model improvement
 
 Expected result: A source-backed choice of qualified evaluation sets and execution modes.
 
+CLI read: `reliqua evaluations catalog --json`
+
 ## Interfaces and limits
 
-Supported interfaces: mcp, http. The lightweight `reliqua` CLI 0.5.0 remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.6.0 remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_evaluation_catalog`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 

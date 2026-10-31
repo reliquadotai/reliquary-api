@@ -1,6 +1,6 @@
 # Contract reference
 
-This index describes the private `@reliquary/api` 0.3.3 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
+This index describes the private `@reliquary/api` 0.6.0 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
 
 All three documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info.version` is the individual wire protocol version, not the npm package version. Examples are synthetic and validate against the shipped runtime parsers.
 
@@ -24,7 +24,7 @@ The older platform artifact `vendor/api-client-0.2.2.tgz` exposes generation and
 
 ## Route and client coverage
 
-**Evaluation compatibility:** the evaluation rows and lifecycle below describe the `0.3.3` package contract. The platform baseline at revision `813fa18`, which vendors `0.2.2`, does not implement `client_ref` creation or exact `quote_id` / `client_ref` history filters, and rejects the newer quote fields `model_access`, `harness`, `max_turns`, `max_episode_tokens` and `episode_timeout_seconds`. Its history is the newest 100 owned evaluations without those filters. The checkpoint helper requires compatible quote, receipt and reconciliation behavior on the actual service; do not infer that compatibility from this package's presence or schema.
+**Evaluation compatibility:** the helpers require deployed support for exact `client_ref` / `quote_id` reconciliation and the documented extended quote fields. Inspect current catalog `qualified_support` and protocol pins; a client version does not upgrade an older service or qualify a fixed-set evaluation.
 
 | Surface / audience | Routes | Access | Client coverage |
 | --- | --- | --- | --- |
