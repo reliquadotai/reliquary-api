@@ -4,7 +4,7 @@
  */
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, rename, stat } from 'node:fs/promises';
+import { mkdir, open, rename, stat, writeFile } from 'node:fs/promises';
 import { basename, join, resolve, sep } from 'node:path';
 import type { GenerationOrderDetail } from './batch-orders.js';
 import { createBatchFileClient, MAX_BATCH_FILE_BYTES, type BatchFile, type BatchFilePurpose, type BatchFileTransport } from './batch-files.js';
@@ -112,6 +112,7 @@ export async function downloadDelivery(transport: StreamTransport, order: Genera
         written.push({ deliveryId: delivery.delivery_id, name: file.name, path: target, size: file.size, sha256: file.sha256, verified: file.sha256 !== null });
         continue;
       }
+      if (file.size === 0) await writeFile(partial, new Uint8Array());
       let offset = (await stat(partial).catch(() => null))?.size ?? 0;
       if (offset > file.size) offset = 0;
       if (offset < file.size) {

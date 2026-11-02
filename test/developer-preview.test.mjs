@@ -118,7 +118,7 @@ test('clean packed installation supports public discovery, preserves skill edits
     const listed = await cli(['skills', 'list', '--json']);
     assert.equal(listed.code, 0, listed.stderr);
     const manifest = JSON.parse(listed.stdout);
-    assert.equal(manifest.version, '0.7.0');
+    assert.equal(manifest.version, '0.10.0');
     assert.equal(manifest.executionEnabled, false);
     assert.deepEqual(manifest.skills, OFFICIAL_SKILLS);
     assert.ok(manifest.skills.some(skill => skill.access === 'approval-required' && !skill.interfaces.includes('cli')));
