@@ -20,7 +20,7 @@ test('batch review hashes exact bytes, keeps defaults, never clamps or mutates e
 });
 test('portable plan is deterministic, input-bound and never executes or claims qualification',async()=>{
  const raw=enc(f.cases[0].batch),p=await planAffineBatch(raw,mining,input);assert.deepEqual(p,await planAffineBatch(raw,mining,input));assert.equal(p.upstream.revision,AFFINE_BATCH_KIT_REVISION);assert.equal(p.comparison.barZ,0.625);assert.equal(p.qualification,'not_run');for(const k of ['liveParity','officialAcceptance','chainSubmission'])assert.equal(p[k],false);
- assert.equal(p.batch.sha256,createHash('sha256').update(raw).digest('hex'));assert.equal(p.mining.sha256,createHash('sha256').update(mining).digest('hex'));assert.deepEqual(p.commands.map(c=>c.stage),['validate','train','compare']);assert(p.commands.every(c=>c.argv.includes('<MINING>')));assert(p.commands[1].argv.includes('<MASTER>'));
+ assert.equal(p.batch.sha256,createHash('sha256').update(raw).digest('hex'));assert.equal(p.mining.sha256,createHash('sha256').update(mining).digest('hex'));assert.deepEqual(p.commands.map(c=>c.stage),['validate','train','compare']);assert(p.commands.every(c=>c.argv.includes('<MINING>')));assert(p.commands[1].argv.includes('<MASTER>'));assert.deepEqual(p.commands[2].argv.slice(-2),['--master','<MASTER>']);
  for(const change of [{seed:-1},{seed:2**32},{head:'main'},{reference:'https://example.invalid'},{trainingResultAt:-1},{prior:'automatic'},{unexpected:true}])await assert.rejects(planAffineBatch(raw,mining,{...input,...change}));
 });
 
