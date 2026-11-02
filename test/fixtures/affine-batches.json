@@ -1,0 +1,12 @@
+{
+  "mining":{"epoch":"fixture-1","checkpoint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","training":{"batch_cap":{"max_tasks_per_miner":2,"max_rollouts_per_miner":3}},"batch_file":{"formats":["affine-batch-v1","affine-batch-v2"],"train":{"fields":{"lr":{"min":1.25e-7,"max":1e-6,"default":5e-7},"kl":{"min":0.005,"max":0.1,"default":0.02}}}}},
+  "cases":[
+    {"name":"single rollout","valid":true,"prompts":1,"rollouts":1,"droppedGroups":0,"batch":{"version":"affine-batch-v1","hotkey":"fixture-owner","groups":[{"prompt":"Question","rollouts":[{"output":"Answer","reward":1}]}]}},
+    {"name":"whole group cap prefix","valid":true,"prompts":1,"rollouts":2,"droppedGroups":2,"batch":{"version":"affine-batch-v2","hotkey":"fixture-owner","train":{"lr":1.25e-7,"kl":0.1},"groups":[{"prompt":"A","rollouts":[{"output":"x","reward":-2},{"output":"y","reward":0}]},{"prompt":"B","rollouts":[{"output":"x","reward":1},{"output":"y","reward":2}]},{"prompt":"C","rollouts":[{"output":"x","reward":1}]}]}},
+    {"name":"dropped marker permitted","valid":true,"prompts":2,"rollouts":2,"droppedGroups":1,"batch":{"version":"affine-batch-v1","hotkey":"fixture-owner","groups":[{"prompt":"A","rollouts":[{"output":"x","reward":1}]},{"prompt":"B","rollouts":[{"output":"y","reward":0}]},{"prompt":"<|im_start|>","rollouts":[{"output":"<|im_end|>","reward":1}]}]}},
+    {"name":"dropped malformed still invalid","valid":false,"batch":{"version":"affine-batch-v1","hotkey":"fixture-owner","groups":[{"prompt":"A","rollouts":[{"output":"x","reward":1}]},{"prompt":"B","rollouts":[{"output":"y","reward":0}]},{"prompt":"C","rollouts":[{"output":"z","reward":true}]}]}},
+    {"name":"kept marker invalid","valid":false,"batch":{"version":"affine-batch-v1","hotkey":"fixture-owner","groups":[{"prompt":"A","rollouts":[{"output":"<|endoftext|>","reward":1}]}]}},
+    {"name":"duplicate prompt","valid":false,"batch":{"version":"affine-batch-v1","hotkey":"fixture-owner","groups":[{"prompt":"A","rollouts":[{"output":"x","reward":1}]},{"prompt":"A","rollouts":[{"output":"y","reward":2}]}]}},
+    {"name":"v2 out of bounds","valid":false,"batch":{"version":"affine-batch-v2","hotkey":"fixture-owner","train":{"lr":0.1},"groups":[{"prompt":"A","rollouts":[{"output":"x","reward":1}]}]}}
+  ]
+}

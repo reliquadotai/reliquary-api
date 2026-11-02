@@ -1,6 +1,6 @@
 # Contract reference
 
-This index describes the private `@reliquary/api` 0.6.0 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
+This index describes the private `@reliquary/api` 0.7.0 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
 
 All three documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info.version` is the individual wire protocol version, not the npm package version. Examples are synthetic and validate against the shipped runtime parsers.
 
@@ -67,3 +67,5 @@ There is no training, public run/RL monitoring, account/key-management or worker
 - [Benchmark export](../examples/export-checkpoint-benchmarks.mjs) and its [Python bridge](../examples/export-checkpoint-benchmarks.py) require verified reports, reviewed publication evidence and a dedicated evaluation run.
 
 Run `npm ci` and `npm test` on Node.js 22 or later. Tests resolve internal schema references, compare operation/security contracts and validate synthetic examples through runtime parsers. The package test installs a local packed artifact and exercises clients/CLI against a local server; it makes no production request.
+
+`affine-pilot.openapi.json` (package 0.7.0, `@reliquary/api/affine-pilot/openapi`) covers the training-scoped assisted diagnostic preparation routes and the existing upload, draft, quote, task and bounded artifact routes used by that workflow. `@reliquary/api/affine-pilot` exports its descriptors, validated client and narrow customer-key transport. Human wallet claim/window actions are outside this API.
