@@ -52,7 +52,8 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
     const allowed = evaluation
       ? url.pathname !== '/api/v1/evaluations/webhook-secret' && /^\/api\/v1\/evaluations(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/files\/[^/]{1,200})?)?$/.test(url.pathname)
       : files || /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
-    const fileList = !evaluation && method === 'GET' && url.pathname === '/api/v1/files' && url.search === '?purpose=batch';
+    const fileList = !evaluation && method === 'GET' && ((url.pathname === '/api/v1/files' && url.search === '?purpose=batch') ||
+      (url.pathname === '/api/v1/dataset-orders' && url.search === '?include=files'));
     const publicRead = url.pathname === (evaluation ? '/api/v1/evaluations/catalog' : '/api/v1/generation/catalog') && method === 'GET';
     const filteredList = evaluation && method === 'GET' && url.pathname === '/api/v1/evaluations' &&
       [...url.searchParams.keys()].every(k => ['quote_id', 'client_ref'].includes(k)) &&

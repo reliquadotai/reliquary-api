@@ -91,7 +91,8 @@ export function generationRequests(audience: GenerationAudience = 'key') {
       if (!/^[\w-]{1,64}$/.test(quoteId) || !/^[\w-]{16,80}$/.test(requestKey)) throw new Error('This confirmation could not be verified. Request a new quote.');
       return { path: root, method: 'POST', headers: { 'Idempotency-Key': requestKey }, json: { quote_id: quoteId } };
     },
-    orders: (): GenerationRequest => ({ path: root }),
+    // File orders are listed only to clients that read them (0.7 and later).
+    orders: (): GenerationRequest => ({ path: audience === 'browser' ? root : root + '?include=files' }),
     detail: (id: string): GenerationRequest => ({ path: path(id) }),
     cancel: (id: string): GenerationRequest => ({ path: path(id) + '/cancel', method: 'POST', json: {} }),
     download: (id: string, delivery: string, name: string, range?: FileRange): GenerationRequest => {

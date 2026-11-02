@@ -399,7 +399,21 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "`files` lists orders on batch files too (clients before 0.7 cannot read them, so they are left out by default).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "files"
+              ]
+            }
+          }
+        ]
       },
       "post": {
         "tags": [
