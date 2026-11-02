@@ -14,3 +14,4 @@ export * from './evaluations.js';
 export * from './public-client.js';
 export * from './developer-preview.js';
 export * from './affine-pilot.js';
+export * from './affine-batches.js';
