@@ -75,12 +75,17 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
       headers.set('Content-Type', 'application/json');
     }
     const retryKey = headers.get('Idempotency-Key') ?? undefined;
-    const signal = init.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs);
+    // A streamed file is bounded by its headers' arrival, not by the time its body takes to read.
+    const headersOnly = stream ? new AbortController() : null;
+    const timer = headersOnly ? setTimeout(() => headersOnly.abort(), timeoutMs) : undefined;
+    const deadline = headersOnly ? headersOnly.signal : AbortSignal.timeout(timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, deadline]) : deadline;
     let status: number | undefined;
     let diagnostics: ReturnType<typeof responseDiagnostics> = { requestId: undefined, retryAfterSeconds: undefined };
     const failure = (code: string) => new GenerationApiError(code, status, retryKey, undefined, diagnostics.requestId, diagnostics.retryAfterSeconds);
     try {
-      const response = await fetcher(url, { method, headers, ...(init.body == null ? {} : { body: init.body }), signal, redirect: 'manual', credentials: 'omit' });
+      const response = await fetcher(url, { method, headers, ...(init.body == null ? {} : { body: init.body }), signal, redirect: 'manual', credentials: 'omit' })
+        .finally(() => clearTimeout(timer));
       status = response.status;
       diagnostics = responseDiagnostics(response.headers);
       if (response.status >= 300 && response.status < 400) {

@@ -197,3 +197,21 @@ test('the transport refuses part uploads outside the part route and oversized pa
   // The generation client still works on the same transport.
   createGenerationClient(transport.request);
 });
+
+test('a streamed download is bounded by its headers, not by the time its body takes', async () => {
+  const body = Buffer.alloc(64, 'x');
+  const server = createServer((request, response) => {
+    response.setHeader('Content-Length', String(body.length));
+    response.write(body.subarray(0, 32));
+    setTimeout(() => response.end(body.subarray(32)), 300);
+  });
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  try {
+    const transport = createGenerationTransport({ origin: `http://127.0.0.1:${server.address().port}`, apiKey: 'test-key', timeoutMs: 100 });
+    const order = { deliveries: [{ delivery_id: 'dl-1', files: [{ name: 'a.jsonl', size: 64, sha256: sha(body),
+      url: '/api/v1/dataset-orders/order-f/deliveries/dl-1/files/a.jsonl' }] }] };
+    const dir = await mkdtemp(join(tmpdir(), 'slow-'));
+    const [file] = await downloadDelivery(transport, order, dir);
+    assert.equal(file.verified, true);
+  } finally { await new Promise(r => server.close(r)); }
+});
