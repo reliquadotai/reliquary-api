@@ -97,3 +97,5 @@ export async function planAffineBatch(bytes: Uint8Array, miningBytes: Uint8Array
     training: { master: input.master, ...review.train }, comparison: { seed: input.seed, prior: input.prior, trainingResultAt: input.trainingResultAt, lastGreenDecidedAt: input.lastGreenDecidedAt, barZ: Math.max(0.25, 1 - 0.75 * (input.trainingResultAt - input.lastGreenDecidedAt) / 43200) },
     structuralOnly: true, tokenValidation: 'not_run', qualification: 'not_run', liveParity: false, officialAcceptance: false, chainSubmission: false, commands };
 }
+
+export * from './affine-batch-pilot.js';

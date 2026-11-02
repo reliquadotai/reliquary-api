@@ -301,7 +301,7 @@ export function createAffinePilotTransport(options: AffinePilotTransportOptions)
     const method = init.method ?? 'GET';
     const artifact = /^\/api\/v1\/training\/tasks\/[\w-]{1,64}\/artifacts\/[\w-]{1,64}$/.test(path);
     const read = path === root + '/preparations' || new RegExp('^' + root + '/preparations/[\\w-]{1,64}$').test(path) || /^\/api\/v1\/training\/tasks\/[\w-]{1,64}$/.test(path) || artifact;
-    const write = [root + '/preparations/review', root + '/preparations', root + '/prepare', '/api/v1/training/files', '/api/resources', '/api/v1/training/quotes', '/api/v1/training/tasks'].includes(path);
+    const write = ['/api/v1/training/affine-batch/prepare', root + '/preparations/review', root + '/preparations', root + '/prepare', '/api/v1/training/files', '/api/resources', '/api/v1/training/quotes', '/api/v1/training/tasks'].includes(path);
     if (!(method === 'GET' ? read : method === 'POST' && write)) throw new GenerationApiError('invalid_route');
     const credential = path === '/api/resources' ? options.resourcesApiKey : options.apiKey;
     if (!credential) throw new GenerationApiError('credential_required');
