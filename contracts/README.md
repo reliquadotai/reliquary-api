@@ -1,12 +1,12 @@
 # Contract reference
 
-This index describes the private `@reliquary/api` 0.6.0 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
+This index describes the private `@reliquary/api` 0.7.0 package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
 
 All three documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info.version` is the individual wire protocol version, not the npm package version. Examples are synthetic and validate against the shipped runtime parsers.
 
 | Surface | OpenAPI / package export | Protocol | Client import |
 | --- | --- | --- | --- |
-| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.1.0` | `createGenerationClient`, `createGenerationTransport` from `@reliquary/api` |
+| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.2.0` | `createGenerationClient`, `createGenerationTransport`, `createBatchFileClient` from `@reliquary/api`; `uploadFile`, `downloadDelivery` from `@reliquary/api/node` |
 | Jobs | [jobs.openapi.json](jobs.openapi.json), `@reliquary/api/jobs/openapi` | `0.2.0` | `createJobsClient`, `createJobsTransport` from `@reliquary/api/jobs` |
 | Evaluations | [evaluations.openapi.json](evaluations.openapi.json), `@reliquary/api/evaluations/openapi` | `0.1.0` | `createEvaluationClient`, `createEvaluationTransport` from `@reliquary/api/evaluations` |
 

@@ -1,4 +1,5 @@
 import {
+  BATCH_OUTPUT_FORMATS, isFileQuote, type BatchOutputFormat, type FileQuoteInput,
   parseBatchOrderResponse, parseBatchOrders, parseBatchQuote,
   parseGenerationOrderResponse, parseGenerationOrders,
   type BatchOrderDetail, type BatchOrdersResponse, type BatchQuote, type BatchQuoteInput,
@@ -34,8 +35,25 @@ const fileName = (name: string) => {
   return encodeURIComponent(name);
 };
 
+/** A quote on an uploaded batch file (``input_file_id``): model, its pinned revision, optional budget and format. */
+export function parseFileQuoteInput(value: unknown): FileQuoteInput {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid quote request.');
+  const input = value as Record<string, unknown>;
+  const fields = ['model', 'revision', 'input_file_id', 'max_new_tokens', 'output_format'];
+  if (Object.keys(input).some(k => !fields.includes(k)) || typeof input['model'] !== 'string' ||
+      !/^[A-Za-z0-9][\w.-]{0,95}\/[A-Za-z0-9][\w.-]{0,95}$/.test(input['model']) || input['model'].includes('..') ||
+      typeof input['revision'] !== 'string' || !/^[a-f0-9]{40}$/.test(input['revision']) ||
+      typeof input['input_file_id'] !== 'string' || !/^file-[\w-]{1,80}$/.test(input['input_file_id']) ||
+      (input['max_new_tokens'] !== undefined && !(typeof input['max_new_tokens'] === 'number' &&
+        Number.isSafeInteger(input['max_new_tokens']) && input['max_new_tokens'] >= 16 && input['max_new_tokens'] <= 131_072)) ||
+      (input['output_format'] !== undefined && !BATCH_OUTPUT_FORMATS.includes(input['output_format'] as BatchOutputFormat)))
+    throw new Error('Invalid file quote request.');
+  return value as FileQuoteInput;
+}
+
 export function parseGenerationQuoteInput(value: unknown): BatchQuoteInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid quote request.');
+  if (Object.hasOwn(value, 'input_file_id')) return parseFileQuoteInput(value);
   const input = value as Record<string, unknown>;
   const pinned = Object.hasOwn(input, 'revision') || Object.hasOwn(input, 'env');
   const fields = ['model', 'prompt_count', 'samples_per_prompt', 'max_new_tokens', 'thinking',
@@ -86,6 +104,14 @@ export function generationRequests(audience: GenerationAudience = 'key') {
 }
 
 export function assertGenerationQuoteMatches(quote: BatchQuote, input: BatchQuoteInput): void {
+  if ('input_file_id' in input || isFileQuote(quote)) {
+    if (!('input_file_id' in input) || !isFileQuote(quote) || quote.model !== input.model || quote.revision !== input.revision ||
+        quote.input_file_id !== input.input_file_id ||
+        (input.max_new_tokens !== undefined && quote.max_new_tokens !== input.max_new_tokens) ||
+        (input.output_format !== undefined && quote.output_format !== undefined && quote.output_format !== input.output_format))
+      throw new Error('The quoted configuration changed. Request a new quote.');
+    return;
+  }
   if (quote.model !== input.model || quote.prompt_count !== input.prompt_count || quote.samples_per_prompt !== input.samples_per_prompt ||
       quote.max_new_tokens !== input.max_new_tokens || quote.thinking !== input.thinking ||
       ('source' in input ? !('source' in quote) || quote.source !== input.source : !('revision' in quote) ||

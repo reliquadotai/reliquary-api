@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -20,6 +20,14 @@
     "./batch-orders": {
       "types": "./dist/batch-orders.d.ts",
       "import": "./dist/batch-orders.js"
+    },
+    "./batch-files": {
+      "types": "./dist/batch-files.d.ts",
+      "import": "./dist/batch-files.js"
+    },
+    "./node": {
+      "types": "./dist/batch-node.d.ts",
+      "import": "./dist/batch-node.js"
     },
     "./product-inventory": {
       "types": "./dist/product-inventory.d.ts",
@@ -60,6 +68,7 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
+    "@types/node": "22.19.1",
     "typescript": "5.9.3"
   }
 }

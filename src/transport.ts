@@ -1,6 +1,7 @@
 import { GenerationApiError, generationRequests, MAX_FILE_CHUNK_BYTES, type FileRange, type GenerationJsonTransport } from './generation.js';
 import { responseDiagnostics } from './error-diagnostics.js';
 import { evaluationRequests } from './evaluations.js';
+import { MAX_BATCH_PART_BYTES } from './batch-files.js';
 
 export type GenerationFileChunk = { bytes: Uint8Array; contentType: string; contentRange: string | null };
 export type GenerationTransportOptions = {
@@ -41,26 +42,35 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
   const timeoutMs = options.timeoutMs ?? 60_000;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120_000) throw new GenerationApiError('invalid_timeout');
   const fetcher = options.fetch ?? fetch;
-  const exchange = async (path: string, init: RequestInit, fileLimit?: number) => {
+  // `stream`: the caller reads the body itself (a file written to disk), never buffered here.
+  const exchange = async (path: string, init: RequestInit, fileLimit?: number, stream = false) => {
     const url = new URL(path, origin);
     const method = init.method ?? 'GET';
     const mutating = method !== 'GET';
+    const part = !evaluation && /^\/api\/v1\/files\/file-[\w-]{1,80}\/parts\/[1-9][0-9]{0,4}$/.test(url.pathname);
+    const files = !evaluation && (/^\/api\/v1\/files(?:\/file-[\w-]{1,80}(?:\/complete|\/content)?)?$/.test(url.pathname) || part);
     const allowed = evaluation
       ? url.pathname !== '/api/v1/evaluations/webhook-secret' && /^\/api\/v1\/evaluations(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/files\/[^/]{1,200})?)?$/.test(url.pathname)
-      : /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
+      : files || /^\/api\/v1\/dataset-orders(?:\/quotes|\/[\w-]{1,64}(?:\/cancel|\/deliveries\/[\w-]{1,80}\/files\/[^/]{1,200})?)?$/.test(url.pathname);
+    const fileList = !evaluation && method === 'GET' && url.pathname === '/api/v1/files' && url.search === '?purpose=batch';
     const publicRead = url.pathname === (evaluation ? '/api/v1/evaluations/catalog' : '/api/v1/generation/catalog') && method === 'GET';
     const filteredList = evaluation && method === 'GET' && url.pathname === '/api/v1/evaluations' &&
       [...url.searchParams.keys()].every(k => ['quote_id', 'client_ref'].includes(k)) &&
       [...url.searchParams.keys()].every(k => url.searchParams.getAll(k).length === 1) &&
       [...url.searchParams].every(([k, v]) => k === 'quote_id' ? /^[\w-]{1,64}$/.test(v) : /^[A-Za-z0-9][A-Za-z0-9._:/+=@-]{0,127}$/.test(v));
-    if (!path.startsWith('/api/v1/') || path !== url.pathname + url.search || url.origin !== origin.origin || url.hash || (url.search && !filteredList) ||
-        (!allowed && !publicRead) || !['GET', 'POST'].includes(method)) throw new GenerationApiError('invalid_route');
+    if (!path.startsWith('/api/v1/') || path !== url.pathname + url.search || url.origin !== origin.origin || url.hash || (url.search && !filteredList && !fileList) ||
+        (!allowed && !publicRead) || !(['GET', 'POST'].includes(method) || (method === 'PUT' && part)) || (part && method !== 'PUT'))
+      throw new GenerationApiError('invalid_route');
     if (!publicRead && !key) throw new GenerationApiError('credential_required');
     const headers = new Headers(init.headers);
     headers.delete('Cookie'); headers.delete('Authorization');
     headers.set('Accept', fileLimit === undefined ? 'application/json' : '*/*');
     if (!publicRead) headers.set('Authorization', `Bearer ${key}`);
-    if (init.body !== undefined && init.body !== null) {
+    if (part) {
+      if (!(init.body instanceof Uint8Array) || init.body.byteLength < 1 || init.body.byteLength > MAX_BATCH_PART_BYTES)
+        throw new GenerationApiError('request_too_large');
+      headers.set('Content-Type', 'application/octet-stream');
+    } else if (init.body !== undefined && init.body !== null) {
       if (typeof init.body !== 'string' || new TextEncoder().encode(init.body).length > 32 * 1024) throw new GenerationApiError('request_too_large');
       headers.set('Content-Type', 'application/json');
     }
@@ -76,6 +86,7 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
       if (response.status >= 300 && response.status < 400) {
         await response.body?.cancel(); throw failure(mutating ? 'outcome_unknown' : 'redirect_refused');
       }
+      if (stream && response.ok) return { response, bytes: new Uint8Array() };
       const bytes = await boundedBody(response, response.ok && fileLimit !== undefined ? fileLimit : 4 * 1024 * 1024);
       if (!response.ok) {
         if (mutating && (response.status >= 500 || response.status === 408)) throw failure('outcome_unknown');
@@ -109,6 +120,30 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
   };
   return {
     request,
+    // A part of a batch file upload: raw bytes, the JSON receipt back. Parts are idempotent: an ambiguous
+    // failure is safe to send again.
+    putPart: async (path: string, bytes: Uint8Array, signal?: AbortSignal): Promise<unknown> => {
+      const { bytes: body } = await exchange(path, { method: 'PUT', body: bytes as unknown as BodyInit, ...(signal ? { signal } : {}) });
+      try { return JSON.parse(new TextDecoder().decode(body)) as unknown; }
+      catch { throw new GenerationApiError('outcome_unknown'); }
+    },
+    // A whole owned file from `offset` (Range resume), its body left to the caller to stream to disk.
+    stream: async (path: string, offset: number, signal?: AbortSignal): Promise<{ status: number; body: ReadableStream<Uint8Array> | null; total: number | null }> => {
+      if (!Number.isSafeInteger(offset) || offset < 0) throw new GenerationApiError('invalid_file_range');
+      const { response } = await exchange(path, { ...(offset ? { headers: { Range: `bytes=${offset}-` } } : {}), ...(signal ? { signal } : {}) }, undefined, true);
+      let total: number | null = null;
+      if (response.status === 206) {
+        const match = response.headers.get('Content-Range')?.match(/^bytes (\d+)-(\d+)\/(\d+)$/);
+        if (!match || Number(match[1]) !== offset) { await response.body?.cancel(); throw new GenerationApiError('invalid_file_range'); }
+        total = Number(match[3]);
+      } else if (response.status !== 200 || offset !== 0) {
+        await response.body?.cancel(); throw new GenerationApiError('invalid_file_range');
+      } else {
+        const length = Number(response.headers.get('Content-Length'));
+        total = Number.isSafeInteger(length) && response.headers.has('Content-Length') ? length : null;
+      }
+      return { status: response.status, body: response.body, total };
+    },
     download: async (descriptor: { path: string; headers?: Record<string, string> }, range: FileRange, signal?: AbortSignal): Promise<GenerationFileChunk> => {
       const { response, bytes } = await exchange(descriptor.path, { headers: descriptor.headers, ...(signal ? { signal } : {}) }, range.maxBytes);
       if (response.status === 206) {
@@ -125,7 +160,7 @@ function createOrderTransport(options: GenerationTransportOptions, evaluation: b
 
 export function createGenerationTransport(options: GenerationTransportOptions = {}) {
   const transport = createOrderTransport(options, false);
-  return { request: transport.request,
+  return { request: transport.request, putPart: transport.putPart, stream: transport.stream,
     download: (orderId: string, deliveryId: string, name: string, range: FileRange = { offset: 0, maxBytes: MAX_FILE_CHUNK_BYTES }, signal?: AbortSignal) =>
       transport.download(generationRequests().download(orderId, deliveryId, name, range), range, signal),
   };
