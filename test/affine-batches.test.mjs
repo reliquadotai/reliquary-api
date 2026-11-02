@@ -21,7 +21,7 @@ test('batch review hashes exact bytes, keeps defaults, never clamps or mutates e
 test('portable plan is deterministic, input-bound and never executes or claims qualification',async()=>{
  const raw=enc(f.cases[0].batch),p=await planAffineBatch(raw,mining,input);assert.deepEqual(p,await planAffineBatch(raw,mining,input));assert.equal(p.upstream.revision,AFFINE_BATCH_KIT_REVISION);assert.equal(p.comparison.barZ,0.625);assert.equal(p.qualification,'not_run');for(const k of ['liveParity','officialAcceptance','chainSubmission'])assert.equal(p[k],false);
  assert.equal(p.batch.sha256,createHash('sha256').update(raw).digest('hex'));assert.equal(p.mining.sha256,createHash('sha256').update(mining).digest('hex'));assert.deepEqual(p.commands.map(c=>c.stage),['validate','train','compare']);assert(p.commands.every(c=>c.argv.includes('<MINING>')));assert(p.commands[1].argv.includes('<MASTER>'));
- for(const change of [{seed:-1},{seed:2**32},{head:'main'},{reference:'https://example.invalid'},{trainingResultAt:0},{prior:'automatic'},{unexpected:true}])await assert.rejects(planAffineBatch(raw,mining,{...input,...change}));
+ for(const change of [{seed:-1},{seed:2**32},{head:'main'},{reference:'https://example.invalid'},{trainingResultAt:-1},{prior:'automatic'},{unexpected:true}])await assert.rejects(planAffineBatch(raw,mining,{...input,...change}));
 });
 
 test('async review and plans freeze bytes and metadata before caller mutation',async()=>{
@@ -29,4 +29,11 @@ test('async review and plans freeze bytes and metadata before caller mutation',a
  const pending=planAffineBatch(raw,contract,metadata);
  raw.fill(0);contract.fill(0);metadata.seed=99;metadata.head='d'.repeat(64);
  const plan=await pending;assert.equal(plan.batch.sha256,createHash('sha256').update(original).digest('hex'));assert.equal(plan.comparison.seed,42);assert.equal(plan.head.digest,input.head);
+});
+
+test('fixed kit rejects unsupported mining train bounds and CLI-invalid identities; zero clock is valid',async()=>{
+ const raw=enc(f.cases[0].batch), changed=structuredClone(f.mining);changed.batch_file.train.fields.lr.max=1;
+ await assert.rejects(reviewAffineBatch(raw,hotkey,enc(changed)),{message:'unsupported_train_contract'});
+ for(const h of ['bad owner','owner\nvalue','owner/path']){await assert.rejects(reviewAffineBatch(enc({...f.cases[0].batch,hotkey:h}),h,mining));}
+ const plan=await planAffineBatch(raw,mining,{...input,lastGreenDecidedAt:0,trainingResultAt:0});assert.equal(plan.comparison.barZ,1);
 });

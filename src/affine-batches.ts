@@ -8,6 +8,7 @@ const exact = (v: unknown, keys: string[]) => record(v) && Object.keys(v).length
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const integer = (v: unknown): v is number => finite(v) && Number.isSafeInteger(v) && v > 0;
 const hash = (v: unknown): v is string => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
+const pinnedTrainBounds = { lr: { min: 1.25e-7, max: 1e-6, default: 5e-7 }, kl: { min: 0.005, max: 0.1, default: 0.02 } };
 const control = /<\|(?:im_start|im_end|endoftext)\|>/;
 const nonblank = (v: unknown): v is string => typeof v === 'string' && /[^\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]/u.test(v);
 const digest = async (bytes: Uint8Array) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array(bytes))), b => b.toString(16).padStart(2, '0')).join('');
@@ -29,6 +30,7 @@ export async function parseAffineMiningContract(bytes: Uint8Array) {
   const bounds = {} as Record<'lr' | 'kl', { min: number; max: number; default: number }>;
   for (const k of ['lr', 'kl'] as const) {
     const f = fields?.[k]; need(record(f) && finite(f.min) && finite(f.max) && finite(f.default) && f.min > 0 && f.min <= f.default && f.default <= f.max, 'invalid_train_bounds');
+    need((['min', 'max', 'default'] as const).every(field => f[field] === pinnedTrainBounds[k][field]), 'unsupported_train_contract');
     bounds[k] = { min: f.min, max: f.max, default: f.default };
   }
   return { sha256: await digest(bytes), epoch: v.epoch, checkpoint: v.checkpoint, maxTasks: caps.max_tasks_per_miner, maxRollouts: caps.max_rollouts_per_miner, formats: v.batch_file.formats as string[], bounds };
@@ -41,7 +43,7 @@ export async function reviewAffineBatch(bytes: Uint8Array, hotkey: string, minin
   const v2 = v.version === 'affine-batch-v2';
   need(exact(v, ['version', 'hotkey', 'groups', ...(v2 && Object.hasOwn(v, 'train') ? ['train'] : [])]), 'invalid_batch_keys');
   need(mining.formats.includes(v.version), 'batch_version_unavailable');
-  need(typeof hotkey === 'string' && hotkey.length > 0 && hotkey.length <= 128 && v.hotkey === hotkey, 'hotkey_mismatch');
+  need(typeof hotkey === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(hotkey) && v.hotkey === hotkey, 'hotkey_mismatch');
   const train = { lr: mining.bounds.lr.default, kl: mining.bounds.kl.default };
   if (Object.hasOwn(v, 'train')) {
     need(record(v.train) && Object.keys(v.train).every(k => k === 'lr' || k === 'kl'), 'invalid_train_keys');
@@ -84,7 +86,7 @@ export async function planAffineBatch(bytes: Uint8Array, miningBytes: Uint8Array
   need(hash(input.head) && hash(input.reference), 'invalid_descriptor_digest');
   need(['provided', 'bf16-bootstrap'].includes(input.master) && ['provided', 'env-average'].includes(input.prior), 'invalid_plan_mode');
   need(Number.isSafeInteger(input.seed) && input.seed >= 0 && input.seed <= 0xffffffff, 'invalid_seed');
-  need(finite(input.trainingResultAt) && finite(input.lastGreenDecidedAt) && input.lastGreenDecidedAt > 0 && input.trainingResultAt >= input.lastGreenDecidedAt, 'invalid_frozen_clock');
+  need(finite(input.trainingResultAt) && finite(input.lastGreenDecidedAt) && input.lastGreenDecidedAt >= 0 && input.trainingResultAt >= input.lastGreenDecidedAt, 'invalid_frozen_clock');
   const review = await reviewAffineBatch(bytes, input.hotkey, miningBytes);
   const commands = ['validate', 'train', 'compare'].map(stage => ({ stage, argv: ['python', '-m', 'reliquary.eval.affine_batches', stage, '--kit', '<KIT>', '--mining', '<MINING>', '--head', '<HEAD>', '--hotkey', input.hotkey, '--work', '<WORK>', '--batch', '<BATCH>',
     ...(stage !== 'validate' ? ['--ref', '<REFERENCE>'] : []), ...(stage === 'train' ? ['--device', 'cpu', '--token-budget', '512', ...(input.master === 'provided' ? ['--master', '<MASTER>'] : [])] : []),

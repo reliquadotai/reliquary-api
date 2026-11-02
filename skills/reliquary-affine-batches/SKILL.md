@@ -11,7 +11,7 @@ The mechanism is batch generation/export, full official-tokenizer validation, on
 
 Provide explicit v1/v2 wire JSON and raw mining.json text. SDK review/export accepts at most 64 MiB of complete UTF-8 JSON; MCP accepts at most 1 MiB inline batch text. No arbitrary local paths, hotkey seeds, credentials, presigned URLs or uploads are accepted.
 
-Raw bytes are hashed without reserialization. All group structures and finite rewards are checked, then whole prompts are dropped in file order when either supplied live cap would be exceeded. Any number of rollouts >=1 is supported; eight is not mandatory. The retained part rejects literal chat control markers. v2 lr and kl use inclusive supplied bounds and defaults, with no clamping.
+Raw bytes are hashed without reserialization. All group structures and finite rewards are checked, then whole prompts are dropped in file order when either supplied live cap would be exceeded. Any number of rollouts >=1 is supported; eight is not mandatory. The retained part rejects literal chat control markers. v2 lr and kl use inclusive supplied bounds and defaults, with no clamping. Snapshots with train bounds or defaults unsupported by the fixed kit revision are refused.
 
 Structural review always reports structuralOnly:true and tokenValidation:not_run. Run the pinned official checker with the actual head tokenizer; output cap and prompt-plus-output limits require that tokenizer, not a character estimate.
 
