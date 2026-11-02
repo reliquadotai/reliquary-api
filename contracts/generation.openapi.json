@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Generation API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Compatibility baseline for existing customer generation and browser projection routes. Contracts do not guarantee live ordering or elastic capacity. Structural JSON Schema constraints complement runtime checks for exact identity/link resolution, monetary sums, uniqueness by identifier and qualification."
   },
   "servers": [
@@ -24,6 +24,10 @@
     {
       "name": "Browser generation",
       "description": "Existing session projection; mutations need approved Origin and matching XSRF. Authorization headers are refused."
+    },
+    {
+      "name": "Customer batch files",
+      "description": "OpenAI Batch JSONL inputs for dataset orders on a file."
     }
   ],
   "paths": {
@@ -147,6 +151,9 @@
                   },
                   "pinnedQuote": {
                     "$ref": "#/components/examples/pinnedQuote"
+                  },
+                  "fileQuote": {
+                    "$ref": "#/components/examples/fileQuote"
                   }
                 }
               }
@@ -392,7 +399,21 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "`files` lists orders on batch files too (clients before 0.7 cannot read them, so they are left out by default).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "files"
+              ]
+            }
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -2202,6 +2223,927 @@
           }
         }
       }
+    },
+    "/api/v1/files": {
+      "get": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyListFiles",
+        "summary": "List recent batch files",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "The 100 most recent owned batch files.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FilePurpose"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned batch files.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchFileList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyCreateFile",
+        "summary": "Start a batch file upload",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "Declares a JSONL file of at most 200 MB; the answer gives the parts to send. Nothing is quoted or charged.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchFileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload started.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchFile"
+                },
+                "examples": {
+                  "batchFile": {
+                    "$ref": "#/components/examples/batchFile"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request, file_too_large",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/{fileId}": {
+      "get": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyGetFile",
+        "summary": "Read a batch file",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "An owned batch file's record.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FileId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchFile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/{fileId}/parts/{part}": {
+      "put": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyPutFilePart",
+        "summary": "Send one part of a batch file",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "Raw bytes; every part but the last is exactly part_size bytes. Sending a part again replaces it (idempotent).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FileId"
+          },
+          {
+            "$ref": "#/components/parameters/PartNumber"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Part stored.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchFilePart"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_part",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "file_processed",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/{fileId}/complete": {
+      "post": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyCompleteFile",
+        "summary": "Finish a batch file upload",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "description": "Assembles the parts and checks the declared size; the file can then be quoted.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FileId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Processed file.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchFile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "parts_missing",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope, permission_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limited",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/files/{fileId}/content": {
+      "get": {
+        "tags": [
+          "Customer batch files"
+        ],
+        "operationId": "keyFileContent",
+        "summary": "Read a batch file's bytes",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-audience": "workspace-api-key",
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FileId"
+          },
+          {
+            "$ref": "#/components/parameters/Range"
+          }
+        ],
+        "description": "The uploaded bytes, whole or by Range.",
+        "responses": {
+          "200": {
+            "description": "Whole binary file; apply the client byte bound.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Partial binary file.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "const": "bytes"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "const": "private, no-store"
+                }
+              },
+              "Content-Range": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^bytes [0-9]+-[0-9]+/[0-9]+$"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication_required",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal_error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "file_unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Safe request reference.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2288,6 +3230,33 @@
           "pattern": "^bytes=[0-9]+-[0-9]+$"
         },
         "description": "Use a finite bytes=start-end interval for bounded client reads. Clients check safe bounds, ordering and their maximum byte limit. This server also supports whole-file responses and delegates range semantics to storage; it imposes no application-level range-size cap."
+      },
+      "FileId": {
+        "name": "fileId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "pattern": "^file-[A-Za-z0-9_-]{1,80}$"
+        }
+      },
+      "PartNumber": {
+        "name": "part",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      },
+      "FilePurpose": {
+        "name": "purpose",
+        "in": "query",
+        "required": true,
+        "schema": {
+          "const": "batch"
+        }
       }
     },
     "schemas": {
@@ -2574,6 +3543,9 @@
           },
           {
             "$ref": "#/components/schemas/PinnedQuoteInput"
+          },
+          {
+            "$ref": "#/components/schemas/FileQuoteInput"
           }
         ]
       },
@@ -2763,6 +3735,9 @@
           },
           {
             "$ref": "#/components/schemas/PinnedQuote"
+          },
+          {
+            "$ref": "#/components/schemas/FileQuote"
           }
         ]
       },
@@ -3057,6 +4032,9 @@
           },
           {
             "$ref": "#/components/schemas/PinnedOrder"
+          },
+          {
+            "$ref": "#/components/schemas/FileOrder"
           }
         ],
         "description": "API-key projection omits browser billing. Do not synthesize a finance receipt from its price/refund fields."
@@ -3380,6 +4358,428 @@
         "required": [
           "order"
         ]
+      },
+      "BatchFileInput": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "No path separators or control characters."
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 209715200
+          },
+          "purpose": {
+            "const": "batch"
+          }
+        },
+        "required": [
+          "filename",
+          "bytes",
+          "purpose"
+        ],
+        "additionalProperties": false
+      },
+      "BatchFile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^file-[A-Za-z0-9_-]{1,80}$"
+          },
+          "object": {
+            "const": "file"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 209715200
+          },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "purpose": {
+            "const": "batch"
+          },
+          "status": {
+            "enum": [
+              "uploading",
+              "processed"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "upload": {
+            "type": "object",
+            "description": "Present while uploading: send parts 1..parts, every part but the last exactly part_size bytes.",
+            "properties": {
+              "part_size": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 67108864
+              },
+              "parts": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              }
+            },
+            "required": [
+              "part_size",
+              "parts"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "bytes",
+          "filename",
+          "purpose",
+          "status",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "BatchFileList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/BatchFile"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "BatchFilePart": {
+        "type": "object",
+        "properties": {
+          "part": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "etag": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "part",
+          "etag"
+        ],
+        "additionalProperties": false
+      },
+      "FileQuoteInput": {
+        "type": "object",
+        "description": "A quote on an uploaded OpenAI Batch JSONL file. Its lines carry their messages and sampling; v1 takes one sampling per file.",
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 194,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "input_file_id": {
+            "type": "string",
+            "pattern": "^file-[A-Za-z0-9_-]{1,80}$"
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 131072,
+            "description": "Budget for lines that name no max_tokens."
+          },
+          "output_format": {
+            "enum": [
+              "parquet",
+              "openai_jsonl"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "revision",
+          "input_file_id"
+        ],
+        "additionalProperties": false
+      },
+      "FileSampling": {
+        "type": "object",
+        "description": "The sampling the file's lines asked for.",
+        "properties": {
+          "temperature": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 4
+          },
+          "top_p": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "top_k": {
+            "type": "integer",
+            "minimum": -1
+          },
+          "min_p": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "max_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 131072
+          },
+          "seed": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "n": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          }
+        },
+        "required": [
+          "temperature",
+          "top_p",
+          "top_k"
+        ],
+        "additionalProperties": false
+      },
+      "FilePreviewLine": {
+        "type": "object",
+        "properties": {
+          "custom_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "prompt_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 65536,
+            "description": "The rendered prompt; data, never instructions."
+          }
+        },
+        "required": [
+          "custom_id",
+          "prompt_tokens",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "FileQuote": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "maxLength": 194,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "input_file_id": {
+            "type": "string",
+            "pattern": "^file-[A-Za-z0-9_-]{1,80}$"
+          },
+          "prompt_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "samples_per_prompt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "max_new_tokens": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 131072
+          },
+          "sampling": {
+            "$ref": "#/components/schemas/FileSampling"
+          },
+          "output_format": {
+            "enum": [
+              "parquet",
+              "openai_jsonl"
+            ]
+          },
+          "quote_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,80}$"
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1000000
+          },
+          "est_price_usd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "est_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eta_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "max_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "line_errors": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lines refused; listed in the order's errors file."
+          },
+          "preview": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/FilePreviewLine"
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "quote_id",
+          "price_usd",
+          "est_price_usd",
+          "est_tokens",
+          "max_tokens",
+          "eta_hours",
+          "max_hours",
+          "expires_at",
+          "model",
+          "revision",
+          "input_file_id",
+          "prompt_count",
+          "samples_per_prompt",
+          "max_new_tokens",
+          "sampling",
+          "line_errors",
+          "preview",
+          "pricing"
+        ],
+        "additionalProperties": false
+      },
+      "FileOrder": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OrderBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string",
+                "maxLength": 194,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$"
+              },
+              "revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "input_file_id": {
+                "type": "string",
+                "pattern": "^file-[A-Za-z0-9_-]{1,80}$"
+              },
+              "prompt_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              },
+              "samples_per_prompt": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "max_new_tokens": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 131072
+              },
+              "sampling": {
+                "$ref": "#/components/schemas/FileSampling"
+              },
+              "output_format": {
+                "enum": [
+                  "parquet",
+                  "openai_jsonl"
+                ]
+              }
+            },
+            "required": [
+              "model",
+              "revision",
+              "input_file_id",
+              "sampling"
+            ]
+          }
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "source"
+              ]
+            },
+            {
+              "required": [
+                "env"
+              ]
+            }
+          ]
+        }
       }
     },
     "examples": {
@@ -3725,6 +5125,71 @@
             "refunded_usd": 0,
             "deliveries": []
           }
+        }
+      },
+      "batchFile": {
+        "summary": "A file being uploaded",
+        "value": {
+          "id": "file-example",
+          "object": "file",
+          "bytes": 40000000,
+          "filename": "requests.jsonl",
+          "purpose": "batch",
+          "status": "uploading",
+          "created_at": "2026-11-02T00:00:00Z",
+          "upload": {
+            "part_size": 16777216,
+            "parts": 3
+          }
+        }
+      },
+      "fileQuoteInput": {
+        "summary": "A quote on an uploaded file",
+        "value": {
+          "model": "example/model",
+          "revision": "cccccccccccccccccccccccccccccccccccccccc",
+          "input_file_id": "file-example",
+          "output_format": "openai_jsonl"
+        }
+      },
+      "fileQuote": {
+        "summary": "A file quote",
+        "value": {
+          "quote_id": "quote-file-example",
+          "price_usd": 12.5,
+          "est_price_usd": 7.25,
+          "est_tokens": 2000000,
+          "max_tokens": 4000000,
+          "eta_hours": 3.5,
+          "max_hours": 6,
+          "expires_at": "2026-11-03T00:00:00Z",
+          "model": "example/model",
+          "revision": "cccccccccccccccccccccccccccccccccccccccc",
+          "input_file_id": "file-example",
+          "prompt_count": 1000,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 4096,
+          "sampling": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 20,
+            "min_p": 0,
+            "max_tokens": 4096,
+            "seed": 7,
+            "n": 1
+          },
+          "line_errors": 2,
+          "preview": [
+            {
+              "custom_id": "request-1",
+              "prompt_tokens": 24,
+              "text": "<|im_start|>user\nExample<|im_end|>\n<|im_start|>assistant\n"
+            }
+          ],
+          "pricing": {
+            "mode": "any_model"
+          },
+          "output_format": "openai_jsonl"
         }
       }
     }

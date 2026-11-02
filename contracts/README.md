@@ -6,7 +6,7 @@ All three documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info
 
 | Surface | OpenAPI / package export | Protocol | Client import |
 | --- | --- | --- | --- |
-| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.1.0` | `createGenerationClient`, `createGenerationTransport` from `@reliquary/api` |
+| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.2.0` | `createGenerationClient`, `createGenerationTransport`, `createBatchFileClient` from `@reliquary/api`; `uploadFile`, `downloadDelivery` from `@reliquary/api/node` |
 | Jobs | [jobs.openapi.json](jobs.openapi.json), `@reliquary/api/jobs/openapi` | `0.2.0` | `createJobsClient`, `createJobsTransport` from `@reliquary/api/jobs` |
 | Evaluations | [evaluations.openapi.json](evaluations.openapi.json), `@reliquary/api/evaluations/openapi` | `0.1.0` | `createEvaluationClient`, `createEvaluationTransport` from `@reliquary/api/evaluations` |
 

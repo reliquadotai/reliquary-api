@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Private source candidate `@reliquary/api` 0.9.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Private source candidate `@reliquary/api` 0.10.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
 
@@ -17,10 +17,10 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 
 ## Customer developer preview
 
-The package also ships the lightweight `reliqua` CLI and 41 official task-oriented skills. Node.js 22 or later is required. Download the pinned client from [the developer hub](https://app.reliqua.ai/developers), verify its checksum against the release manifest, and install the local tarball:
+The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. Download the pinned client from [the developer hub](https://app.reliqua.ai/developers), verify its checksum against the release manifest, and install the local tarball:
 
 ```sh
-npm install --global ./reliquary-client-0.9.0.tgz
+npm install --global ./reliquary-client-0.10.0.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -66,11 +66,11 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.9.0` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.10.0` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.9.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.10.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
 Since 0.3.3, the package preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
@@ -127,6 +127,26 @@ const generation = createGenerationClient(
 That transport owns session cookies, approved mutation origins, XSRF and session expiry. API-key routes use `/api/v1/dataset-orders`; browser routes use `/api/batch/orders`. Browser order responses include billing and browser delivery URLs; key responses omit that receipt. `catalog()` and `quote()` preserve the common response format. List responses contain the newest 100 owned orders and expose no cursor.
 
 For key downloads, `transport.download(orderId, deliveryId, fileName, { offset, maxBytes })` returns bytes and content metadata. Each read is bounded to at most 256 KiB by the client, checks 200/206 and validates partial ranges. The server also permits full-file responses; the client bound is not a server range limit. Resolve identifiers from owned detail and verify file size/digest when assembling an artifact.
+
+### Batch files
+
+A batch file is an OpenAI Batch JSONL (`custom_id`, `method`, `url` `/v1/chat/completions` or `/v1/completions`, `body`) of at most 200 MB, uploaded in parts and then quoted on a pinned model. Its lines carry their own messages and sampling; the platform renders and checks them and reports refused lines in the quote's `line_errors` and the delivery's errors file. The Node entry point does the parts and the disk writes:
+
+```ts
+import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
+import { uploadFile, downloadDelivery } from '@reliquary/api/node';
+
+const transport = createGenerationTransport({ apiKey: process.env.GENERATION_API_KEY });
+const file = await uploadFile(transport, './requests.jsonl'); // resumable: pass { fileId } to finish an interrupted upload
+const generation = createGenerationClient(transport.request);
+const quote = await generation.quote({ model: 'org/name', revision: 'FULL_40_HEX_COMMIT', input_file_id: file.id, output_format: 'openai_jsonl' });
+// Review price, line_errors, preview and expiry, then order with a stable key:
+const order = await generation.create(quote.quote_id, 'stable-request-key-0001');
+// Later, once delivered:
+const files = await downloadDelivery(transport, await generation.detail(order.id), './results');
+```
+
+`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and sha256 from the order; a mismatching file is kept aside as `.rejected`, never under its name. Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`). Customers that prefer the OpenAI SDK use the platform's OpenAI-compatible routes with the same file ids.
 
 Catalogue visibility, account permission, ordering gates, execution capacity, delivery, verification and financial settlement are separate facts. This package documents the existing workflow and does not enable services or guarantee live ordering. Structural schemas complement runtime checks for configuration identity, resolved delivery links, unique identifiers, monetary precision and receipt sums. Existing runtime contracts and workload qualification remain authoritative.
 
