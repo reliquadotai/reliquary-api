@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
@@ -43,7 +43,12 @@
     "./subnet-client": {
       "types": "./dist/subnet-client.d.ts",
       "import": "./dist/subnet-client.js"
-    }
+    },
+    "./affine-pilot": {
+      "types": "./dist/affine-pilot.d.ts",
+      "import": "./dist/affine-pilot.js"
+    },
+    "./affine-pilot/openapi": "./contracts/affine-pilot.openapi.json"
   },
   "files": [
     "dist",

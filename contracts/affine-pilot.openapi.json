@@ -1,0 +1,1986 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Assisted Affine diagnostic pilot",
+    "version": "0.7.0",
+    "description": "Source-pinned same-host internal diagnostic, not verified current official Affine parity, reward verification, operator acceptance or promotion gate. No live GPU by default. Human wallet claim/window actions are outside this API."
+  },
+  "servers": [
+    {
+      "url": "https://api.reliqua.ai"
+    }
+  ],
+  "paths": {
+    "/api/v1/training/affine-native-evaluation/preparations": {
+      "get": {
+        "operationId": "affinePilotStatus",
+        "description": "training:read or training:write. Availability and latest 20 owned preparations; no session claim or window mutation.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Catalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "affineCheckpointPrepare",
+        "description": "training:write. Explicit approval consumes at most the reviewed preparation ceiling. Stable requestId in body; reuse exact values only after reconciliation. Open connected window must have at least 4200 seconds remaining.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preparation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preparation"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepareInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/training/affine-native-evaluation/preparations/{id}": {
+      "get": {
+        "operationId": "affinePreparationGet",
+        "description": "",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preparation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/training/affine-native-evaluation/preparations/review": {
+      "post": {
+        "operationId": "affineCheckpointReview",
+        "description": "training:write. Repository accepts owner/name or https://huggingface.co/owner/name. Reference cannot contain ..; public full compatible safetensors only. Review expires, and does not execute.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Review"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/training/affine-native-evaluation/prepare": {
+      "post": {
+        "operationId": "affineEvaluationPrepare",
+        "description": "training:write. Prepare exact native request/configuration without launching. Absolute nativeJobExpiresAt remains binding.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreparedEvaluation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluationPrepareInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/training/files": {
+      "post": {
+        "operationId": "affineRequestUpload",
+        "description": "training:write. Confirm upload rights. Exactly JSON.stringify(request) plus newline, not a wrapper. Content-addressed upload does not launch.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-ndjson": {
+              "schema": {
+                "type": "string",
+                "maxLength": 4096,
+                "description": "One EvaluationRequest JSON object plus newline."
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Dataset-Format",
+            "required": true,
+            "schema": {
+              "const": "affine_native_evaluation_request"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Filename",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Data-Authorized",
+            "required": true,
+            "schema": {
+              "const": "true"
+            }
+          }
+        ]
+      }
+    },
+    "/api/resources": {
+      "post": {
+        "operationId": "affineSaveDraft",
+        "description": "resources:write key required; training key cannot save this draft. Save server-prepared configuration unchanged.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourceInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{16,80}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/training/quotes": {
+      "post": {
+        "operationId": "affineTrainingQuote",
+        "description": "training:write. Required in service-credits mode; quote binds exact draft revision and dataset and expires.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrainingInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/training/tasks": {
+      "post": {
+        "operationId": "affineTrainingStart",
+        "description": "training:write. Separate explicit execution approval; stable launch key. Include exact fresh quoteId for service-credits mode; operator-funded pilot omits only when supported.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{16,80}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/training/tasks/{id}": {
+      "get": {
+        "operationId": "affineTrainingTaskGet",
+        "description": "Owned task, result, events, artifacts and billing. Succeeded alone is not verified receipt integrity or official acceptance.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owned response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/training/tasks/{id}/artifacts/{artifactId}": {
+      "get": {
+        "operationId": "affineArtifactDownload",
+        "description": "Owned artifact ID from task metadata. SDK requires bounded ranges <=262144 bytes, validates Content-Range and does not follow redirects. A bounded complete HTTP 200 response is accepted only at offset zero. Verify total size/digest and receipt signature against retained profile pins.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Refused; preserve error code and request diagnostics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Bounded artifact bytes.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[\\w-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Range",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^bytes=[0-9]+-[0-9]+$"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "workspaceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Separate training:write and resources:write keys; training:read may read."
+      }
+    },
+    "schemas": {
+      "ReviewInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository",
+          "reference",
+          "sessionId",
+          "maxCostMicroUsd"
+        ],
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "reference": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][\\w./-]{0,199}$"
+          },
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5100000
+          }
+        }
+      },
+      "PrepareInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "repository",
+          "revision",
+          "sessionId",
+          "maxCostMicroUsd",
+          "policyDigest",
+          "approvePreparation",
+          "requestId"
+        ],
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5100000
+          },
+          "policyDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "approvePreparation": {
+            "const": true
+          },
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId",
+          "repository",
+          "revision",
+          "weightBytes",
+          "architecture",
+          "policyId",
+          "policyDigest",
+          "maxSeconds",
+          "maxCostMicroUsd",
+          "expiresAt"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "repository": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][\\w.-]{0,95}/[A-Za-z0-9][\\w.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "weightBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 21474836480
+          },
+          "architecture": {
+            "const": "Qwen3_5ForConditionalGeneration"
+          },
+          "policyId": {
+            "const": "mimo-diagnostic4-v1"
+          },
+          "policyDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "maxSeconds": {
+            "const": 900
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5100000
+          },
+          "expiresAt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "Preparation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sessionId",
+          "repository",
+          "revision",
+          "weightBytes",
+          "architecture",
+          "policyId",
+          "policyDigest",
+          "maxSeconds",
+          "maxCostMicroUsd",
+          "expiresAt",
+          "id",
+          "state",
+          "profileDigest",
+          "runId",
+          "error",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "repository": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][\\w.-]{0,95}/[A-Za-z0-9][\\w.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "weightBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 21474836480
+          },
+          "architecture": {
+            "const": "Qwen3_5ForConditionalGeneration"
+          },
+          "policyId": {
+            "const": "mimo-diagnostic4-v1"
+          },
+          "policyDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "maxSeconds": {
+            "const": 900
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5100000
+          },
+          "expiresAt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "preparing",
+              "qualifying",
+              "ready",
+              "failed"
+            ]
+          },
+          "profileDigest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[\\w-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "Catalog": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "available",
+          "reason",
+          "sessionId",
+          "windowEndsAt",
+          "preparations"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "windowEndsAt": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preparations": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/Preparation"
+            }
+          }
+        }
+      },
+      "EvaluationPrepareInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "profileDigest",
+          "maxHours",
+          "maxCostMicroUsd"
+        ],
+        "properties": {
+          "profileDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "maxHours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000000
+          }
+        }
+      },
+      "EvaluationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schema",
+          "profileDigest",
+          "jobDigest",
+          "maxHours",
+          "maxCostMicroUsd",
+          "nativeJobExpiresAt"
+        ],
+        "properties": {
+          "schema": {
+            "const": "affine-native-evaluation-request/v1"
+          },
+          "profileDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "jobDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "maxHours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168
+          },
+          "maxCostMicroUsd": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000000
+          },
+          "nativeJobExpiresAt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "PreparedEvaluation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request",
+          "configuration",
+          "mode"
+        ],
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/EvaluationRequest"
+          },
+          "configuration": {
+            "type": "object",
+            "description": "Exact server-produced schemaVersion 2 training configuration; preserve unchanged.",
+            "additionalProperties": true
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "service-credits",
+              "operator-funded-pilot"
+            ]
+          }
+        }
+      },
+      "ResourceInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "name",
+          "config"
+        ],
+        "properties": {
+          "kind": {
+            "const": "training"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "TrainingInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "draftId",
+          "revision",
+          "datasetId"
+        ],
+        "properties": {
+          "draftId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "datasetId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          }
+        }
+      },
+      "StartInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "draftId",
+          "revision",
+          "datasetId",
+          "approveExecution"
+        ],
+        "properties": {
+          "draftId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "datasetId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          },
+          "approveExecution": {
+            "const": true
+          },
+          "quoteId": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,64}$"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
