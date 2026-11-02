@@ -13,11 +13,11 @@ For a model outside the catalog, explain that a public model requires an immutab
 
 Expected result: An actionable list of supported generation choices and current gates.
 
-CLI read: `reliqua generation catalog --json`
+CLI entry: `reliqua generation catalog --json`
 
 ## Interfaces and limits
 
-Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.6.0 remains read-only; installable instructions do not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.9.0 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_generation_catalog`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 

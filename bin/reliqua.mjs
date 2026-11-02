@@ -2,6 +2,7 @@
 import { readFile, mkdir, lstat, open, realpath } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { createPublicClient, createJobsClient, createJobsTransport, jobRequests, OFFICIAL_SKILLS, DEVELOPER_PREVIEW } from '../dist/index.js';
+import { affineCommand, UsageError } from './affine-cli.mjs';
 
 const help = `Reliquary developer preview ${DEVELOPER_PREVIEW.version}
 Usage: reliqua <command> [options]
@@ -15,6 +16,8 @@ Usage: reliqua <command> [options]
   runs list | runs inspect [--run ID]        Public run catalog and telemetry
   doctor                                   Check connectivity and local setup
   jobs capabilities|list|status|events|report  Read owned CPU jobs
+  affine status|prepare|upload|save-draft|quote|start|task|verify-delivery|download
+                                           Qualified Affine batch stages
   skills list [--skill ID] [--search TEXT] [--category ID] [--interface cli|mcp|http] [--access LEVEL]
   skills show --skill ID                    Read packaged instructions
   skills install --directory DIRECTORY [--skill ID]  Install selected or all skills
@@ -22,11 +25,13 @@ Usage: reliqua <command> [options]
 Options: --json, --origin HTTPS_ORIGIN, --timeout 1..60000 (milliseconds)
 Job options: --id ID, --cursor CURSOR, --limit 1..100, --artifact ID
 Job reads use RELIQUARY_RESOURCES_KEY (or JOBS_API_KEY).
+Affine stages use RELIQUARY_TRAINING_KEY and RELIQUARY_RESOURCES_KEY.
+Use --input FILE for one stage, --id ID for task, --directory NEW_DIRECTORY for download.
+Upload requires --confirm-rights; start requires --approve-execution and a stable key.
 Public reads send no credentials. RELIQUARY_API_URL selects an API origin.
-This preview never uploads, launches, books, cancels or spends.
+Affine stages require an owner-qualified profile and upstream grants. No hardware is booked.
 --version prints the installed release. --help displays this guide.
 `;
-class UsageError extends Error { code = 'invalid_arguments'; }
 const args = process.argv.slice(2);
 const json = args.includes('--json');
 const fail = message => { throw new UsageError(message); };
@@ -36,12 +41,15 @@ const allowed = {
   'jobs events': ['id', 'cursor', 'limit'], 'jobs report': ['id', 'artifact'],
   'skills list': ['skill', 'search', 'category', 'interface', 'access'], 'skills show': ['skill'], 'skills install': ['directory', 'skill'],
   'generation catalog': [], 'evaluations catalog': [], 'monitoring health': [], 'monitoring snapshot': [], 'runs list': [], 'runs inspect': ['run'],
+  'affine status': [], 'affine prepare': ['input'], 'affine upload': ['input', 'confirm-rights'],
+  'affine save-draft': ['input'], 'affine quote': ['input'], 'affine start': ['input', 'approve-execution'],
+  'affine task': ['id'], 'affine verify-delivery': ['input'], 'affine download': ['input', 'directory'],
 };
 const clean = value => String(value ?? 'unknown').replace(/[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 300);
 try {
   if (!args.length || args[0] === '--help' || args[0] === 'help') { process.stdout.write(help); process.exit(0); }
   if (args[0] === '--version') { process.stdout.write(DEVELOPER_PREVIEW.version + '\n'); process.exit(0); }
-  const command = ['compute', 'jobs', 'skills', 'generation', 'evaluations', 'monitoring', 'runs'].includes(args[0]) ? `${args.shift()} ${args.shift()}` : args.shift();
+  const command = ['compute', 'jobs', 'skills', 'generation', 'evaluations', 'monitoring', 'runs', 'affine'].includes(args[0]) ? `${args.shift()} ${args.shift()}` : args.shift();
   if (!Object.hasOwn(allowed, command)) fail('Unknown command. Run reliqua --help.');
   const options = new Map();
   while (args.length) {
@@ -49,7 +57,7 @@ try {
     if (!flag.startsWith('--')) fail('Options must use --name value.');
     const name = flag.slice(2);
     if (!['json', 'origin', 'timeout', ...allowed[command]].includes(name) || options.has(name)) fail('Unknown or repeated option.');
-    const value = name === 'json' ? true : args.shift();
+    const value = ['json', 'confirm-rights', 'approve-execution'].includes(name) ? true : args.shift();
     if (value === undefined || (typeof value === 'string' && (!value || value.startsWith('--')))) fail(`--${name} needs a value.`);
     options.set(name, value);
   }
@@ -67,7 +75,13 @@ try {
   const timeoutMs = integer('timeout', 15_000, 60_000);
   let output;
   let kind = 'json';
-  if (command.startsWith('skills ')) {
+  if (command.startsWith('affine ')) {
+    output = await affineCommand(command.slice(7), Object.fromEntries(options), {
+      origin, timeoutMs,
+      apiKey: process.env.RELIQUARY_TRAINING_KEY ?? process.env.TRAINING_API_KEY,
+      resourcesApiKey: process.env.RELIQUARY_RESOURCES_KEY ?? process.env.RESOURCES_API_KEY ?? process.env.JOBS_API_KEY,
+    });
+  } else if (command.startsWith('skills ')) {
     let selectedSkills = options.has('skill') ? OFFICIAL_SKILLS.filter(skill => skill.id === required('skill')) : OFFICIAL_SKILLS;
     if (!selectedSkills.length) fail('Unknown skill ID. Run reliqua skills list.');
     if (command === 'skills list') {
@@ -154,15 +168,17 @@ try {
         ]);
         output = { preview: DEVELOPER_PREVIEW, readiness, generation, evaluations,
           compute: { managedRentalsEnabled: compute['managedRentalsEnabled'] ?? null, rehearsalEnabled: compute['rehearsalEnabled'] ?? null },
-          notice: 'Public service state is separate from account permission and qualified capacity. CLI execution is disabled.' };
+          notice: 'Public service state is separate from account permission and qualified capacity. Affine stages require a qualified owner profile and explicit upload/launch approval.' };
         break;
       }
       case 'doctor': {
         const health = await client.read('health');
         output = { version: DEVELOPER_PREVIEW.version, apiOrigin: new URL(origin ?? DEVELOPER_PREVIEW.apiOrigin).origin,
           health, resourcesCredentialConfigured: !!(process.env.RELIQUARY_RESOURCES_KEY ?? process.env.JOBS_API_KEY),
-          credentialValidated: false, executionEnabled: false,
-          nextStep: 'Run reliqua compute list. For owned jobs, supply a resources-scoped key locally and run reliqua jobs capabilities.' };
+          trainingCredentialConfigured: !!(process.env.RELIQUARY_TRAINING_KEY ?? process.env.TRAINING_API_KEY),
+          credentialValidated: false,
+          execution: { automatic: false, affineStagesSupported: true, qualifiedOwnerProfileRequired: true, explicitLaunchApprovalRequired: true, availability: 'not_checked' },
+          nextStep: 'For Affine batches, set your training key locally and run reliqua affine status --json. For owned CPU jobs, set a resources key and run reliqua jobs capabilities. Account permission does not establish capacity.' };
       }
     }
   }
@@ -185,6 +201,7 @@ try {
     ...(error?.status === undefined ? {} : { status: error.status }),
     ...(error?.requestId === undefined ? {} : { requestId: error.requestId }),
     ...(error?.retryAfterSeconds === undefined ? {} : { retryAfterSeconds: error.retryAfterSeconds }),
+    ...(typeof error?.retryKey === 'string' && /^[\w-]{16,80}$/.test(error.retryKey) ? { retryKey: error.retryKey } : {}),
   } }) + '\n');
   process.exitCode = error instanceof UsageError ? 2 : 1;
 }
