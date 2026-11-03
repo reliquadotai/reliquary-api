@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Private source candidate `@reliquary/api` 0.10.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Private source candidate `@reliquary/api` 0.11.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
 
@@ -20,7 +20,7 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. Download the pinned client from [the developer hub](https://app.reliqua.ai/developers), verify its checksum against the release manifest, and install the local tarball:
 
 ```sh
-npm install --global ./reliquary-client-0.10.0.tgz
+npm install --global ./reliquary-client-0.11.0.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -66,11 +66,11 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.10.0` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.11.0` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.10.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For a consumer adopting this version, pin the reviewed `vendor/api-client-0.11.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
 Since 0.3.3, the package preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
@@ -444,10 +444,12 @@ Use [the staged fetch example](examples/affine-pilot.mjs) and [OpenAPI contract]
 
 Reports are structural-only: full output/context token validation requires the official head tokenizer. The pinned plan describes batch export/validation, one GRPO step and parent/candidate comparison through the external official-kit wrapper. It contains placeholders, independent descriptor digests, explicit seed, raw mining snapshot digest, prior availability and a frozen clock; it executes nothing. CPU tiny commands prove plumbing only. Missing fp32 master, private prior/selection and production kernels prevent official parity. Qualification remains not_run and acceptance/submission/parity flags remain false. No credentials, chain registration, remote upload or paid endpoint is added.
 
-This is a private source candidate, separate from the 0.7 checkpoint diagnostic. The [pinned official miner guide](https://github.com/AffineFoundation/affine/blob/a59734f8a7a494c46df47ca3955cc7f594ec6bc0/miner/README.md) and bundled `reliquary-affine-batches` skill describe the workflow; installation must use a matching verified release manifest. Keep batches, generated plans and execution evidence private outside repositories.
+This is a private source candidate, separate from the 0.7 checkpoint diagnostic. The [pinned official miner guide](https://github.com/AffineFoundation/affine/blob/46c3cb6a83abbc881341d374e86d438af91eedb5/miner/README.md) and bundled `reliquary-affine-batches` skill describe the workflow; installation must use a matching verified release manifest. Keep batches, generated plans and execution evidence private outside repositories.
 
 The hosted batch workflow additionally exports `createAffineBatchClient`, `affineBatchRequests`, and strict `parseAffineBatch{Profile,Request,Prepared,Receipt,Result}` functions from `@reliquary/api/affine-batches` and the package root. Pass the existing `createAffinePilotTransport({ apiKey, resourcesApiKey, origin }).request` to the client. `prepare({ profileDigest, maxHours, maxCostMicroUsd })` selects an already approved owner profile; it does not start compute. Upload only the returned small metadata request with `uploadRequest(request, 'batch.jsonl', true)`, then `saveDraft(prepared, name, stableDraftKey)`. The saved configuration fixes `affine_batch`, one optimizer step, private compute and the same request. Actual batch/model bytes belong to the approved frozen job, rather than this metadata upload.
 
 Use [the staged hosted example](examples/affine-batch-pilot.mjs): `node examples/affine-batch-pilot.mjs STAGE INPUT.private.json`. Stages are `prepare`, `upload`, `save-draft`, `quote`, `start`, `task`, and `verify-delivery`. Credentials use `TRAINING_API_KEY` (`training:write`), `RESOURCES_API_KEY` (`resources:write`) and optional `RELIQUARY_API_URL`. Save each returned response privately before proceeding. Draft input is `{ prepared, name, requestKey }`; start input is `{ submission: { draftId, revision, datasetId, approveExecution: true }, requestKey }`. Execution requires this separate approval and a stable key. Preserve original keys on ambiguous outcomes; no stage retries automatically. A quote is optional for this operator-funded profile. No stage rents hardware or claims a wallet invitation.
 
 For `verify-delivery`, supply `{ taskId, request, pins }`, where `pins` contains the independently retained `profileDigest`, `environmentDigest`, uploaded request byte hash `requestSha256`, and approved `affineBatch` profile. The example checks the task/result, exact source/model/job/context bindings, fractional training clock, bounded streamed archive hash and Ed25519 receipt signature. It accepts finite negative gains and nullable estimator metrics. This establishes delivered integrity against the retained signer/profile; it does not independently rerun the estimator, attest inference identity, establish improvement, or establish live parity, official acceptance, reward verification or chain submission. Those assurance flags remain false. A scientific RED decision remains a valid delivered result.
+
+Current Affine batch preparation supports all 16 typed train fields at source revision `46c3cb6a83abbc881341d374e86d438af91eedb5`. Fixed-z plans use current-round 12,288 output / 16,384 context and explicitly report PUBLIC PRIOR APPROXIMATION, without private IRT parity. JSON integer validation requires the standard reviver source context (supported on the Node.js 22 minimum); runtimes without it fail closed for explicit step_mult. Local checks used Node.js 24.21.0. Historical receipt formulas remain valid.
