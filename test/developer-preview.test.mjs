@@ -66,7 +66,7 @@ test('clean packed installation supports public discovery, preserves skill edits
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
   try {
-    const packed = await run('npm', ['pack', '--json', '--pack-destination', temp]);
+    const packed = await run('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', temp]);
     assert.equal(packed.code, 0, packed.stderr);
     const entries = JSON.parse(packed.stdout);
     const shippedSkills = entries[0].files.filter(file => /^skills\/[^/]+\/SKILL\.md$/.test(file.path)).map(file => file.path).sort();
