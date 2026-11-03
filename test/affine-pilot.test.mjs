@@ -103,7 +103,7 @@ test('OpenAPI and official skill cover the complete route without a session muta
   for(const path of ['/api/resources','/api/v1/training/files','/api/v1/training/quotes','/api/v1/training/tasks'])assert(spec.paths[path].post);
   assert.deepEqual(spec.components.schemas.PrepareInput.required.sort(),['repository','revision','sessionId','maxCostMicroUsd','policyDigest','approvePreparation','requestId'].sort());
   assert(!Object.keys(spec.paths).some(p=>/claim|session|window/.test(p)));
-  const skill=OFFICIAL_SKILLS.find(s=>s.id==='reliquary-affine-pilot'); assert(skill&&!skill.interfaces.includes('cli'));assert.equal(skill.version,'0.10.0'); assert.equal(skill.mcpTools.filter(t=>t.startsWith('reliquary_affine_')).length,6);
+  const skill=OFFICIAL_SKILLS.find(s=>s.id==='reliquary-affine-pilot'); assert(skill&&!skill.interfaces.includes('cli'));assert.equal(skill.version,'0.11.0'); assert.equal(skill.mcpTools.filter(t=>t.startsWith('reliquary_affine_')).length,6);
 });
 
 test('receipt verification binds independently retained pins and rejects altered archive or signature',()=>{
