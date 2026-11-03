@@ -107,15 +107,16 @@ function context(v: Record<string, unknown>): boolean {
   return (
     typeof v['upstreamRevision'] === 'string' &&
     /^[a-f0-9]{40}$/.test(v['upstreamRevision']) &&
-    ['provided', 'bf16-bootstrap'].includes(String(v['masterMode'])) &&
+    typeof v['masterMode'] === 'string' &&
+    ['provided', 'bf16-bootstrap'].includes(v['masterMode']) &&
     (v['masterMode'] === 'provided' ? hash(v['masterDigest']) : v['masterDigest'] === null) &&
-    ['published-reference', 'caller-provided-unverified'].includes(
-      String(v['referenceProvenance']),
-    ) &&
+    typeof v['referenceProvenance'] === 'string' &&
+    ['published-reference', 'caller-provided-unverified'].includes(v['referenceProvenance']) &&
     integer(v['seed'], 0, 0xffffffff) &&
     integer(v['expectedDraw'], 1, 19305) &&
     finite(v['lastGreenDecidedAt']) &&
-    ['actual-training-result-minus-frozen-last-green', 'fixed-z-1-public-prior-v1'].includes(String(v['comparisonClockRule']))
+    typeof v['comparisonClockRule'] === 'string' &&
+    ['actual-training-result-minus-frozen-last-green', 'fixed-z-1-public-prior-v1'].includes(v['comparisonClockRule'])
   );
 }
 export function validAffineBatchProfile(v: unknown): v is AffineBatchProfile {

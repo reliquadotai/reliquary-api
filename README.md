@@ -1,8 +1,8 @@
 # API contracts and clients
 
-Private source candidate `@reliquary/api` 0.11.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Source candidate `@reliquary/api` 0.11.1 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
-Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The repository and package are private; the examples below assume an approved, reviewed package artifact, not a public npm installation.
+Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The source is [MIT licensed](LICENSE). Install a reviewed source build or local tarball; the manifest retains `private: true` to prevent npm registry publication. Security reports use the private channels described in [SECURITY.md](SECURITY.md).
 
 ## Start here
 
@@ -17,10 +17,18 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 
 ## Customer developer preview
 
-The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. Download the pinned client from [the developer hub](https://app.reliqua.ai/developers), verify its checksum against the release manifest, and install the local tarball:
+The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. From a reviewed source checkout:
 
 ```sh
-npm install --global ./reliquary-client-0.11.0.tgz
+npm ci
+npm test
+npm pack
+```
+
+This produces `reliquary-api-0.11.1.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
+
+```sh
+npm install --global ./reliquary-api-0.11.1.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -42,7 +50,7 @@ For owned job reads, set `RELIQUARY_RESOURCES_KEY` privately in your environment
 
 Use `--json` for machine output. Errors are structured JSON on stderr with safe request diagnostics. Exit codes are 0 for a successful read (including empty/unavailable catalogs), 1 for a failed command/request and 2 for invalid arguments. `--origin`/`RELIQUARY_API_URL` support HTTPS origins and loopback HTTP; `--timeout` is a bounded request deadline in milliseconds. Skill installation is repeatable and refuses to overwrite local edits or symlink destinations. Remove the chosen skill folders separately; `npm uninstall --global @reliquary/api` removes the client.
 
-This 0.8 source candidate ships matching bundled instructions and private package artifacts; no hosted 0.8 release manifest or registry publication is asserted. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
+This 0.11.1 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
 
 For the staged customer workflow and verified private downloads, see [the Affine CLI guide](examples/affine-cli.md). Run `reliqua affine status --json` with your training key to inspect your actual qualified profiles before preparing a request.
 
@@ -66,13 +74,13 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.11.0` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.11.1` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For a consumer adopting this version, pin the reviewed `vendor/api-client-0.11.0.tgz` in its manifest and lockfile. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For SDK use, copy the reviewed `reliquary-api-0.11.1.tgz` into the consuming project as `vendor/api-client-0.11.1.tgz`, then run `npm install --save-exact ./vendor/api-client-0.11.1.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
-Since 0.3.3, the package preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
+Generation contract 0.2.0 adds batch-file requests; jobs and evaluations retain the wire versions listed above. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
 Public run monitoring is available through `createPublicClient().read("runs")` and `.run(publishedId?)`; results retain the upstream envelope, source clocks, unavailable states, nulls and metric meanings. The CLI supports the same stored telemetry reads without credentials. This is a bounded public-read helper, not a generated monitoring OpenAPI or typed training orchestration SDK. Account/key management, worker protocols and training orchestration keep their separately scoped HTTP contracts and native operator boundaries.
 
@@ -84,7 +92,7 @@ Start with a public discovery request; it creates no order and needs no credenti
 curl --fail-with-body --silent --show-error https://api.reliqua.ai/api/v1/generation/catalog
 ```
 
-For an approved private package installation, the equivalent client request is:
+After installing the reviewed package, the equivalent client request is:
 
 ```ts
 import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
@@ -146,7 +154,9 @@ const order = await generation.create(quote.quote_id, 'stable-request-key-0001')
 const files = await downloadDelivery(transport, await generation.detail(order.id), './results');
 ```
 
-`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and sha256 from the order; a mismatching file is kept aside as `.rejected`, never under its name. Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`). Customers that prefer the OpenAI SDK use the platform's OpenAI-compatible routes with the same file ids.
+`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and sha256 from the order. It preserves existing completed files, reuses matching files, and refuses links or special-file destinations. Downloaded bytes with a mismatching digest stay outside the final filename; `.rejected` is used when available without replacing an existing file. New directories and files have owner-only permissions. Use a directory you control and do not replace its entries concurrently; hostile shared destinations are unsupported. Resume uploads with the same unchanged source and file id.
+
+Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`). Customers that prefer the OpenAI SDK use the platform's OpenAI-compatible routes with the same file ids.
 
 Catalogue visibility, account permission, ordering gates, execution capacity, delivery, verification and financial settlement are separate facts. This package documents the existing workflow and does not enable services or guarantee live ordering. Structural schemas complement runtime checks for configuration identity, resolved delivery links, unique identifiers, monetary precision and receipt sums. Existing runtime contracts and workload qualification remain authoritative.
 
@@ -444,7 +454,7 @@ Use [the staged fetch example](examples/affine-pilot.mjs) and [OpenAPI contract]
 
 Reports are structural-only: full output/context token validation requires the official head tokenizer. The pinned plan describes batch export/validation, one GRPO step and parent/candidate comparison through the external official-kit wrapper. It contains placeholders, independent descriptor digests, explicit seed, raw mining snapshot digest, prior availability and a frozen clock; it executes nothing. CPU tiny commands prove plumbing only. Missing fp32 master, private prior/selection and production kernels prevent official parity. Qualification remains not_run and acceptance/submission/parity flags remain false. No credentials, chain registration, remote upload or paid endpoint is added.
 
-This is a private source candidate, separate from the 0.7 checkpoint diagnostic. The [pinned official miner guide](https://github.com/AffineFoundation/affine/blob/46c3cb6a83abbc881341d374e86d438af91eedb5/miner/README.md) and bundled `reliquary-affine-batches` skill describe the workflow; installation must use a matching verified release manifest. Keep batches, generated plans and execution evidence private outside repositories.
+This source candidate is separate from the 0.7 checkpoint diagnostic. The [pinned official miner guide](https://github.com/AffineFoundation/affine/blob/a59734f8a7a494c46df47ca3955cc7f594ec6bc0/miner/README.md) and bundled `reliquary-affine-batches` skill describe the workflow; install this candidate from its reviewed source tarball. Hosted artifacts require their own matching verified release manifest. Keep batches, generated plans and execution evidence private outside repositories.
 
 The hosted batch workflow additionally exports `createAffineBatchClient`, `affineBatchRequests`, and strict `parseAffineBatch{Profile,Request,Prepared,Receipt,Result}` functions from `@reliquary/api/affine-batches` and the package root. Pass the existing `createAffinePilotTransport({ apiKey, resourcesApiKey, origin }).request` to the client. `prepare({ profileDigest, maxHours, maxCostMicroUsd })` selects an already approved owner profile; it does not start compute. Upload only the returned small metadata request with `uploadRequest(request, 'batch.jsonl', true)`, then `saveDraft(prepared, name, stableDraftKey)`. The saved configuration fixes `affine_batch`, one optimizer step, private compute and the same request. Actual batch/model bytes belong to the approved frozen job, rather than this metadata upload.
 

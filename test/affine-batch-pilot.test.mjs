@@ -57,3 +57,13 @@ test('fixed comparison rule extends receipts without changing historical formula
  for(const bad of [{...fixed,barZ:receipt.barZ},{...fixed,comparisonClockRule:'unknown'},{...fixed,nativeRewardVerified:true}])assert.throws(()=>parseAffineBatchReceipt(bad));
  assert.deepEqual(parseAffineBatchReceipt(receipt),receipt);
 });
+
+test('profile and receipt context requires string enums',()=>{
+ for(const field of ['masterMode','referenceProvenance','comparisonClockRule']) {
+  const value=profile[field];
+  for(const invalid of [[value],{toString:()=>value},{}]) {
+   assert.throws(()=>parseAffineBatchProfile({...profile,[field]:invalid}));
+   assert.throws(()=>parseAffineBatchReceipt({...receipt,[field]:invalid}));
+  }
+ }
+});

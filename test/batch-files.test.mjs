@@ -215,3 +215,13 @@ test('a streamed download is bounded by its headers, not by the time its body ta
     assert.equal(file.verified, true);
   } finally { await new Promise(r => server.close(r)); }
 });
+
+
+test('upload rejects invalid retry limits before making a request', async () => {
+  let requested = false;
+  const transport = { request: async () => { requested = true; throw new Error('Unexpected request.'); } };
+  for (const partAttempts of [NaN, Infinity, -1, 0, 1.5, 11]) {
+    await assert.rejects(uploadFile(transport, new Blob(['{}\n']), { partAttempts }), /Part attempts must be an integer from 1 to 10/);
+  }
+  assert.equal(requested, false);
+});
