@@ -6,8 +6,57 @@ type BatchConfiguration = {
   max_new_tokens: number;
   thinking: boolean;
 };
-export type BatchQuoteInput = BatchConfiguration &
-  ({ source: string } | { revision: string; env: string; sampling?: Partial<BatchSampling> });
+export type BatchQuoteInput =
+  | (BatchConfiguration & ({ source: string } | { revision: string; env: string; sampling?: Partial<BatchSampling> }))
+  | FileQuoteInput;
+export const BATCH_OUTPUT_FORMATS = ['parquet', 'openai_jsonl'] as const;
+export type BatchOutputFormat = (typeof BATCH_OUTPUT_FORMATS)[number];
+/** A quote on an uploaded batch file: its lines carry their own messages and sampling. */
+export type FileQuoteInput = {
+  model: string;
+  revision: string;
+  input_file_id: string;
+  max_new_tokens?: number;
+  output_format?: BatchOutputFormat;
+};
+/** The one sampling a file's lines asked for (OpenAI body fields, normalised by the platform). */
+export type FileSampling = {
+  temperature: number;
+  top_p: number;
+  top_k: number;
+  min_p?: number;
+  max_tokens?: number | null;
+  seed?: number | null;
+  n?: number;
+};
+export type FilePreviewLine = { custom_id: string; prompt_tokens: number; text: string };
+export type FileBatchQuote = {
+  quote_id: string;
+  price_usd: number;
+  est_price_usd: number;
+  est_tokens: number;
+  max_tokens: number;
+  eta_hours: number;
+  max_hours: number;
+  expires_at: string;
+  model: string;
+  revision: string;
+  input_file_id: string;
+  prompt_count: number;
+  samples_per_prompt: number;
+  max_new_tokens: number;
+  sampling: FileSampling;
+  line_errors: number;
+  preview: FilePreviewLine[];
+  pricing: Record<string, unknown>;
+  output_format?: BatchOutputFormat;
+};
+type FileIdentity = {
+  revision: string;
+  input_file_id: string;
+  sampling: FileSampling;
+  output_format?: BatchOutputFormat;
+};
 type CatalogIdentity = { source: string };
 type PinnedIdentity = {
   revision: string;
@@ -15,7 +64,7 @@ type PinnedIdentity = {
   gpu_count: number;
   sampling: BatchSampling;
 };
-export type BatchQuote = BatchConfiguration & {
+export type BatchQuote = FileBatchQuote | (BatchConfiguration & {
   quote_id: string;
   price_usd: number;
   est_tokens: number;
@@ -30,7 +79,7 @@ export type BatchQuote = BatchConfiguration & {
         max_hours: number;
         pricing: Record<string, unknown>;
       })
-  );
+  ));
 export const BATCH_ORDER_STATUSES = [
   'reserved',
   'provisioning',
@@ -64,7 +113,8 @@ export type BatchOrderProgress = {
   counts_complete: boolean;
   observed_at: string;
 };
-export type BatchOrder = BatchConfiguration & {
+type FileConfiguration = Omit<BatchConfiguration, 'thinking'> & { thinking?: boolean };
+type OrderFields = {
   id: string;
   status: BatchOrderStatus;
   price_usd: number;
@@ -76,7 +126,9 @@ export type BatchOrder = BatchConfiguration & {
   updated_at: string;
   finished_at: string | null;
   billing: BatchBilling;
-} & (CatalogIdentity | PinnedIdentity);
+};
+export type BatchOrder = OrderFields &
+  ((BatchConfiguration & (CatalogIdentity | PinnedIdentity)) | (FileConfiguration & FileIdentity));
 export type BatchDeliveryFile = { name: string; size: number; sha256: string | null; url: string };
 export type BatchOrderDetail = BatchOrder & {
   refunded_usd: number;
@@ -123,6 +175,118 @@ function configuration(v: Record<string, unknown>): BatchConfiguration {
     thinking: v['thinking'] as boolean,
   };
 }
+const FILE_ID = /^file-[\w-]{1,80}$/;
+const MODEL_REPO = /^[A-Za-z0-9][\w.-]{0,95}\/[A-Za-z0-9][\w.-]{0,95}$/;
+const nullableInteger = (v: unknown, min: number, max: number) => v === null || integer(v, min, max);
+export function parseFileSampling(value: unknown): FileSampling {
+  const keys = ['temperature', 'top_p', 'top_k', 'min_p', 'max_tokens', 'seed', 'n'];
+  if (
+    !record(value) ||
+    Object.keys(value).some((k) => !keys.includes(k)) ||
+    !number(value['temperature'], Number.MIN_VALUE, 4) ||
+    !number(value['top_p'], Number.MIN_VALUE, 1) ||
+    !(value['top_k'] === -1 || integer(value['top_k'], 0, 1_000_000)) ||
+    (value['min_p'] !== undefined && !(number(value['min_p'], 0, 1) && (value['min_p'] as number) < 1)) ||
+    (value['max_tokens'] !== undefined && !nullableInteger(value['max_tokens'], 1, 131_072)) ||
+    (value['seed'] !== undefined && !nullableInteger(value['seed'], 0, Number.MAX_SAFE_INTEGER)) ||
+    (value['n'] !== undefined && !integer(value['n'], 1, 64))
+  )
+    fail();
+  const sampling: FileSampling = {
+    temperature: value['temperature'] as number,
+    top_p: value['top_p'] as number,
+    top_k: value['top_k'] as number,
+  };
+  for (const key of ['min_p', 'max_tokens', 'seed', 'n'] as const)
+    if (value[key] !== undefined) (sampling as Record<string, unknown>)[key] = value[key];
+  return sampling;
+}
+const outputFormat = (v: unknown): BatchOutputFormat | undefined => {
+  if (v === undefined) return undefined;
+  if (!BATCH_OUTPUT_FORMATS.includes(v as BatchOutputFormat)) fail();
+  return v as BatchOutputFormat;
+};
+function fileIdentity(v: Record<string, unknown>): FileConfiguration & FileIdentity {
+  if (
+    !text(v['model'], 194) ||
+    !MODEL_REPO.test(v['model']) ||
+    v['model'].includes('..') ||
+    typeof v['revision'] !== 'string' ||
+    !/^[0-9a-f]{40}$/.test(v['revision']) ||
+    typeof v['input_file_id'] !== 'string' ||
+    !FILE_ID.test(v['input_file_id']) ||
+    Object.hasOwn(v, 'source') ||
+    Object.hasOwn(v, 'env') ||
+    !integer(v['prompt_count'], 1, 1_000_000) ||
+    !integer(v['samples_per_prompt'], 1, 64) ||
+    !integer(v['max_new_tokens'], 1, 131_072) ||
+    (v['thinking'] !== undefined && typeof v['thinking'] !== 'boolean')
+  )
+    fail();
+  const format = outputFormat(v['output_format']);
+  return {
+    model: v['model'] as string,
+    prompt_count: v['prompt_count'] as number,
+    samples_per_prompt: v['samples_per_prompt'] as number,
+    max_new_tokens: v['max_new_tokens'] as number,
+    ...(v['thinking'] !== undefined ? { thinking: v['thinking'] as boolean } : {}),
+    revision: v['revision'] as string,
+    input_file_id: v['input_file_id'] as string,
+    sampling: parseFileSampling(v['sampling']),
+    ...(format ? { output_format: format } : {}),
+  };
+}
+function preview(value: unknown): FilePreviewLine[] {
+  if (!Array.isArray(value) || value.length > 10) fail();
+  return value.map((line: unknown) => {
+    if (
+      !record(line) ||
+      !text(line['custom_id'], 64) ||
+      !integer(line['prompt_tokens'], 0, 1_000_000) ||
+      typeof line['text'] !== 'string' ||
+      line['text'].length > 65_536
+    )
+      fail();
+    return {
+      custom_id: line['custom_id'] as string,
+      prompt_tokens: line['prompt_tokens'] as number,
+      text: line['text'] as string,
+    };
+  });
+}
+function parseFileQuote(value: Record<string, unknown>): FileBatchQuote {
+  if (
+    !id(value['quote_id']) ||
+    !money(value['price_usd']) ||
+    value['price_usd'] < 0.01 ||
+    !money(value['est_price_usd']) ||
+    !integer(value['est_tokens']) ||
+    !integer(value['max_tokens'], value['est_tokens'] as number) ||
+    !number(value['eta_hours']) ||
+    !number(value['max_hours']) ||
+    !time(value['expires_at']) ||
+    !integer(value['line_errors']) ||
+    !record(value['pricing'])
+  )
+    fail();
+  const identity = fileIdentity(value);
+  const { thinking: _thinking, ...fields } = identity;
+  return {
+    ...fields,
+    quote_id: value['quote_id'] as string,
+    price_usd: value['price_usd'] as number,
+    est_price_usd: value['est_price_usd'] as number,
+    est_tokens: value['est_tokens'] as number,
+    max_tokens: value['max_tokens'] as number,
+    eta_hours: value['eta_hours'] as number,
+    max_hours: value['max_hours'] as number,
+    expires_at: value['expires_at'] as string,
+    line_errors: value['line_errors'] as number,
+    preview: preview(value['preview']),
+    pricing: value['pricing'] as Record<string, unknown>,
+  };
+}
+export const isFileQuote = (quote: BatchQuote): quote is FileBatchQuote => 'input_file_id' in quote;
 function identity(v: Record<string, unknown>): CatalogIdentity | PinnedIdentity {
   if (Object.hasOwn(v, 'source')) {
     if (
@@ -163,6 +327,7 @@ function identity(v: Record<string, unknown>): CatalogIdentity | PinnedIdentity 
   };
 }
 export function parseBatchQuote(value: unknown): BatchQuote {
+  if (record(value) && Object.hasOwn(value, 'input_file_id')) return parseFileQuote(value);
   if (
     !record(value) ||
     !id(value['quote_id']) ||
@@ -244,8 +409,7 @@ export function parseGenerationOrder(value: unknown): GenerationOrder {
   )
     fail();
   return {
-    ...configuration(value),
-    ...identity(value),
+    ...(Object.hasOwn(value, 'input_file_id') ? fileIdentity(value) : { ...configuration(value), ...identity(value) }),
     id: value['id'] as string,
     status: value['status'] as BatchOrderStatus,
     price_usd: value['price_usd'] as number,

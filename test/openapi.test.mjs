@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
   parseGenerationCatalog, parseBatchQuote, parseBatchOrders, parseBatchOrderResponse,
   parseGenerationOrderResponse, parseGenerationOrders, parseGenerationQuoteInput,
-  parseGenerationResponse, assertGenerationQuoteMatches,
+  parseGenerationResponse, assertGenerationQuoteMatches, parseBatchFile,
 } from '../dist/index.js';
 
 const spec = JSON.parse(await readFile(new URL('../contracts/generation.openapi.json', import.meta.url), 'utf8'));
@@ -19,7 +19,7 @@ function resolve(ref) {
 test('OpenAPI baseline, every reference, operation and path parameter stay complete', () => {
   assert.equal(spec.openapi, '3.1.1');
   assert.equal(spec.jsonSchemaDialect, 'https://json-schema.org/draft/2020-12/schema');
-  assert.equal(spec.info.version, '0.1.0');
+  assert.equal(spec.info.version, '0.2.0');
   assert.deepEqual(spec.servers.map(s => s.url), ['https://api.reliqua.ai', 'https://app.reliqua.ai']);
   const walk = value => {
     if (!value || typeof value !== 'object') return;
@@ -29,10 +29,10 @@ test('OpenAPI baseline, every reference, operation and path parameter stay compl
   walk(spec);
   const ids = new Set();
   for (const [path, methods] of Object.entries(spec.paths)) {
-    assert.match(path, /^\/api\/(?:v1\/(?:generation\/catalog|dataset-orders)|batch\/(?:catalog|quotes|orders))/);
+    assert.match(path, /^\/api\/(?:v1\/(?:generation\/catalog|dataset-orders|files)|batch\/(?:catalog|quotes|orders))/);
     assert.doesNotMatch(path, /\/(?:internal|admin|auth|custody|payments)(?:\/|$)/);
     for (const [method, operation] of Object.entries(methods)) {
-      assert.ok(['get', 'post'].includes(method));
+      assert.ok(['get', 'post'].includes(method) || (method === 'put' && path.endsWith('/parts/{part}')));
       assert.ok(!ids.has(operation.operationId));
       ids.add(operation.operationId);
       const parameters = (operation.parameters ?? []).map(p => p.$ref ? resolve(p.$ref) : p);
@@ -56,7 +56,7 @@ test('OpenAPI baseline, every reference, operation and path parameter stay compl
       }
     }
   }
-  assert.equal(ids.size, 14);
+  assert.equal(ids.size, 20);
 });
 
 test('route variants preserve success statuses, projection, idempotency and bounded lists', () => {
@@ -92,7 +92,7 @@ test('route variants preserve success statuses, projection, idempotency and boun
 
 test('published synthetic examples satisfy both shipped runtime audiences', () => {
   parseGenerationCatalog(example('catalog'));
-  for (const kind of ['catalog', 'pinned']) {
+  for (const kind of ['catalog', 'pinned', 'file']) {
     const input = parseGenerationQuoteInput(example(`${kind}QuoteInput`));
     const quote = parseBatchQuote(example(`${kind}Quote`));
     assertGenerationQuoteMatches(quote, input);
@@ -132,4 +132,14 @@ test('runtime checks retain semantic identity, ownership links and finance invar
   historical.order.billing.reserved_micro_usd = 1;
   historical.order.billing.held_micro_usd = 1;
   assert.throws(() => parseBatchOrderResponse(historical));
+});
+
+test('batch file routes publish their contract and examples', () => {
+  const file = parseBatchFile(example('batchFile'));
+  assert.equal(file.upload.parts, Math.ceil(file.bytes / file.upload.part_size));
+  assert.ok(spec.paths['/api/v1/files/{fileId}/parts/{part}'].put.requestBody.content['application/octet-stream']);
+  assert.equal(spec.components.schemas.FileQuoteInput.additionalProperties, false);
+  assert.deepEqual(spec.components.schemas.FileQuoteInput.required, ['model', 'revision', 'input_file_id']);
+  assert.ok(spec.paths['/api/v1/files/{fileId}/content'].get.responses['206'].headers['Content-Range']);
+  assert.ok(spec.paths['/api/v1/dataset-orders/quotes'].post.responses['201'].content['application/json'].examples.fileQuote);
 });

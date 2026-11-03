@@ -78,7 +78,7 @@ test('fetch transport follows real customer protocol without forwarding credenti
       if (request.url === '/api/v1/dataset-orders/order-a/deliveries/delivery-a/files/data.jsonl') {
         response.statusCode = 206; response.setHeader('Content-Range', 'bytes 0-2/3'); response.setHeader('Content-Type', 'application/x-ndjson'); return response.end('abc');
       }
-      if (request.url === '/api/v1/dataset-orders' && request.method === 'GET') return response.end(JSON.stringify({ orders: [order] }));
+      if (request.url === '/api/v1/dataset-orders?include=files' && request.method === 'GET') return response.end(JSON.stringify({ orders: [order] }));
       if (request.url === '/api/v1/dataset-orders' && request.method === 'POST') response.statusCode = 201;
       if (request.url.endsWith('/cancel')) response.statusCode = 202;
       return response.end(JSON.stringify({ order }));

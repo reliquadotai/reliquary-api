@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Source candidate `@reliquary/api` 0.9.1 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Source candidate `@reliquary/api` 0.10.1 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The source is [MIT licensed](LICENSE). Install a reviewed source build or local tarball; the manifest retains `private: true` to prevent npm registry publication. Security reports use the private channels described in [SECURITY.md](SECURITY.md).
 
@@ -17,7 +17,7 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 
 ## Customer developer preview
 
-The package also ships the lightweight `reliqua` CLI and 42 official task-oriented skills. Node.js 22 or later is required. From a reviewed source checkout:
+The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. From a reviewed source checkout:
 
 ```sh
 npm ci
@@ -25,10 +25,10 @@ npm test
 npm pack
 ```
 
-This produces `reliquary-api-0.9.1.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
+This produces `reliquary-api-0.10.1.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
 
 ```sh
-npm install --global ./reliquary-api-0.9.1.tgz
+npm install --global ./reliquary-api-0.10.1.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -50,7 +50,7 @@ For owned job reads, set `RELIQUARY_RESOURCES_KEY` privately in your environment
 
 Use `--json` for machine output. Errors are structured JSON on stderr with safe request diagnostics. Exit codes are 0 for a successful read (including empty/unavailable catalogs), 1 for a failed command/request and 2 for invalid arguments. `--origin`/`RELIQUARY_API_URL` support HTTPS origins and loopback HTTP; `--timeout` is a bounded request deadline in milliseconds. Skill installation is repeatable and refuses to overwrite local edits or symlink destinations. Remove the chosen skill folders separately; `npm uninstall --global @reliquary/api` removes the client.
 
-This 0.9.1 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
+This 0.10.1 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
 
 For the staged customer workflow and verified private downloads, see [the Affine CLI guide](examples/affine-cli.md). Run `reliqua affine status --json` with your training key to inspect your actual qualified profiles before preparing a request.
 
@@ -74,13 +74,13 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.9.1` | Generation `0.1.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.10.1` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For SDK use, copy the reviewed `reliquary-api-0.9.1.tgz` into the consuming project as `vendor/api-client-0.9.1.tgz`, then run `npm install --save-exact ./vendor/api-client-0.9.1.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For SDK use, copy the reviewed `reliquary-api-0.10.1.tgz` into the consuming project as `vendor/api-client-0.10.1.tgz`, then run `npm install --save-exact ./vendor/api-client-0.10.1.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
-Since 0.3.3, the package preserves the wire protocols and validators. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
+Generation contract 0.2.0 adds batch-file requests; jobs and evaluations retain the wire versions listed above. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
 Public run monitoring is available through `createPublicClient().read("runs")` and `.run(publishedId?)`; results retain the upstream envelope, source clocks, unavailable states, nulls and metric meanings. The CLI supports the same stored telemetry reads without credentials. This is a bounded public-read helper, not a generated monitoring OpenAPI or typed training orchestration SDK. Account/key management, worker protocols and training orchestration keep their separately scoped HTTP contracts and native operator boundaries.
 
@@ -135,6 +135,28 @@ const generation = createGenerationClient(
 That transport owns session cookies, approved mutation origins, XSRF and session expiry. API-key routes use `/api/v1/dataset-orders`; browser routes use `/api/batch/orders`. Browser order responses include billing and browser delivery URLs; key responses omit that receipt. `catalog()` and `quote()` preserve the common response format. List responses contain the newest 100 owned orders and expose no cursor.
 
 For key downloads, `transport.download(orderId, deliveryId, fileName, { offset, maxBytes })` returns bytes and content metadata. Each read is bounded to at most 256 KiB by the client, checks 200/206 and validates partial ranges. The server also permits full-file responses; the client bound is not a server range limit. Resolve identifiers from owned detail and verify file size/digest when assembling an artifact.
+
+### Batch files
+
+A batch file is an OpenAI Batch JSONL (`custom_id`, `method`, `url` `/v1/chat/completions` or `/v1/completions`, `body`) of at most 200 MB, uploaded in parts and then quoted on a pinned model. Its lines carry their own messages and sampling; the platform renders and checks them and reports refused lines in the quote's `line_errors` and the delivery's errors file. The Node entry point does the parts and the disk writes:
+
+```ts
+import { createGenerationClient, createGenerationTransport } from '@reliquary/api';
+import { uploadFile, downloadDelivery } from '@reliquary/api/node';
+
+const transport = createGenerationTransport({ apiKey: process.env.GENERATION_API_KEY });
+const file = await uploadFile(transport, './requests.jsonl'); // resumable: pass { fileId } to finish an interrupted upload
+const generation = createGenerationClient(transport.request);
+const quote = await generation.quote({ model: 'org/name', revision: 'FULL_40_HEX_COMMIT', input_file_id: file.id, output_format: 'openai_jsonl' });
+// Review price, line_errors, preview and expiry, then order with a stable key:
+const order = await generation.create(quote.quote_id, 'stable-request-key-0001');
+// Later, once delivered:
+const files = await downloadDelivery(transport, await generation.detail(order.id), './results');
+```
+
+`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and sha256 from the order. It preserves existing completed files, reuses matching files, and refuses links or special-file destinations. Downloaded bytes with a mismatching digest stay outside the final filename; `.rejected` is used when available without replacing an existing file. New directories and files have owner-only permissions. Use a directory you control and do not replace its entries concurrently; hostile shared destinations are unsupported. Resume uploads with the same unchanged source and file id.
+
+Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`). Customers that prefer the OpenAI SDK use the platform's OpenAI-compatible routes with the same file ids.
 
 Catalogue visibility, account permission, ordering gates, execution capacity, delivery, verification and financial settlement are separate facts. This package documents the existing workflow and does not enable services or guarantee live ordering. Structural schemas complement runtime checks for configuration identity, resolved delivery links, unique identifiers, monetary precision and receipt sums. Existing runtime contracts and workload qualification remain authoritative.
 
