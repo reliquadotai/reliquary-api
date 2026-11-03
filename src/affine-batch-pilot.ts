@@ -23,7 +23,7 @@ export type AffineBatchContext = {
   seed: number;
   expectedDraw: number;
   lastGreenDecidedAt: number;
-  comparisonClockRule: 'actual-training-result-minus-frozen-last-green';
+  comparisonClockRule: 'actual-training-result-minus-frozen-last-green' | 'fixed-z-1-public-prior-v1';
 };
 export type AffineBatchProfile = AffineBatchPins &
   AffineBatchContext & {
@@ -107,15 +107,16 @@ function context(v: Record<string, unknown>): boolean {
   return (
     typeof v['upstreamRevision'] === 'string' &&
     /^[a-f0-9]{40}$/.test(v['upstreamRevision']) &&
-    ['provided', 'bf16-bootstrap'].includes(String(v['masterMode'])) &&
+    typeof v['masterMode'] === 'string' &&
+    ['provided', 'bf16-bootstrap'].includes(v['masterMode']) &&
     (v['masterMode'] === 'provided' ? hash(v['masterDigest']) : v['masterDigest'] === null) &&
-    ['published-reference', 'caller-provided-unverified'].includes(
-      String(v['referenceProvenance']),
-    ) &&
+    typeof v['referenceProvenance'] === 'string' &&
+    ['published-reference', 'caller-provided-unverified'].includes(v['referenceProvenance']) &&
     integer(v['seed'], 0, 0xffffffff) &&
     integer(v['expectedDraw'], 1, 19305) &&
     finite(v['lastGreenDecidedAt']) &&
-    v['comparisonClockRule'] === 'actual-training-result-minus-frozen-last-green'
+    typeof v['comparisonClockRule'] === 'string' &&
+    ['actual-training-result-minus-frozen-last-green', 'fixed-z-1-public-prior-v1'].includes(v['comparisonClockRule'])
   );
 }
 export function validAffineBatchProfile(v: unknown): v is AffineBatchProfile {
@@ -244,13 +245,13 @@ export function validAffineBatchReceipt(v: unknown): v is AffineBatchReceipt {
     ) &&
     finite(v['barZ'], 0.25) &&
     v['barZ'] <= 1 &&
-    Math.abs(
+    (v['comparisonClockRule'] === 'fixed-z-1-public-prior-v1' ? v['barZ'] === 1 : Math.abs(
       v['barZ'] -
         Math.max(
           0.25,
           1 - (0.75 * (v['trainingResultAt'] - Number(v['lastGreenDecidedAt']))) / 43200,
         ),
-    ) <= 1e-12 &&
+    ) <= 1e-12) &&
     ['liveParity', 'officialAcceptance', 'chainSubmission', 'nativeRewardVerified'].every(
       (k) => v[k] === false,
     )

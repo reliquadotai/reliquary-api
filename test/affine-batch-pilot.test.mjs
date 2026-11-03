@@ -49,3 +49,21 @@ test('Node example verifies signature and retained profile/request/archive bindi
  assert.equal(verifyAffineBatchReceipt(historicalEnvelope,historicalPins,historicalRequest,{...detail,result:{...result,receipt:historicalReceipt}},archive).integrityVerified,true,'Historical signed delivery remains verifiable after profile expiry');
  assert.throws(()=>verifyAffineBatchReceipt({...envelope,signature:'A'.repeat(86)+'=='},pins,request,detail,archive));assert.throws(()=>verifyAffineBatchReceipt(envelope,{...pins,requestSha256:other},request,detail,archive));assert.throws(()=>verifyAffineBatchReceipt(envelope,{...pins,affineBatch:{...pins.affineBatch,seed:43}},request,detail,archive));assert.throws(()=>verifyAffineBatchReceipt(envelope,pins,request,detail,{sha256:other,size:3}));
 });
+
+
+test('fixed comparison rule extends receipts without changing historical formula or flags',()=>{
+ const fixed={...receipt,comparisonClockRule:'fixed-z-1-public-prior-v1',barZ:1};
+ assert.deepEqual(parseAffineBatchReceipt(fixed),fixed);parseAffineBatchProfile({...profile,comparisonClockRule:fixed.comparisonClockRule});
+ for(const bad of [{...fixed,barZ:receipt.barZ},{...fixed,comparisonClockRule:'unknown'},{...fixed,nativeRewardVerified:true}])assert.throws(()=>parseAffineBatchReceipt(bad));
+ assert.deepEqual(parseAffineBatchReceipt(receipt),receipt);
+});
+
+test('profile and receipt context requires string enums',()=>{
+ for(const field of ['masterMode','referenceProvenance','comparisonClockRule']) {
+  const value=profile[field];
+  for(const invalid of [[value],{toString:()=>value},{}]) {
+   assert.throws(()=>parseAffineBatchProfile({...profile,[field]:invalid}));
+   assert.throws(()=>parseAffineBatchReceipt({...receipt,[field]:invalid}));
+  }
+ }
+});

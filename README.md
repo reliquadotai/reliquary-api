@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Source candidate `@reliquary/api` 0.10.1 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Source candidate `@reliquary/api` 0.11.1 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The source is [MIT licensed](LICENSE). Install a reviewed source build or local tarball; the manifest retains `private: true` to prevent npm registry publication. Security reports use the private channels described in [SECURITY.md](SECURITY.md).
 
@@ -25,10 +25,10 @@ npm test
 npm pack
 ```
 
-This produces `reliquary-api-0.10.1.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
+This produces `reliquary-api-0.11.1.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
 
 ```sh
-npm install --global ./reliquary-api-0.10.1.tgz
+npm install --global ./reliquary-api-0.11.1.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -50,7 +50,7 @@ For owned job reads, set `RELIQUARY_RESOURCES_KEY` privately in your environment
 
 Use `--json` for machine output. Errors are structured JSON on stderr with safe request diagnostics. Exit codes are 0 for a successful read (including empty/unavailable catalogs), 1 for a failed command/request and 2 for invalid arguments. `--origin`/`RELIQUARY_API_URL` support HTTPS origins and loopback HTTP; `--timeout` is a bounded request deadline in milliseconds. Skill installation is repeatable and refuses to overwrite local edits or symlink destinations. Remove the chosen skill folders separately; `npm uninstall --global @reliquary/api` removes the client.
 
-This 0.10.1 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
+This 0.11.1 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
 
 For the staged customer workflow and verified private downloads, see [the Affine CLI guide](examples/affine-cli.md). Run `reliqua affine status --json` with your training key to inspect your actual qualified profiles before preparing a request.
 
@@ -74,11 +74,11 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.10.1` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.11.1` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For SDK use, copy the reviewed `reliquary-api-0.10.1.tgz` into the consuming project as `vendor/api-client-0.10.1.tgz`, then run `npm install --save-exact ./vendor/api-client-0.10.1.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For SDK use, copy the reviewed `reliquary-api-0.11.1.tgz` into the consuming project as `vendor/api-client-0.11.1.tgz`, then run `npm install --save-exact ./vendor/api-client-0.11.1.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
 Generation contract 0.2.0 adds batch-file requests; jobs and evaluations retain the wire versions listed above. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
@@ -461,3 +461,5 @@ The hosted batch workflow additionally exports `createAffineBatchClient`, `affin
 Use [the staged hosted example](examples/affine-batch-pilot.mjs): `node examples/affine-batch-pilot.mjs STAGE INPUT.private.json`. Stages are `prepare`, `upload`, `save-draft`, `quote`, `start`, `task`, and `verify-delivery`. Credentials use `TRAINING_API_KEY` (`training:write`), `RESOURCES_API_KEY` (`resources:write`) and optional `RELIQUARY_API_URL`. Save each returned response privately before proceeding. Draft input is `{ prepared, name, requestKey }`; start input is `{ submission: { draftId, revision, datasetId, approveExecution: true }, requestKey }`. Execution requires this separate approval and a stable key. Preserve original keys on ambiguous outcomes; no stage retries automatically. A quote is optional for this operator-funded profile. No stage rents hardware or claims a wallet invitation.
 
 For `verify-delivery`, supply `{ taskId, request, pins }`, where `pins` contains the independently retained `profileDigest`, `environmentDigest`, uploaded request byte hash `requestSha256`, and approved `affineBatch` profile. The example checks the task/result, exact source/model/job/context bindings, fractional training clock, bounded streamed archive hash and Ed25519 receipt signature. It accepts finite negative gains and nullable estimator metrics. This establishes delivered integrity against the retained signer/profile; it does not independently rerun the estimator, attest inference identity, establish improvement, or establish live parity, official acceptance, reward verification or chain submission. Those assurance flags remain false. A scientific RED decision remains a valid delivered result.
+
+Current Affine batch preparation supports all 16 typed train fields at source revision `46c3cb6a83abbc881341d374e86d438af91eedb5`. Fixed-z plans use current-round 12,288 output / 16,384 context and explicitly report PUBLIC PRIOR APPROXIMATION, without private IRT parity. JSON integer validation requires the standard reviver source context (supported on the Node.js 22 minimum); runtimes without it fail closed for explicit step_mult. Local checks used Node.js 24.21.0. Historical receipt formulas remain valid.
