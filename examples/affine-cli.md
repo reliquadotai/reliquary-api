@@ -1,8 +1,28 @@
 # Affine batch workflow with the CLI
 
-Requires Node.js 22 or later and client 0.11.1. Build the reviewed source and install its local tarball as described in the [package guide](../README.md#customer-developer-preview). Verify the artifact SHA-256 when receiving a handoff. Hosted release archives require their own matching verified release manifest. `reliqua --help` lists the installed commands. The SDK example in [affine-batch-pilot.mjs](affine-batch-pilot.mjs) implements the same stages.
+Requires Node.js 22 or later and client 0.11.2. Build the reviewed source and install its local tarball as described in the [package guide](../README.md#customer-developer-preview). Verify the artifact SHA-256 when receiving a handoff. Hosted release archives require their own matching verified release manifest. `reliqua --help` lists the installed commands. The SDK example in [affine-batch-pilot.mjs](affine-batch-pilot.mjs) implements the same stages.
 
-This workflow uses an existing, owner-bound, qualified batch profile. It does not rent hardware, open a capacity window or claim an invitation. Actual prompt, rollout, reward, model and tokenizer bytes must already belong to the operator-approved frozen job. The upload below sends only its small metadata request. If capacity is closed, keep the request and contact the operator to qualify a new profile; an old successful run does not authorize another allocation.
+Local review and planning work without an account or compute. Hosted execution requires an existing, owner-bound, qualified batch profile. It does not rent hardware, open a capacity window or claim an invitation. Actual prompt, rollout, reward, model and tokenizer bytes must already belong to the operator-approved frozen job. The upload below sends only its small metadata request. If capacity is closed, keep the request and contact the operator to qualify a new profile; an old successful run does not authorize another allocation.
+
+## Review and plan locally
+
+Use a complete official v1/v2 batch and its raw mining snapshot. Both commands reuse the SDK's pure checks, make no network request and write only stdout. Work in an owner-only private directory outside repositories; explicit shell redirection saves the returned records:
+
+```bash
+umask 077
+reliqua affine review --batch batch.private.json --mining mining.private.json --hotkey PUBLIC_HOTKEY --json > review.private.json
+reliqua affine plan --batch batch.private.json --mining mining.private.json --input plan-input.private.json --json > plan.private.json
+```
+
+Batch input is capped at 64 MiB, mining input at 1 MiB and plan metadata at 32 KiB; all must be regular UTF-8 JSON files. Use this exact metadata shape for `plan-input.private.json`, replacing the placeholders and example clock values with retained values:
+
+```json
+{"hotkey":"PUBLIC_HOTKEY","head":"HEAD_DESCRIPTOR_SHA256","reference":"REFERENCE_DESCRIPTOR_SHA256","master":"provided","seed":7,"prior":"provided","trainingResultAt":2000000001,"lastGreenDecidedAt":2000000000}
+```
+
+`head` and `reference` are lowercase 64-hex descriptor digests, not model repository names or Git revisions. `hotkey` must match the batch. `master` is `provided` or `bf16-bootstrap`; `prior` is `provided` or `env-average`. `seed` is a uint32; both clock values are Unix epoch seconds, with `trainingResultAt >= lastGreenDecidedAt >= 0`. Retain their real provenance; do not invent historical result times to produce a plan.
+
+Review is structural only. Plan returns commands for review using the [pinned official kit](https://github.com/AffineFoundation/affine/blob/eaf1ad20e4d018c85b30f53e9807b2b9a6a75e25/miner/README.md); it does not execute them, validate tokenizer bytes, qualify hardware or prove live parity. Its public-prior comparison approximation is separate from official acceptance. See [the Arbos guide](arbos-affine.md) for skill import and the operator handoff.
 
 ## Connect the owner
 

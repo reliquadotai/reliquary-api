@@ -55,7 +55,7 @@ test('all current train fields accept endpoints and reject wrong types, unknown 
 test('current plans pin fixed public approximation and refuse unsupported round policies',async()=>{
  const raw=enc(f.cases[0].batch),plan=await planAffineBatch(raw,mining,input);
  assert.equal(plan.comparison.comparisonClockRule,'fixed-z-1-public-prior-v1');assert.equal(plan.comparison.assurance,'PUBLIC PRIOR APPROXIMATION');assert.equal(plan.comparison.settings.max_tokens,12288);
- for(const [k,v] of Object.entries({bar_z:0.25,max_tokens:8192,max_context_tokens:12288,weighting:'uniform',cap_rule:'env',k_cand:1})){
+ for(const [k,v] of Object.entries({sigma_run_floor:0.003,bar_z:0.25,max_tokens:8192,max_context_tokens:12288,weighting:'uniform',cap_rule:'env',k_cand:1})){
   const changed=structuredClone(f.mining);changed.training.promotion_gate.heldout.current_round.settings[k]=v;
   await assert.rejects(planAffineBatch(raw,enc(changed),input),{message:'unsupported_comparison_contract'});
  }

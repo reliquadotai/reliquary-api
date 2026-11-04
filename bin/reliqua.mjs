@@ -16,6 +16,7 @@ Usage: reliqua <command> [options]
   runs list | runs inspect [--run ID]        Public run catalog and telemetry
   doctor                                   Check connectivity and local setup
   jobs capabilities|list|status|events|report  Read owned CPU jobs
+  affine review|plan                         Local batch checks; no credential or compute
   affine status|prepare|upload|save-draft|quote|start|task|verify-delivery|download
                                            Qualified Affine batch stages
   skills list [--skill ID] [--search TEXT] [--category ID] [--interface cli|mcp|http] [--access LEVEL]
@@ -27,9 +28,10 @@ Job options: --id ID, --cursor CURSOR, --limit 1..100, --artifact ID
 Job reads use RELIQUARY_RESOURCES_KEY (or JOBS_API_KEY).
 Affine stages use RELIQUARY_TRAINING_KEY and RELIQUARY_RESOURCES_KEY.
 Use --input FILE for one stage, --id ID for task, --directory NEW_DIRECTORY for download.
+Local review: --batch FILE --mining FILE --hotkey OWNER; plan: --batch FILE --mining FILE --input FILE.
 Upload requires --confirm-rights; start requires --approve-execution and a stable key.
 Public reads send no credentials. RELIQUARY_API_URL selects an API origin.
-Affine stages require an owner-qualified profile and upstream grants. No hardware is booked.
+Hosted Affine stages require an owner-qualified profile and upstream grants. No hardware is booked.
 --version prints the installed release. --help displays this guide.
 `;
 const args = process.argv.slice(2);
@@ -41,6 +43,7 @@ const allowed = {
   'jobs events': ['id', 'cursor', 'limit'], 'jobs report': ['id', 'artifact'],
   'skills list': ['skill', 'search', 'category', 'interface', 'access'], 'skills show': ['skill'], 'skills install': ['directory', 'skill'],
   'generation catalog': [], 'evaluations catalog': [], 'monitoring health': [], 'monitoring snapshot': [], 'runs list': [], 'runs inspect': ['run'],
+  'affine review': ['batch', 'mining', 'hotkey'], 'affine plan': ['batch', 'mining', 'input'],
   'affine status': [], 'affine prepare': ['input'], 'affine upload': ['input', 'confirm-rights'],
   'affine save-draft': ['input'], 'affine quote': ['input'], 'affine start': ['input', 'approve-execution'],
   'affine task': ['id'], 'affine verify-delivery': ['input'], 'affine download': ['input', 'directory'],

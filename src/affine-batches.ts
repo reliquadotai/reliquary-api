@@ -1,5 +1,5 @@
 /** Local preparation only. Full validation requires the official head tokenizer. */
-export const AFFINE_BATCH_KIT_REVISION = '46c3cb6a83abbc881341d374e86d438af91eedb5';
+export const AFFINE_BATCH_KIT_REVISION = 'eaf1ad20e4d018c85b30f53e9807b2b9a6a75e25';
 export const AFFINE_BATCH_MAX_BYTES = 64 * 1024 * 1024;
 export type AffineTrain = { adam_eps?: number; adv_center?: 'mean' | 'none' | 'group_norm'; adv_clip?: number; clamp_mode?: 'per_tensor' | 'global_norm' | 'both'; global_norm_cap?: number; kl?: number; loss_agg?: 'seq_mean' | 'token_mean'; lr?: number; lr_scale_attn?: number; lr_scale_early?: number; lr_scale_embed?: number; lr_scale_late?: number; lr_scale_lm_head?: number; lr_scale_mlp?: number; step_mult?: number; weight_decay?: number };
 export type AffineBatch = { version: 'affine-batch-v1' | 'affine-batch-v2'; hotkey: string; groups: { prompt: string; rollouts: { output: string; reward: number }[] }[]; train?: AffineTrain };
@@ -210,7 +210,7 @@ export async function planAffineBatch(bytes: Uint8Array, miningBytes: Uint8Array
   const settings = json(snapshot(miningBytes, 1024 * 1024)) as any;
   const round = settings.training?.promotion_gate?.heldout?.current_round;
   const policy = round?.settings;
-  const supportedPolicy = {"N": 500, "a_hi": 2, "a_lo": 0.5, "a_shrink": 0.5, "bar_z": 1, "block_delay": 3, "cap": 0.1, "cap_max": 0.33, "cap_rule": "task-level", "floor": 0.1, "head_blocks": 3, "head_rollouts": 12, "k_cand": 8, "max_context_tokens": 16384, "max_tokens": 12288, "min_cover": 0.95, "min_scored": 100, "n_init": 2, "scoring_mode": "separate", "shares": "size", "sigma_run_floor": 0.003, "tau_run": 0, "theta_prior_sd": 2, "weighting": "irt-info", "z_inclusive": false};
+  const supportedPolicy = {"N": 500, "a_hi": 2, "a_lo": 0.5, "a_shrink": 0.5, "bar_z": 1, "block_delay": 3, "cap": 0.1, "cap_max": 0.33, "cap_rule": "task-level", "floor": 0.1, "head_blocks": 3, "head_rollouts": 12, "k_cand": 8, "max_context_tokens": 16384, "max_tokens": 12288, "min_cover": 0.95, "min_scored": 100, "n_init": 2, "scoring_mode": "separate", "shares": "size", "sigma_run_floor": 0, "tau_run": 0, "theta_prior_sd": 2, "weighting": "irt-info", "z_inclusive": false};
   need(record(policy) && round.bar_z === 1 && Object.entries(supportedPolicy).every(([k, v]) => policy[k] === v), 'unsupported_comparison_contract');
   const commands = ['validate', 'train', 'compare'].map(stage => ({ stage, argv: ['python', '-m', 'reliquary.eval.affine_batches', stage, '--kit', '<KIT>', '--mining', '<MINING>', '--head', '<HEAD>', '--hotkey', input.hotkey, '--work', '<WORK>', '--batch', '<BATCH>',
     ...(stage !== 'validate' ? ['--ref', '<REFERENCE>'] : []), ...(stage === 'train' ? ['--device', 'cpu', '--token-budget', '512', ...(input.master === 'provided' ? ['--master', '<MASTER>'] : [])] : []),

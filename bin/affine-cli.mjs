@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { constants } from 'node:fs';
 import { open, mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import { affineBatchRequests, createAffineBatchClient, parseAffineBatchProfile, parseAffineBatchRequest, parseAffineBatchResult } from '../dist/affine-batches.js';
+import { AFFINE_BATCH_MAX_BYTES, affineBatchRequests, createAffineBatchClient, parseAffineBatchProfile, parseAffineBatchRequest, parseAffineBatchResult, reviewAffineBatch, planAffineBatch } from '../dist/affine-batches.js';
 import { createAffinePilotClient, createAffinePilotTransport } from '../dist/affine-pilot.js';
 import { downloadVerifiedArtifact } from '../examples/affine-pilot.mjs';
 import { verifyAffineBatchReceipt } from '../examples/affine-batch-pilot.mjs';
@@ -15,26 +15,32 @@ function fields(value, required, optional = []) {
     fail('The input fields do not match this stage. See the Affine CLI guide.');
 }
 
-async function readInput(path) {
-  if (typeof path !== 'string') fail('--input requires a JSON file.');
+async function readBytes(path, limit) {
+  if (typeof path !== 'string') fail('This stage requires its named input files.');
   let file;
   try {
     file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     const info = await file.stat();
-    if (!info.isFile() || info.size > 32768) fail('Use a regular JSON file of at most 32 KiB.');
-    const buffer = Buffer.alloc(32769);
+    if (!info.isFile() || info.size > limit) fail(`Use a regular file of at most ${limit} bytes.`);
+    const buffer = Buffer.alloc(Math.min(info.size, limit) + 1);
     let length = 0;
     while (length < buffer.length) {
       const read = await file.read(buffer, length, buffer.length - length, null);
       if (!read.bytesRead) break;
       length += read.bytesRead;
     }
-    if (length > 32768) fail('Use a JSON file of at most 32 KiB.');
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer.subarray(0, length)));
+    if (length !== info.size) fail('The input file changed while reading.');
+    return buffer.subarray(0, length);
   } catch (error) {
     if (error instanceof UsageError) throw error;
-    fail('Use a readable regular JSON file of at most 32 KiB.');
+    fail(`Use a readable regular file of at most ${limit} bytes.`);
   } finally { await file?.close(); }
+}
+
+async function readInput(path) {
+  const bytes = await readBytes(path, 32768);
+  try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
+  catch { fail('Use a UTF-8 JSON input file.'); }
 }
 
 function verificationInput(input) {
@@ -85,6 +91,19 @@ async function delivery(client, input, directory) {
 
 /** One selected stage per invocation; never poll, provision hardware or retry a mutation. */
 export async function affineCommand(stage, options, transportOptions) {
+  if (stage === 'review' || stage === 'plan') {
+    const batch = await readBytes(options.batch, AFFINE_BATCH_MAX_BYTES);
+    const mining = await readBytes(options.mining, 1024 * 1024);
+    const input = stage === 'plan' ? await readInput(options.input) : undefined;
+    try {
+      if (stage === 'review') return await reviewAffineBatch(batch, options.hotkey, mining);
+      fields(input, ['hotkey', 'head', 'reference', 'master', 'seed', 'prior', 'trainingResultAt', 'lastGreenDecidedAt']);
+      return await planAffineBatch(batch, mining, input);
+    } catch (error) {
+      if (error instanceof UsageError) throw error;
+      fail(`Local Affine check refused: ${error.message}`);
+    }
+  }
   if (stage === 'upload' && options['confirm-rights'] !== true) fail('Uploading requires --confirm-rights for this request.');
   if (stage === 'start' && options['approve-execution'] !== true) fail('Launching requires --approve-execution for this exact submission.');
   const input = ['status', 'task'].includes(stage) ? undefined : await readInput(options.input);
