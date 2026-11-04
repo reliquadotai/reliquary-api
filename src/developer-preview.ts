@@ -55,7 +55,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A connection diagnosis and the exact next supported discovery step.",
     "docs": "/docs/agents/connect",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua doctor --json"
   },
   {
@@ -92,7 +92,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A bounded GPU shortlist with package and per-GPU rates, observation clocks and an explicit booking boundary.",
     "docs": "/docs/agents/compute",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua compute list --gpu H200 --limit 20 --json"
   },
   {
@@ -133,7 +133,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A source-qualified checkpoint summary with exact revision, publication time and limits of what it proves.",
     "docs": "/docs/agents/observe",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua inventory --json"
   },
   {
@@ -189,7 +189,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A product-by-product readiness explanation grounded in returned gates.",
     "docs": "/docs/agents/product-readiness",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua capabilities --json"
   },
   {
@@ -230,7 +230,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A freshness and coverage diagnosis without changing collection services.",
     "docs": "/docs/agents/monitoring-health",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua monitoring health --json"
   },
   {
@@ -265,7 +265,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A dated historical comparison with visible retention and coverage gaps.",
     "docs": "/docs/agents/network-history",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-network-analytics",
@@ -299,7 +299,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A focused interpretation of one published analytics view with units and provenance.",
     "docs": "/docs/agents/network-analytics",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-generation-discover",
@@ -333,7 +333,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An actionable list of supported generation choices and current gates.",
     "docs": "/docs/agents/generation-discover",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua generation catalog --json"
   },
   {
@@ -376,7 +376,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A server-issued estimate with exact inputs, maximum cost and expiry; no order.",
     "docs": "/docs/agents/generation-quote",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-generation-order",
@@ -417,7 +417,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One submitted order or a precise refusal/unknown outcome with its original request identity.",
     "docs": "/docs/agents/generation-order",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-generation-track",
@@ -457,7 +457,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned order status with progress, delivered-file metadata and billing distinctions.",
     "docs": "/docs/agents/generation-track",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-generation-delivery",
@@ -498,7 +498,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Verified delivery metadata and the requested bounded file content.",
     "docs": "/docs/agents/generation-delivery",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-generation-cancel",
@@ -538,7 +538,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A cancellation request result with honest remaining work and refund status.",
     "docs": "/docs/agents/generation-cancel",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-evaluation-discover",
@@ -572,7 +572,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A source-backed choice of qualified evaluation sets and execution modes.",
     "docs": "/docs/agents/evaluation-discover",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua evaluations catalog --json"
   },
   {
@@ -614,7 +614,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A quoted bounded evaluation configuration ready for a separate execution decision.",
     "docs": "/docs/agents/evaluation-quote",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-evaluation-order",
@@ -655,7 +655,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One owned evaluation order with the approved configuration and request identity.",
     "docs": "/docs/agents/evaluation-order",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-evaluation-review",
@@ -701,7 +701,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A qualified evaluation interpretation with exact configuration and any incomplete grading.",
     "docs": "/docs/agents/evaluation-review",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-evaluation-cancel",
@@ -741,7 +741,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A server cancellation result with remaining work and refund uncertainty.",
     "docs": "/docs/agents/evaluation-cancel",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-readiness",
@@ -777,7 +777,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An account-specific training readiness result with exact profiles and unresolved gates.",
     "docs": "/docs/agents/training-readiness",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-datasets",
@@ -830,7 +830,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Owned file metadata or requested bounded content, or an authorized compatible upload receipt; no training run.",
     "docs": "/docs/agents/training-datasets",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-import",
@@ -877,7 +877,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A verified delivered shard saved as an owned training-library file.",
     "docs": "/docs/agents/training-import",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-draft",
@@ -929,7 +929,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A saved exact-profile draft ID/revision ready for separate quoting and launch approval.",
     "docs": "/docs/agents/training-draft",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-quote",
@@ -976,7 +976,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A current server training quote with allocation, rate, expiry and billing policy.",
     "docs": "/docs/agents/training-quote",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-start",
@@ -1028,7 +1028,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "One approved run submission or a precise refusal/unknown outcome with original request identity.",
     "docs": "/docs/agents/training-start",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-progress",
@@ -1068,7 +1068,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned training progress snapshot with pinned configuration and billing distinctions.",
     "docs": "/docs/agents/training-progress",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-artifacts",
@@ -1109,7 +1109,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Owned artifact metadata and the requested bounded content, with completeness limits.",
     "docs": "/docs/agents/training-artifacts",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-cancel",
@@ -1150,7 +1150,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A cancellation result with confirmed or unresolved remaining execution and billing.",
     "docs": "/docs/agents/training-cancel",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-training-dataset-lifecycle",
@@ -1196,7 +1196,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "The requested dataset availability change or a precise dependency/permission refusal.",
     "docs": "/docs/agents/training-dataset-lifecycle",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-credits",
@@ -1236,7 +1236,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A scoped balance/ledger explanation with currency, timestamps and settlement limits.",
     "docs": "/docs/agents/credits",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-resource-drafts",
@@ -1293,7 +1293,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An inspected or saved owned draft with exact revision and no implicit launch.",
     "docs": "/docs/agents/resource-drafts",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-cpu-readiness",
@@ -1330,7 +1330,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An account-specific CPU readiness diagnosis with permission and live-worker distinctions.",
     "docs": "/docs/agents/cpu-readiness",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua jobs capabilities --json"
   },
   {
@@ -1378,7 +1378,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "An owned bounded CPU validation job tied to an immutable approved dataset receipt.",
     "docs": "/docs/agents/cpu-validate",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-cpu-progress",
@@ -1425,7 +1425,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A bounded owned CPU progress snapshot with attempts and relevant events.",
     "docs": "/docs/agents/cpu-progress",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua jobs list --limit 20 --json"
   },
   {
@@ -1468,7 +1468,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A digest-verified frozen report interpretation with explicit dataset-validation limits.",
     "docs": "/docs/agents/cpu-report",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua jobs report --id JOB_ID --artifact ARTIFACT_ID --json"
   },
   {
@@ -1515,7 +1515,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A revision-bound CPU control result with remaining work and any uncertainty.",
     "docs": "/docs/agents/cpu-control",
-    "version": "0.11.1"
+    "version": "0.11.2"
   },
   {
     "id": "reliquary-run-catalog",
@@ -1549,7 +1549,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A published run selection with its actual availability and source time.",
     "docs": "/docs/agents/run-catalog",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua runs list --json"
   },
   {
@@ -1590,7 +1590,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A source-dated progress report with actual coordinates, freshness and unresolved gaps.",
     "docs": "/docs/agents/run-monitor",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua runs inspect --json"
   },
   {
@@ -1626,7 +1626,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A benchmark comparison with explicit coordinate, provenance and comparability limits.",
     "docs": "/docs/agents/run-benchmarks",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua runs inspect --json"
   },
   {
@@ -1662,7 +1662,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "Measured per-environment response-token counts and shares with original source time.",
     "docs": "/docs/agents/run-token-mix",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua runs inspect --json"
   },
   {
@@ -1698,7 +1698,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     ],
     "expectedResult": "A bounded declared-fleet comparison with qualified metrics and explicit unknowns.",
     "docs": "/docs/agents/run-gpu-fleet",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "command": "reliqua runs inspect --json"
   },
   {
@@ -1708,7 +1708,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     prompt: 'Prepare my compatible checkpoint for the assisted Affine pilot and show each approval boundary.',
     category: 'training', interfaces: ['mcp', 'http'], access: 'approval-required', state: 'gated',
     stateReason: 'Requires a human-claimed workspace, open pilot window, connected coordinator, exact preparation approval and separate execution approval. No live GPU is enabled by default.',
-    requiredScopes: ['training', 'resources'], version: '0.11.1', docs: '/docs/agents/affine-pilot',
+    requiredScopes: ['training', 'resources'], version: '0.11.2', docs: '/docs/agents/affine-pilot',
     apiRoutes: [
       { method: 'GET', path: '/api/v1/training/affine-native-evaluation/preparations' },
       { method: 'POST', path: '/api/v1/training/affine-native-evaluation/preparations/review' },
@@ -1741,11 +1741,12 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     prompt: 'Prepare batch generation and export, official tokenizer validation, one GRPO step and parent/candidate comparison.',
     category: 'training', interfaces: ['cli', 'mcp', 'http'], access: 'approval-required', state: 'qualified-pilot',
     stateReason: 'Hosted preparation requires an available qualified owner profile; local review cannot establish tokenizer validity, gain or official parity.',
-    requiredScopes: ['training', 'resources'], apiRoutes: [{ method: 'POST', path: '/api/v1/training/affine-batch/prepare' }, { method: 'POST', path: '/api/v1/training/files' }, { method: 'POST', path: '/api/resources' }, { method: 'POST', path: '/api/v1/training/tasks' }, { method: 'GET', path: '/api/v1/training/tasks/{id}' }, { method: 'GET', path: '/api/v1/training/tasks/{id}/artifacts/{artifactId}' }], version: '0.11.1',
+    requiredScopes: ['training', 'resources'], apiRoutes: [{ method: 'POST', path: '/api/v1/training/affine-batch/prepare' }, { method: 'POST', path: '/api/v1/training/files' }, { method: 'POST', path: '/api/resources' }, { method: 'POST', path: '/api/v1/training/tasks' }, { method: 'GET', path: '/api/v1/training/tasks/{id}' }, { method: 'GET', path: '/api/v1/training/tasks/{id}/artifacts/{artifactId}' }], version: '0.11.2',
     docs: '/docs/agents/affine-batches',
     command: 'reliqua affine status --json',
     mcpTools: ['reliquary_connection', 'reliquary_affine_batch_review', 'reliquary_affine_batch_plan', 'reliquary_affine_batch_prepare', 'reliquary_training_upload', 'reliquary_resource_create', 'reliquary_training_start', 'reliquary_training_task_get', 'reliquary_training_artifact_download'],
     guidance: [
+      'For Arbos use its native skill import and ordinary shell; see the bundled examples/arbos-affine.md guide. With client 0.11.2, affine review --batch FILE --mining FILE --hotkey OWNER and affine plan --batch FILE --mining FILE --input FILE perform local SDK checks without credentials, network or compute. Keep inputs and redirected output private outside repositories. Native external-MCP setup still requires host-specific verification.',
       'CLI users start with reliqua affine status --json and their own RELIQUARY_TRAINING_KEY. Read the installed Affine CLI guide before a mutation. prepare, upload, save-draft, quote and start each consume one explicit --input JSON file of at most 32 KiB. Upload requires --confirm-rights; start requires --approve-execution in addition to the retained submission and its original stable requestKey. These flags acknowledge authorization for the exact selected stage; they do not qualify a profile or override upstream refusal.',
       'For an existing signed delivery, retain taskId, the original request and independent profile/environment/request digests plus approved affineBatch profile. Run reliqua affine verify-delivery --input verification-input.private.json --json, or affine download with --directory pointing to a new private directory. Download writes receipt.json, result.zip and verification.json only after signature/binding/hash checks; it never overwrites an existing directory. On interrupted download, reuse the same task and a new output directory rather than launching again. No command automatically polls, retries or provisions capacity.',
       'Use the bundled instructions and pinned official miner kit. Local batch review and plan run without a training credential, network, upload, shell execution or write enablement. Hosted preparation is a separate authenticated, qualification-gated corridor and does not imply general service availability.',
@@ -1817,7 +1818,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
   ],
   "expectedResult": "An uploaded file, its reviewed quote, and at most one submitted order with its original request identity.",
   "docs": "/docs/agents/batch-files",
-  "version": "0.11.1"
+  "version": "0.11.2"
 },
 {
   "id": "reliquary-batch-download",
@@ -1858,13 +1859,13 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
   ],
   "expectedResult": "Delivered files on disk with their paths, sizes and sha256 verification.",
   "docs": "/docs/agents/batch-download",
-  "version": "0.11.1"
+  "version": "0.11.2"
 }
 ];
 
 export const DEVELOPER_PREVIEW = {
-  version: '0.11.1',
-  releaseManifest: '/releases/0.11.1.json',
+  version: '0.11.2',
+  releaseManifest: '/releases/0.11.2.json',
   cli: 'reliqua',
   executionEnabled: false,
   docsOrigin: 'https://app.reliqua.ai',

@@ -152,3 +152,35 @@ test('CLI rejects oversized, symlinked or unexpected input before making a reque
   }
   assert.equal(f.state.requests.length, 0);
 });
+
+test('local review and plan use exact batch bytes without contacting a configured API', { timeout: 60000 }, async t => {
+  const f = await fixture(t);
+  const local = JSON.parse(await readFile(resolvePath('test/fixtures/affine-batches.json')));
+  const raw = '  ' + JSON.stringify(local.cases[0].batch) + '\n';
+  const batch = join(f.directory, 'batch.private.json'); await writeFile(batch, raw);
+  const mining = await f.input(local.mining);
+  const reviewed = await f.cli(['review', '--batch', batch, '--mining', mining, '--hotkey', 'fixture-owner']);
+  assert.equal(reviewed.code, 0, reviewed.stderr);
+  assert.equal(JSON.parse(reviewed.stdout).sha256, digest(raw));
+  assert.equal(JSON.parse(reviewed.stdout).tokenValidation, 'not_run');
+  const metadata = { hotkey: 'fixture-owner', head: h, reference: other, master: 'provided', seed: 42, prior: 'env-average', trainingResultAt: 0, lastGreenDecidedAt: 0 };
+  const input = await f.input(metadata);
+  const planned = await f.cli(['plan', '--batch', batch, '--mining', mining, '--input', input]);
+  assert.equal(planned.code, 0, planned.stderr);
+  const plan = JSON.parse(planned.stdout);
+  assert.equal(plan.batch.sha256, digest(raw));
+  assert.equal(plan.comparison.settings.sigma_run_floor, 0);
+  assert.equal(plan.upstream.revision, 'eaf1ad20e4d018c85b30f53e9807b2b9a6a75e25');
+  assert.equal(plan.qualification, 'not_run'); assert.equal(plan.chainSubmission, false);
+  const historical = structuredClone(local.mining);
+  historical.training.promotion_gate.heldout.current_round.settings.sigma_run_floor = 0.003;
+  const stale = await f.cli(['plan', '--batch', batch, '--mining', await f.input(historical), '--input', input]);
+  assert.equal(stale.code, 2); assert.match(stale.stderr, /unsupported_comparison_contract/);
+  const link = join(f.directory, 'batch-link.json'); await symlink(batch, link);
+  for (const args of [
+    ['review', '--batch', link, '--mining', mining, '--hotkey', 'fixture-owner'],
+    ['review', '--batch', batch, '--mining', mining],
+    ['plan', '--batch', batch, '--mining', mining, '--input', await f.input({ ...metadata, secret: 'never-sent' })],
+  ]) assert.equal((await f.cli(args)).code, 2);
+  assert.equal(f.state.requests.length, 0);
+});
