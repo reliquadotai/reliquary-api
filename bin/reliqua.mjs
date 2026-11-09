@@ -19,7 +19,7 @@ Usage: reliqua <command> [options]
   affine review|plan                         Local batch checks; no credential or compute
   affine status|prepare|upload|save-draft|quote|start|task|verify-delivery|download
                                            Qualified Affine batch stages
-  skills list [--skill ID] [--search TEXT] [--category ID] [--interface cli|mcp|http] [--access LEVEL]
+  skills list [--skill ID] [--search TEXT] [--category ID] [--interface cli|mcp|http] [--access LEVEL] [--state STATE]
   skills show --skill ID                    Read packaged instructions
   skills install --directory DIRECTORY [--skill ID]  Install selected or all skills
 
@@ -41,7 +41,7 @@ const allowed = {
   'compute list': ['gpu', 'limit'], inventory: [], network: [], capabilities: [], doctor: [],
   'jobs capabilities': [], 'jobs list': ['cursor', 'limit'], 'jobs status': ['id'],
   'jobs events': ['id', 'cursor', 'limit'], 'jobs report': ['id', 'artifact'],
-  'skills list': ['skill', 'search', 'category', 'interface', 'access'], 'skills show': ['skill'], 'skills install': ['directory', 'skill'],
+  'skills list': ['skill', 'search', 'category', 'interface', 'access', 'state'], 'skills show': ['skill'], 'skills install': ['directory', 'skill'],
   'generation catalog': [], 'evaluations catalog': [], 'monitoring health': [], 'monitoring snapshot': [], 'runs list': [], 'runs inspect': ['run'],
   'affine review': ['batch', 'mining', 'hotkey'], 'affine plan': ['batch', 'mining', 'input'],
   'affine status': [], 'affine prepare': ['input'], 'affine upload': ['input', 'confirm-rights'],
@@ -88,7 +88,7 @@ try {
     let selectedSkills = options.has('skill') ? OFFICIAL_SKILLS.filter(skill => skill.id === required('skill')) : OFFICIAL_SKILLS;
     if (!selectedSkills.length) fail('Unknown skill ID. Run reliqua skills list.');
     if (command === 'skills list') {
-      for (const [name, choices] of [['interface', ['cli', 'mcp', 'http']], ['access', ['public-read', 'authenticated-read', 'approval-required']]])
+      for (const [name, choices] of [['interface', ['cli', 'mcp', 'http']], ['access', ['public-read', 'authenticated-read', 'approval-required']], ['state', ['available', 'qualified-pilot', 'gated', 'not-yet-available']]])
         if (options.has(name) && !choices.includes(required(name))) fail(`Invalid --${name}.`);
       const search = options.get('search')?.trim().toLowerCase();
       if (options.has('search') && (!search || search.length > 160)) fail('--search must contain 1..160 characters.');
@@ -96,8 +96,10 @@ try {
         (!search || [skill.id, skill.title, skill.description, ...skill.mcpTools, ...skill.apiRoutes.map(route => route.path)].join(' ').toLowerCase().includes(search)) &&
         (!options.has('category') || skill.category === required('category')) &&
         (!options.has('interface') || skill.interfaces.includes(required('interface'))) &&
-        (!options.has('access') || skill.access === required('access')));
-      output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false, skills: selectedSkills };
+        (!options.has('access') || skill.access === required('access')) &&
+        (!options.has('state') || skill.state === required('state')));
+      output = { version: DEVELOPER_PREVIEW.version, executionEnabled: false,
+        notYetAvailable: selectedSkills.filter(skill => skill.state === 'not-yet-available').map(skill => skill.id), skills: selectedSkills };
     } else if (command === 'skills show') {
       required('skill');
       const skill = selectedSkills[0];

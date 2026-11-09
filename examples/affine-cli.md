@@ -1,6 +1,6 @@
 # Affine batch workflow with the CLI
 
-Requires Node.js 22 or later and client 0.11.2. Build the reviewed source and install its local tarball as described in the [package guide](../README.md#customer-developer-preview). Verify the artifact SHA-256 when receiving a handoff. Hosted release archives require their own matching verified release manifest. `reliqua --help` lists the installed commands. The SDK example in [affine-batch-pilot.mjs](affine-batch-pilot.mjs) implements the same stages.
+Requires Node.js 22 or later and client 0.12.0. Build the reviewed source and install its local tarball as described in the [package guide](../README.md#customer-developer-preview). Verify the artifact SHA-256 when receiving a handoff. Hosted release archives require their own matching verified release manifest. `reliqua --help` lists the installed commands. The SDK example in [affine-batch-pilot.mjs](affine-batch-pilot.mjs) implements the same stages.
 
 Local review and planning work without an account or compute. Hosted execution requires an existing, owner-bound, qualified batch profile. It does not rent hardware, open a capacity window or claim an invitation. Actual prompt, rollout, reward, model and tokenizer bytes must already belong to the operator-approved frozen job. The upload below sends only its small metadata request. If capacity is closed, keep the request and contact the operator to qualify a new profile; an old successful run does not authorize another allocation.
 

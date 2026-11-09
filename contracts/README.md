@@ -1,14 +1,15 @@
 # Contract reference
 
-This index describes the `@reliquary/api` 0.11.2 source package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
+This index describes the `@reliquary/api` 0.12.0 source package. A contract file defines a wire format; it does not establish deployment, account approval, funded capacity or successful execution. See the [connection, scope and version guide](../README.md#connection-and-version-boundaries) before calling a service.
 
 The contract documents use OpenAPI 3.1.1 and the JSON Schema 2020-12 dialect. `info.version` is the individual wire protocol version, not the npm package version. Examples are synthetic and validate against the shipped runtime parsers.
 
 | Surface | OpenAPI / package export | Protocol | Client import |
 | --- | --- | --- | --- |
-| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.2.0` | `createGenerationClient`, `createGenerationTransport`, `createBatchFileClient` from `@reliquary/api`; `uploadFile`, `downloadDelivery` from `@reliquary/api/node` |
+| Generation | [generation.openapi.json](generation.openapi.json), `@reliquary/api/openapi` | `0.3.0` | `createGenerationClient`, `createGenerationTransport`, `createBatchFileClient` from `@reliquary/api`; `uploadFile`, `downloadDelivery` from `@reliquary/api/node` |
 | Jobs | [jobs.openapi.json](jobs.openapi.json), `@reliquary/api/jobs/openapi` | `0.2.0` | `createJobsClient`, `createJobsTransport` from `@reliquary/api/jobs` |
-| Evaluations | [evaluations.openapi.json](evaluations.openapi.json), `@reliquary/api/evaluations/openapi` | `0.1.0` | `createEvaluationClient`, `createEvaluationTransport` from `@reliquary/api/evaluations` |
+| Evaluations | [evaluations.openapi.json](evaluations.openapi.json), `@reliquary/api/evaluations/openapi` | `0.2.0` | `createEvaluationClient`, `createEvaluationTransport` from `@reliquary/api/evaluations` |
+| OpenAI-compatible Batch | [openai-batch.openapi.json](openai-batch.openapi.json), `@reliquary/api/openai-batch/openapi` | `0.1.0` | No package client: use the official OpenAI SDK with `base_url` `https://app.reliqua.ai/api/openai/v1` |
 
 Load a contract from the installed artifact, so reference and client version agree:
 
@@ -16,8 +17,9 @@ Load a contract from the installed artifact, so reference and client version agr
 import generationContract from '@reliquary/api/openapi' with { type: 'json' };
 import jobsContract from '@reliquary/api/jobs/openapi' with { type: 'json' };
 import evaluationContract from '@reliquary/api/evaluations/openapi' with { type: 'json' };
+import openAiBatchContract from '@reliquary/api/openai-batch/openapi' with { type: 'json' };
 
-console.log(generationContract.info.version, jobsContract.info.version, evaluationContract.info.version);
+console.log(generationContract.info.version, jobsContract.info.version, evaluationContract.info.version, openAiBatchContract.info.version);
 ```
 
 The older platform artifact `vendor/api-client-0.2.2.tgz` exposes generation and jobs, not the newer evaluation exports. Its job schema has an older browser-cookie label; the actual HTTPS session cookie is `__Host-reliquary_session` (`reliquary_session` on local HTTP). Reuse the platform session transport instead of constructing cookie authentication from that older schema. Updating this repository does not replace an installed artifact or change its integrity pin.
@@ -28,13 +30,15 @@ The older platform artifact `vendor/api-client-0.2.2.tgz` exposes generation and
 
 | Surface / audience | Routes | Access | Client coverage |
 | --- | --- | --- | --- |
-| Public generation discovery | `GET /api/v1/generation/catalog`, `GET /api/batch/catalog` | No key | `generation.catalog()`; key audience is the default. |
+| Public generation discovery | `GET /api/v1/generation/catalog`, `GET /api/batch/catalog` | No key | `generation.catalog()`; key audience is the default. `architectures` lists the model architectures quotes accept. |
 | Customer generation | `/api/v1/dataset-orders` and its quote, detail, cancel and delivery-file routes | `orders:write`, account/source/dispatch gates | `quote`, `create`, `orders`, `detail`, `cancel`, `downloadPath`; file bytes through `transport.download`. |
 | Browser generation | `/api/batch/quotes`, `/api/batch/orders` and order subroutes | Existing session; mutations retain approved Origin and XSRF | Same client with `{ audience: 'browser' }` and injected session transport. |
 | Customer CPU validation | `/api/v1/jobs`, `/api/v1/job-inputs`, `/api/v1/job-workers` and their subroutes | `resources:read` / `resources:write`, owner isolation and submission gates | `capabilities`, `list`, `detail`, `events`, `create`, `control`, `uploadInput`, `artifact`, `workers`, `enrollWorker`, `revokeWorker`. |
 | Browser jobs | `/api/jobs`, `/api/job-inputs`, `/api/job-workers` and their subroutes | Existing session; native projections require fresh administrator verification | Same jobs client with `{ audience: 'browser' }`; customer CPU controls are described by this OpenAPI. Native controls require the separate operator action-proof flow. |
 | Public evaluation discovery | `GET /api/v1/evaluations/catalog` | No key | `evaluations.catalog()`. |
 | Customer evaluations | `/api/v1/evaluations` and its quote, detail, cancel and file routes | `evaluations:write`, evaluation approval and qualified source/harness gates | `quote`, `create`, `orders`, `detail`, `cancel`, `downloadPath`; file bytes through `transport.download`. |
+| Customer batch files and evaluations on a file | `/api/v1/files` and its part, complete and content routes; file quotes and orders on `/api/v1/dataset-orders` (optional `grader`) | `orders:write`, account/model/dispatch gates | `createBatchFileClient`, `uploadFile`, `downloadDelivery`; quotes and orders through the generation client. |
+| OpenAI-compatible Batch | `/api/openai/v1/files`, `/api/openai/v1/batches` and their subroutes | `orders:write`; OpenAI error shape | HTTP contract only; use the official OpenAI SDK. |
 | Evaluation webhook secret | `POST /api/v1/evaluations/webhook-secret` | `evaluations:write`, owner isolation | HTTP contract only. No client method or bundled-transport route for secret rotation. |
 
 The generation and jobs documents include both customer-key and browser audiences. The evaluation document describes only the customer-key API. OpenAPI bearer security uses the `workspaceKey` scheme; the operation's `x-required-api-key-scope` states the required scope. Browser mutations retain their Origin/XSRF requirements and cannot be converted into key-authorized operator actions.

@@ -1,6 +1,6 @@
 # API contracts and clients
 
-Source candidate `@reliquary/api` 0.11.2 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
+Source candidate `@reliquary/api` 0.12.0 contains versioned generation, job and evaluation contracts, runtime validators, TypeScript clients and bounded fetch transports. It is for customer integrations and the platform's existing browser transport. It does not provision capacity or enable services.
 
 Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overview) for current platform routes and access requirements. Use the [contract index](contracts/README.md) for this package's exact OpenAPI files, exports and coverage. The source is [MIT licensed](LICENSE). Install a reviewed source build or local tarball; the manifest retains `private: true` to prevent npm registry publication. Security reports use the private channels described in [SECURITY.md](SECURITY.md).
 
@@ -17,7 +17,7 @@ Use the [public HTTP reference](https://app.reliqua.ai/docs/api-reference/overvi
 
 ## Customer developer preview
 
-The package also ships the lightweight `reliqua` CLI and 44 official task-oriented skills. Node.js 22 or later is required. From a reviewed source checkout:
+The package also ships the lightweight `reliqua` CLI and 45 official task-oriented skills. Node.js 22 or later is required. From a reviewed source checkout:
 
 ```sh
 npm ci
@@ -25,10 +25,10 @@ npm test
 npm pack
 ```
 
-This produces `reliquary-api-0.11.2.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
+This produces `reliquary-api-0.12.0.tgz`. Record and verify its checksum when handing off the reviewed artifact. Install that local tarball for the CLI:
 
 ```sh
-npm install --global ./reliquary-api-0.11.2.tgz
+npm install --global ./reliquary-api-0.12.0.tgz
 reliqua doctor
 reliqua compute list --gpu H200 --limit 20 --json
 reliqua inventory --json
@@ -44,13 +44,13 @@ reliqua skills show --skill reliquary-run-token-mix
 reliqua skills install --skill reliquary-compute --directory "$HOME/.agents/skills"
 ```
 
-Public reads use the existing APIs without sending credentials. `createPublicClient` provides the same fixed public GET routes with bounded responses and deadlines; it never follows redirects or retries. `OFFICIAL_SKILLS` supplies the shared workflow manifest: categories, supported interfaces, access requirements, support states, actual tool sequences, HTTP routes and task guidance. Skills cover public discovery, owned reads and gated preparation/execution workflows; installing instructions never enables capabilities or authorizes execution. Use `skills install --skill ID` to install one workflow, or omit `--skill` for the entire catalog. Public commands remain read-only. The explicitly selected `affine` batch stages can upload metadata, save a draft and launch only an approved owner-qualified profile; data rights and execution require separate CLI flags. No command provisions hardware or retries a mutation. Existing `jobctl` functionality and API wire contracts remain unchanged.
+Public reads use the existing APIs without sending credentials. `createPublicClient` provides the same fixed public GET routes with bounded responses and deadlines; it never follows redirects or retries. `OFFICIAL_SKILLS` supplies the shared workflow manifest: categories, supported interfaces, access requirements, support states, actual tool sequences, HTTP routes and task guidance. Skills cover public discovery, owned reads and gated preparation/execution workflows; installing instructions never enables capabilities or authorizes execution. Each skill's `state` is `available`, `qualified-pilot`, `gated` or `not-yet-available`. `not-yet-available` marks a workflow whose product is not open yet (catalog/environment generation, private training, CPU validation and the Affine workflows in this release): its instructions ship unchanged for when it opens, `availability` and the first line of its SKILL.md say what to use instead, and `reliqua skills list --state not-yet-available` lists them. Use `skills install --skill ID` to install one workflow, or omit `--skill` for the entire catalog. Public commands remain read-only. The explicitly selected `affine` batch stages can upload metadata, save a draft and launch only an approved owner-qualified profile; data rights and execution require separate CLI flags. No command provisions hardware or retries a mutation. Existing `jobctl` functionality and API wire contracts remain unchanged.
 
 For owned job reads, set `RELIQUARY_RESOURCES_KEY` privately in your environment (`JOBS_API_KEY` is also supported), then use `reliqua jobs capabilities`, `list`, `status`, `events` or `report`. Run `reliqua --help` for required arguments. `doctor` reports configured credentials without claiming to validate them. Account permission and qualified worker availability are separate.
 
 Use `--json` for machine output. Errors are structured JSON on stderr with safe request diagnostics. Exit codes are 0 for a successful read (including empty/unavailable catalogs), 1 for a failed command/request and 2 for invalid arguments. `--origin`/`RELIQUARY_API_URL` support HTTPS origins and loopback HTTP; `--timeout` is a bounded request deadline in milliseconds. Skill installation is repeatable and refuses to overwrite local edits or symlink destinations. Remove the chosen skill folders separately; `npm uninstall --global @reliquary/api` removes the client.
 
-This 0.11.2 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
+This 0.12.0 source candidate ships matching bundled instructions; repository visibility, hosted release manifests and registry publication remain separate release decisions. Existing 0.7 hosted artifacts remain a separate immutable release. Reconnect a host only when explicitly adopting the reviewed candidate.
 
 For the staged customer workflow and verified private downloads, see [the Affine CLI guide](examples/affine-cli.md). Run `reliqua affine status --json` with your training key to inspect your actual qualified profiles before preparing a request.
 
@@ -74,13 +74,13 @@ The package version, each wire protocol and the artifact installed by a consumer
 
 | Package / consumer | Covered contract artifacts | Meaning |
 | --- | --- | --- |
-| This source package, `0.11.2` | Generation `0.2.0`, jobs `0.2.0`, evaluations `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
+| This source package, `0.12.0` | Generation `0.3.0`, jobs `0.2.0`, evaluations `0.2.0`, OpenAI-compatible Batch `0.1.0` | Defines the exports and helpers described here; it is not evidence of a deployed service or consumer upgrade. |
 | Older platform pin `vendor/api-client-0.2.2.tgz` | Generation and jobs exports | A consumer retaining this pin does not acquire the newer evaluation exports by reading this README. |
 | A reviewed consumer artifact | Inspect its manifest, lockfile, version and integrity | Upgrade explicitly; never replace a tarball under an unchanged version or assume source `main` is installed. |
 
-For SDK use, copy the reviewed `reliquary-api-0.11.2.tgz` into the consuming project as `vendor/api-client-0.11.2.tgz`, then run `npm install --save-exact ./vendor/api-client-0.11.2.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
+For SDK use, copy the reviewed `reliquary-api-0.12.0.tgz` into the consuming project as `vendor/api-client-0.12.0.tgz`, then run `npm install --save-exact ./vendor/api-client-0.12.0.tgz` there. Keep its manifest and lockfile together so the version and integrity pin agree. No public registry is required. The clients, CLI and examples require Node.js 22 or later. The checkpoint helper retains up to 24 fixed-set requests under one aggregate approval and polls pending orders every 30 seconds; verified reports use digest-pinned sidecars.
 
-Generation contract 0.2.0 adds batch-file requests; jobs and evaluations retain the wire versions listed above. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
+Generation contract 0.3.0 adds evaluations on a customer's file (the `grader` quote field, `purpose`/`grader` on the quote, `evaluation` and `purpose` on the order, `pricing.grading_fee_usd`), the file quote's `architecture`, `gpu_count`, `thinking`, `verification` and `seed`, the processed file's `sha256`, the file list's `object` and the catalogue's `architectures`. Evaluations contract 0.2.0 adds `verification` to forced-draw quotes and orders. The new OpenAI-compatible Batch contract 0.1.0 (`@reliquary/api/openai-batch/openapi`) describes `/api/openai/v1/files` and `/api/openai/v1/batches` for the official OpenAI SDKs; this package has no client for it. Jobs retains the wire version listed above. The bounded evaluation transport now rejects the HTTP-only webhook-secret rotation path. Direct generation/evaluation transport mutations classify HTTP 408 as `outcome_unknown`, preserving the original key and response diagnostics without retrying.
 
 Public run monitoring is available through `createPublicClient().read("runs")` and `.run(publishedId?)`; results retain the upstream envelope, source clocks, unavailable states, nulls and metric meanings. The CLI supports the same stored telemetry reads without credentials. This is a bounded public-read helper, not a generated monitoring OpenAPI or typed training orchestration SDK. Account/key management, worker protocols and training orchestration keep their separately scoped HTTP contracts and native operator boundaries.
 
@@ -103,6 +103,8 @@ const transport = createGenerationTransport({
 });
 const generation = createGenerationClient(transport.request);
 const catalog = await generation.catalog();
+// catalog.architectures: the config.json architectures[0] values pinned-model, Batch and evaluation
+// quotes accept (null until the platform has read the list).
 ```
 
 To inspect owned history without creating work, call `await generation.orders()` and then `await generation.detail(ownedOrderId)` with an ID from that response. To request a quote, select an exact model ID and one of that model's source IDs from the returned catalogue:
@@ -154,9 +156,22 @@ const order = await generation.create(quote.quote_id, 'stable-request-key-0001')
 const files = await downloadDelivery(transport, await generation.detail(order.id), './results');
 ```
 
-`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and sha256 from the order. It preserves existing completed files, reuses matching files, and refuses links or special-file destinations. Downloaded bytes with a mismatching digest stay outside the final filename; `.rejected` is used when available without replacing an existing file. New directories and files have owner-only permissions. Use a directory you control and do not replace its entries concurrently; hostile shared destinations are unsupported. Resume uploads with the same unchanged source and file id.
+`downloadDelivery` writes `<directory>/<delivery id>/<file>`, resumes a partial file by `Range`, and checks each file's size and verifies its sha256 when supplied by the order. It preserves existing completed files, reuses matching files, and refuses links or special-file destinations. Downloaded bytes with a mismatching digest stay outside the final filename; `.rejected` is used when available without replacing an existing file. New directories and files have owner-only permissions. Use a directory you control and do not replace its entries concurrently; hostile shared destinations are unsupported. Resume uploads with the same unchanged source and file id.
 
-Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`). Customers that prefer the OpenAI SDK use the platform's OpenAI-compatible routes with the same file ids.
+Outputs are `output-*.jsonl` (OpenAI batch output lines) or `part-*.parquet`, `errors-*.jsonl` and `report.json` (verification and billing basis). `createBatchFileClient(transport)` exposes the file routes directly (`create`, `putPart`, `complete`, `get`, `list`); a processed file carries its `sha256` (null until the platform has read a file uploaded in parts). The quote names the model's `architecture`, the `gpu_count` of the node that verifies it, `verification: 'draw'` and the lines' `seed`.
+
+To evaluate a model on your own questions, give every line a top-level `reference` (the expected answer, at most 4,096 characters) and quote with a `grader`, `boxed_math_v1` or `exact_match_v1` (`FILE_GRADERS`):
+
+```ts
+const quote = await generation.quote({ model: 'org/name', revision: 'FULL_40_HEX_COMMIT', input_file_id: file.id, grader: 'boxed_math_v1' });
+// quote.purpose === 'eval', quote.grader, quote.pricing.grading_fee_usd (before the margin; included in price_usd)
+const order = await generation.create(quote.quote_id, 'stable-request-key-0002');
+// Later: (await generation.detail(order.id)).evaluation -> { grader, status: 'pending' | 'graded' | 'ungraded', complete, summary }
+```
+
+`summary.envs` holds one entry named after the grader (pass@1 with its 95 % interval, pass@k, mean_score and row counts) and `summary.macro` the macro scores. The graded files are delivered under delivery `evaluation` (`graded.parquet`, `report.json`, `manifest.json`) beside the completions; `downloadDelivery` saves both. Without a grader, lines that carry a `reference` are refused. See the [file evaluation reference](https://app.reliqua.ai/docs/api-reference/file-evaluations).
+
+Customers that prefer the official OpenAI SDK send the same file to the platform's OpenAI-compatible routes (`base_url` `https://app.reliqua.ai/api/openai/v1`, same `orders:write` key); `metadata.reliquary_grader` makes such a batch an evaluation. [openai-batch.openapi.json](contracts/openai-batch.openapi.json) describes those routes; they quote and order in one call. Review a native quote first, set `metadata.max_price_usd` to the approved ceiling, and send a stable `Idempotency-Key` with the OpenAI SDK request and any retry.
 
 Catalogue visibility, account permission, ordering gates, execution capacity, delivery, verification and financial settlement are separate facts. This package documents the existing workflow and does not enable services or guarantee live ordering. Structural schemas complement runtime checks for configuration identity, resolved delivery links, unique identifiers, monetary precision and receipt sums. Existing runtime contracts and workload qualification remain authoritative.
 

@@ -22,8 +22,10 @@ export type BatchFile = {
   status: BatchFileStatus;
   created_at: string;
   upload?: BatchFileUpload;
+  /** SHA-256 of the whole file once processed; null until the platform has read a file uploaded in parts. */
+  sha256?: string | null;
 };
-export type BatchFileList = { data: BatchFile[] };
+export type BatchFileList = { object: 'list'; data: BatchFile[] };
 export type BatchFilePart = { part: number; etag: string };
 export type BatchFileInput = { filename: string; bytes: number; purpose: BatchFilePurpose };
 
@@ -65,14 +67,22 @@ export function parseBatchFile(value: unknown): BatchFile {
       fail();
     file.upload = { part_size: upload['part_size'] as number, parts: upload['parts'] as number };
   }
+  const sha256 = value['sha256'];
+  if (sha256 !== undefined) {
+    if (!(sha256 === null || (typeof sha256 === 'string' && /^[0-9a-f]{64}$/.test(sha256))) ||
+        (file.status === 'uploading' && sha256 !== null))
+      fail();
+    file.sha256 = sha256;
+  }
   return file;
 }
 
 export function parseBatchFileList(value: unknown): BatchFileList {
-  if (!record(value) || !Array.isArray(value['data']) || value['data'].length > 100) fail();
+  if (!record(value) || (value['object'] !== undefined && value['object'] !== 'list') ||
+      !Array.isArray(value['data']) || value['data'].length > 100) fail();
   const data = value['data'].map(parseBatchFile);
   if (new Set(data.map(file => file.id)).size !== data.length) fail();
-  return { data };
+  return { object: 'list', data };
 }
 
 export function parseBatchFilePart(value: unknown, part: number): BatchFilePart {

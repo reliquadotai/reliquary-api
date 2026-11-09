@@ -1,4 +1,7 @@
 import { GenerationApiError, type FileRange, type GenerationJsonTransport, type GenerationRequest, MAX_FILE_CHUNK_BYTES } from './generation.js';
+import { parseEvaluationMetrics, parseEvaluationSummary, type EvaluationMetrics, type EvaluationSummary } from './evaluation-summary.js';
+import { orderQueueFields, quoteCapacityFields, type QuoteCapacity } from './order-capacity.js';
+export { parseEvaluationMetrics, parseEvaluationSummary, type EvaluationMetrics, type EvaluationSummary } from './evaluation-summary.js';
 
 export type EvaluationSampling = { temperature: number; top_p: number; top_k: number; seed: number };
 export type EvaluationSetInput = { env: string; set_id: string; problems: number; samples: number };
@@ -20,28 +23,21 @@ type EvaluationConfiguration = {
   max_new_tokens: number; thinking: boolean; sampling: EvaluationSampling; model_access: 'public' | 'private';
   harness: string | null; max_turns: number | null; max_episode_tokens: number | null; episode_timeout_seconds: number | null;
   protocol: EvaluationProtocol | null; protocol_json: string | null; protocol_sha256: string | null; protocol_bindings: Record<string, string> | null;
+  /** Present on forced-draw subnet quotes and orders: every sample follows the public seeded draw. */
+  verification?: 'draw';
 };
 export type EvaluationQuote = EvaluationConfiguration & {
   quote_id: string; price_usd: number; est_price_usd: number; est_tokens: number; max_tokens: number;
   eta_hours: number; max_hours: number; expires_at: string; gpu_count: number; weight_bytes: number;
   pricing: Record<string, unknown>;
+  capacity?: QuoteCapacity;
 };
 export const EVALUATION_STATES = ['reserved', 'provisioning', 'generating', 'qualifying', 'queued', 'running', 'draining', 'grading', 'delivered', 'cancelled', 'failed'] as const;
 export type EvaluationState = (typeof EVALUATION_STATES)[number];
-export type EvaluationMetrics = {
-  n_problems: number; samples: number; complete: boolean;
-  n_problems_graded: number | null; missing_problems: number | null; expected_rows: number | null; graded_rows: number | null;
-  ungraded_rows: number | null; missing_rows: number | null;
-  requested_samples: number | null; attempted_samples: number | null; completed_samples: number | null; graded_samples: number | null;
-  mean_score: number | null; truncation_rate: number | null;
-  format_failure_rate: number | null; mean_completion_tokens: number | null; mean_turns: number | null;
-  tool_calls_total: number | null; stop_reasons: Record<string, number> | null;
-  'pass@1': { value: number; ci95: [number, number] }; 'pass@k': Record<string, number>;
-};
-export type EvaluationSummary = { complete: boolean; envs: Record<string, EvaluationMetrics>; macro: { 'pass@1': number; 'pass@k': Record<string, number> } };
 export type EvaluationOrder = EvaluationConfiguration & {
   id: string; eval_id: string | null; quote_id: string | null; client_ref: string | null; status: EvaluationState;
   cancel_requested: boolean; gpu_count: number; price_usd: number; status_reason: string | null;
+  queue_position?: number; estimated_start_at?: string | null;
   needs_attention: boolean; complete: boolean | null; progress: unknown; created_at: string; updated_at: string; finished_at: string | null;
   refunded_usd?: number; summary?: EvaluationSummary | null; generation?: Record<string, unknown> | null;
   files?: { name: string; size: number; sha256: string | null; url: string }[];
@@ -63,6 +59,8 @@ const list = (v: unknown, max: number): unknown[] => Array.isArray(v) && v.lengt
 const nullable = <T>(v: unknown, parse: (value: unknown) => T): T | null => v == null ? null : parse(v);
 const id = (v: unknown): string => /^[\w-]{1,64}$/.test(text(v, 64)) ? v as string : fail();
 const setId = (v: unknown): string => /^[\w.-]{1,128}$/.test(text(v, 128)) ? v as string : fail();
+// Environment ids such as verifiers:aime25 (the service accepts \w[\w.:-]{0,63}).
+const envId = (v: unknown): string => /^\w[\w.:-]{0,63}$/.test(text(v, 64)) ? v as string : fail();
 const digest = (v: unknown): string => /^[a-f0-9]{64}$/.test(text(v, 64)) ? v as string : fail();
 const time = (v: unknown): string => Number.isFinite(Date.parse(text(v, 40))) ? v as string : fail();
 const unique = <T>(items: T[], key: (item: T) => string): T[] => new Set(items.map(key)).size === items.length ? items : fail();
@@ -122,7 +120,7 @@ export async function verifyEvaluationProtocol(value: { protocol: EvaluationProt
 const bindings = (v: unknown): Record<string, string> => Object.fromEntries(Object.entries(record(v)).map(([key, value]) => [setId(key), digest(value)]));
 const envs = (v: unknown): EvaluationSetInput[] => unique(list(v, 8).map(raw => {
   const e = record(raw);
-  return { env: setId(e['env']), set_id: setId(e['set_id']), problems: integer(e['problems'], 1, 5000), samples: integer(e['samples'], 1, 64) };
+  return { env: envId(e['env']), set_id: setId(e['set_id']), problems: integer(e['problems'], 1, 5000), samples: integer(e['samples'], 1, 64) };
 }), e => e.set_id);
 const sampling = (v: unknown): EvaluationSampling => {
   const s = record(v);
@@ -136,6 +134,7 @@ const configuration = (v: Record<string, unknown>): EvaluationConfiguration => (
   max_episode_tokens: nullable(v['max_episode_tokens'], x => integer(x, 1, 65536)),
   episode_timeout_seconds: nullable(v['episode_timeout_seconds'], x => integer(x, 1, 3600)),
   protocol: nullable(v['protocol'], protocol), protocol_json: protocolJson(v['protocol_json'], v['protocol']), protocol_sha256: nullable(v['protocol_sha256'], digest), protocol_bindings: nullable(v['protocol_bindings'], bindings),
+  ...(v['verification'] === undefined ? {} : { verification: choice(v['verification'], ['draw'] as const) }),
 });
 export function parseEvaluationQuoteInput(value: unknown): EvaluationQuoteInput {
   const v = record(value);
@@ -167,7 +166,7 @@ export function parseEvaluationCatalog(value: unknown): EvaluationCatalog {
   const v = record(value);
   const entries = unique(list(v['envs'], 128).map(raw => {
     const e = record(raw);
-    return { env: setId(e['env']), sets: unique(list(e['sets'], 256).map(raw => {
+    return { env: envId(e['env']), sets: unique(list(e['sets'], 256).map(raw => {
       const s = record(raw);
       return { set_id: setId(s['set_id']), name: text(s['name']), description: typeof s['description'] === 'string' && s['description'].length <= 4000 ? s['description'] : fail(), count: integer(s['count'], 1), default_max_new_tokens: integer(s['default_max_new_tokens'], 16, 131072), thinking: bool(s['thinking']), qualified_support: s['qualified_support'] === undefined ? false : bool(s['qualified_support']), protocol: nullable(s['protocol'], protocol), protocol_json: protocolJson(s['protocol_json'], s['protocol']), protocol_sha256: nullable(s['protocol_sha256'], digest) };
     }), s => s.set_id) };
@@ -176,30 +175,12 @@ export function parseEvaluationCatalog(value: unknown): EvaluationCatalog {
 }
 export function parseEvaluationQuote(value: unknown): EvaluationQuote {
   const v = record(value);
-  return { ...configuration(v), quote_id: id(v['quote_id']), price_usd: number(v['price_usd'], 0.01), est_price_usd: number(v['est_price_usd']), est_tokens: integer(v['est_tokens']), max_tokens: integer(v['max_tokens']), eta_hours: number(v['eta_hours']), max_hours: number(v['max_hours']), expires_at: time(v['expires_at']), gpu_count: integer(v['gpu_count'], 1, 8), weight_bytes: integer(v['weight_bytes'], 1), pricing: record(v['pricing']) };
+  return { ...configuration(v), ...quoteCapacityFields(v), quote_id: id(v['quote_id']), price_usd: number(v['price_usd'], 0.01), est_price_usd: number(v['est_price_usd']), est_tokens: integer(v['est_tokens']), max_tokens: integer(v['max_tokens']), eta_hours: number(v['eta_hours']), max_hours: number(v['max_hours']), expires_at: time(v['expires_at']), gpu_count: integer(v['gpu_count'], 1, 8), weight_bytes: integer(v['weight_bytes'], 1), pricing: record(v['pricing']) };
 }
-const rates = (value: unknown, report = false): Record<string, number> => Object.fromEntries(Object.entries(record(value)).map(([key, raw]) => {
-  if (!/^[1-9][0-9]*$/.test(key)) fail();
-  return [key, number(report ? record(raw)['value'] : raw, 0, 1)];
-}));
-function metrics(value: unknown, report = false): EvaluationMetrics {
-  const v = record(value), pass = record(v['pass@1']), ci = list(pass['ci95'], 2).map(x => number(x, 0, 1));
-  if (ci.length !== 2 || ci[0]! > ci[1]!) fail();
-  const result = { n_problems: integer(v['n_problems']), samples: integer(v['samples'], 1, 64), complete: bool(v['complete']), 'pass@1': { value: number(pass['value'], 0, 1), ci95: ci as [number, number] }, 'pass@k': rates(v['pass@k'], report) } as EvaluationMetrics;
-  for (const key of ['n_problems_graded', 'missing_problems', 'expected_rows', 'graded_rows', 'ungraded_rows', 'missing_rows', 'requested_samples', 'attempted_samples', 'completed_samples', 'graded_samples', 'tool_calls_total'] as const) result[key] = nullable(v[key], x => integer(x));
-  for (const key of ['mean_score', 'truncation_rate', 'format_failure_rate', 'mean_completion_tokens', 'mean_turns'] as const) result[key] = nullable(v[key], x => number(x, 0, key.endsWith('_rate') ? 1 : Number.MAX_SAFE_INTEGER));
-  result.stop_reasons = nullable(v['stop_reasons'], x => Object.fromEntries(Object.entries(record(x)).map(([k, n]) => [text(k, 100), integer(n)])));
-  if (result.n_problems_graded !== null && result.n_problems_graded > result.n_problems) fail();
-  if (result.expected_rows !== null && result.graded_rows !== null && result.ungraded_rows !== null && result.missing_rows !== null && result.expected_rows !== result.graded_rows + result.ungraded_rows + result.missing_rows) fail();
-  return result;
-}
-function summary(value: unknown, report = false): EvaluationSummary {
-  const v = record(value), macro = record(v['macro']);
-  return { complete: bool(v['complete']), envs: Object.fromEntries(Object.entries(record(v['envs'])).map(([env, raw]) => [setId(env), metrics(raw, report)])), macro: { 'pass@1': number(macro['pass@1'], 0, 1), 'pass@k': rates(macro['pass@k']) } };
-}
+const summary = parseEvaluationSummary;
 export function parseEvaluationOrder(value: unknown): EvaluationOrder {
   const v = record(record(value)['evaluation']), orderId = id(v['id']);
-  const order: EvaluationOrder = { ...configuration(v), id: orderId, eval_id: nullable(v['eval_id'], x => text(x, 128)), quote_id: nullable(v['quote_id'], id), client_ref: nullable(v['client_ref'], clientRef), status: choice(v['status'], EVALUATION_STATES), cancel_requested: bool(v['cancel_requested']), gpu_count: integer(v['gpu_count'], 1, 8), price_usd: number(v['price_usd']), status_reason: nullable(v['status_reason'], x => text(x, 200)), needs_attention: bool(v['needs_attention']), complete: nullable(v['complete'], bool), progress: v['progress'] ?? null, created_at: time(v['created_at']), updated_at: time(v['updated_at']), finished_at: nullable(v['finished_at'], time) };
+  const order: EvaluationOrder = { ...configuration(v), ...orderQueueFields(v), id: orderId, eval_id: nullable(v['eval_id'], x => text(x, 128)), quote_id: nullable(v['quote_id'], id), client_ref: nullable(v['client_ref'], clientRef), status: choice(v['status'], EVALUATION_STATES), cancel_requested: bool(v['cancel_requested']), gpu_count: integer(v['gpu_count'], 1, 8), price_usd: number(v['price_usd']), status_reason: nullable(v['status_reason'], x => text(x, 200)), needs_attention: bool(v['needs_attention']), complete: nullable(v['complete'], bool), progress: v['progress'] ?? null, created_at: time(v['created_at']), updated_at: time(v['updated_at']), finished_at: nullable(v['finished_at'], time) };
   if (v['refunded_usd'] !== undefined) order.refunded_usd = number(v['refunded_usd']);
   if (v['summary'] !== undefined) order.summary = nullable(v['summary'], x => summary(x));
   if (v['generation'] !== undefined) order.generation = nullable(v['generation'], record);

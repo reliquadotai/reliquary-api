@@ -40,6 +40,11 @@ export type GenerationCatalog = {
     price_per_mtok_usd?: number;
     sources: GenerationSource[];
   }[];
+  /**
+   * Model architectures (config.json architectures[0]) that pinned-model, Batch and evaluation quotes accept;
+   * null until the platform has first read the list. Absent only from older servers and embedded catalogs.
+   */
+  architectures?: string[] | null;
 };
 export type ProductInventory = {
   schemaVersion: 1;
@@ -112,11 +117,22 @@ export function parseGenerationCatalog(value: unknown): GenerationCatalog {
     };
   });
   if (!unique(models)) throw new Error('The batch catalogue returned duplicate entries.');
+  const architectures = value['architectures'];
+  if (
+    architectures !== undefined &&
+    architectures !== null &&
+    (!Array.isArray(architectures) ||
+      architectures.length > 100 ||
+      !architectures.every((a: unknown) => typeof a === 'string' && /^[A-Za-z0-9_]{1,200}$/.test(a)) ||
+      new Set(architectures).size !== architectures.length)
+  )
+    throw new Error('The batch catalogue returned unexpected architectures.');
   return {
     ordering: value['ordering'] as GenerationCatalog['ordering'],
     any_model_ordering: value['any_model_ordering'] as GenerationCatalog['any_model_ordering'],
     envs: value['envs'],
     models,
+    ...(architectures !== undefined ? { architectures: architectures === null ? null : [...(architectures as string[])] } : {}),
   };
 }
 

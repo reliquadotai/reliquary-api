@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Evaluation orders API",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Owned pinned-model evaluation lifecycle. Execution, qualified source support, billing and publication remain independent gates."
   },
   "servers": [
@@ -1912,7 +1912,8 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "pattern": "^[\\w.-]+$"
+            "pattern": "^\\w[\\w.:-]{0,63}$",
+            "description": "Environment id from the catalog, such as verifiers:aime25."
           },
           "set_id": {
             "type": "string",
@@ -2079,6 +2080,10 @@
               "subnet",
               "direct"
             ]
+          },
+          "verification": {
+            "const": "draw",
+            "description": "Present on forced-draw subnet quotes: every sample follows the public draw seeded by sampling.seed, which the subnet checks. Absent otherwise."
           },
           "model": {
             "$ref": "#/components/schemas/Model"
@@ -2263,6 +2268,9 @@
           "pricing": {
             "type": "object",
             "additionalProperties": true
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/QuoteCapacity"
           }
         },
         "required": [
@@ -2435,7 +2443,8 @@
                 "env": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 64
+                  "maxLength": 64,
+                  "pattern": "^\\w[\\w.:-]{0,63}$"
                 },
                 "sets": {
                   "type": "array",
@@ -2787,6 +2796,10 @@
               "direct"
             ]
           },
+          "verification": {
+            "const": "draw",
+            "description": "Present on forced-draw subnet orders: every sample follows the public draw seeded by sampling.seed, which the subnet checks. Absent otherwise."
+          },
           "model": {
             "$ref": "#/components/schemas/Model"
           },
@@ -3077,6 +3090,20 @@
               "$ref": "#/components/schemas/File"
             },
             "maxItems": 1000
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
           }
         },
         "required": [
@@ -3116,7 +3143,15 @@
           "generation",
           "files"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "OrderSummary": {
         "type": "object",
@@ -3384,6 +3419,24 @@
                 "type": "null"
               }
             ]
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
+          },
+          "verification": {
+            "const": "draw",
+            "description": "Present on forced-draw subnet orders: every sample follows the public draw seeded by sampling.seed, which the subnet checks. Absent otherwise."
           }
         },
         "required": [
@@ -3419,7 +3472,15 @@
           "updated_at",
           "finished_at"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "OrderResponse": {
         "type": "object",
@@ -3653,6 +3714,64 @@
           "macro"
         ],
         "additionalProperties": false
+      },
+      "QuoteCapacity": {
+        "description": "Model-specific estimate for an order placed now. A quote does not reserve capacity.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "now"
+              }
+            },
+            "required": [
+              "starts"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "queued"
+              },
+              "reason": {
+                "enum": [
+                  "waiting_for_capacity",
+                  "daily_capacity_reached"
+                ]
+              },
+              "queue_position": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "estimated_start_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "Estimated start, or null when the server cannot estimate it."
+              },
+              "resets_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "The daily capacity reset at midnight UTC, when applicable."
+              }
+            },
+            "required": [
+              "starts",
+              "reason",
+              "queue_position",
+              "estimated_start_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     },
     "examples": {
@@ -4073,6 +4192,79 @@
               "1": 0.5,
               "2": 0.75
             }
+          }
+        }
+      },
+      "subnetQuote": {
+        "summary": "A forced-draw subnet quote on a catalog set",
+        "value": {
+          "quote_id": "quote-b",
+          "mode": "subnet",
+          "verification": "draw",
+          "model_access": "public",
+          "protocol": null,
+          "protocol_json": null,
+          "protocol_sha256": null,
+          "protocol_bindings": null,
+          "harness": null,
+          "max_turns": null,
+          "max_episode_tokens": null,
+          "episode_timeout_seconds": null,
+          "price_usd": 2.6,
+          "est_price_usd": 2.55,
+          "est_tokens": 64,
+          "max_tokens": 128,
+          "eta_hours": 0.02,
+          "max_hours": 0.03,
+          "expires_at": "2027-01-16T08:00:00.000Z",
+          "model": {
+            "repo": "Qwen/Qwen3-8B",
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218"
+          },
+          "weight_bytes": 16381516776,
+          "gpu_count": 1,
+          "envs": [
+            {
+              "env": "verifiers:aime25",
+              "set_id": "verifiers-aime25-r0-n30",
+              "problems": 2,
+              "samples": 1
+            }
+          ],
+          "max_new_tokens": 64,
+          "thinking": false,
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "seed": 0
+          },
+          "pricing": {
+            "mode": "subnet",
+            "verification": "draw"
+          }
+        }
+      },
+      "subnetQuoteInput": {
+        "summary": "Two AIME 2025 problems in subnet mode",
+        "value": {
+          "model": "Qwen/Qwen3-8B",
+          "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+          "envs": [
+            {
+              "env": "verifiers:aime25",
+              "set_id": "verifiers-aime25-r0-n30",
+              "problems": 2,
+              "samples": 1
+            }
+          ],
+          "max_new_tokens": 64,
+          "thinking": false,
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "seed": 0
           }
         }
       }

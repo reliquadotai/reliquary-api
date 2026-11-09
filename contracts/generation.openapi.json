@@ -3,7 +3,7 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "Generation API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Compatibility baseline for existing customer generation and browser projection routes. Contracts do not guarantee live ordering or elastic capacity. Structural JSON Schema constraints complement runtime checks for exact identity/link resolution, monetary sums, uniqueness by identifier and qualification."
   },
   "servers": [
@@ -154,6 +154,9 @@
                   },
                   "fileQuote": {
                     "$ref": "#/components/examples/fileQuote"
+                  },
+                  "fileEvaluationQuote": {
+                    "$ref": "#/components/examples/fileEvaluationQuote"
                   }
                 }
               }
@@ -681,6 +684,9 @@
                 "examples": {
                   "keyOrder": {
                     "$ref": "#/components/examples/keyOrder"
+                  },
+                  "keyFileEvaluationOrder": {
+                    "$ref": "#/components/examples/keyFileEvaluationOrder"
                   }
                 }
               }
@@ -2259,6 +2265,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatchFileList"
+                },
+                "examples": {
+                  "batchFileList": {
+                    "$ref": "#/components/examples/batchFileList"
+                  }
                 }
               }
             }
@@ -2513,6 +2524,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatchFile"
+                },
+                "examples": {
+                  "batchFileProcessed": {
+                    "$ref": "#/components/examples/batchFileProcessed"
+                  }
                 }
               }
             }
@@ -2827,6 +2843,11 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatchFile"
+                },
+                "examples": {
+                  "batchFileProcessed": {
+                    "$ref": "#/components/examples/batchFileProcessed"
+                  }
                 }
               }
             }
@@ -3367,13 +3388,31 @@
             "items": {
               "$ref": "#/components/schemas/CatalogModel"
             }
+          },
+          "architectures": {
+            "anyOf": [
+              {
+                "type": "array",
+                "maxItems": 100,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_]{1,200}$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Model architectures (config.json architectures[0]) that pinned-model, Batch API and evaluation quotes accept; another architecture is refused with 422 architecture_unsupported. null until the platform has first read the list."
           }
         },
         "required": [
           "ordering",
           "any_model_ordering",
           "envs",
-          "models"
+          "models",
+          "architectures"
         ],
         "description": "Public qualified catalogue and ordering gates. Discovery, price or a pilot flag does not prove account access, execution capacity or availability at confirmation."
       },
@@ -3706,6 +3745,9 @@
               "pricing": {
                 "type": "object",
                 "description": "Server pricing terms. Estimates and the reservation ceiling remain separate; new terms may be added."
+              },
+              "capacity": {
+                "$ref": "#/components/schemas/QuoteCapacity"
               }
             },
             "required": [
@@ -3919,6 +3961,20 @@
             ],
             "format": "date-time",
             "maxLength": 40
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
           }
         },
         "required": [
@@ -3937,7 +3993,15 @@
           "created_at",
           "updated_at",
           "finished_at"
-        ]
+        ],
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "CatalogOrder": {
         "allOf": [
@@ -4437,6 +4501,14 @@
               "parts"
             ],
             "additionalProperties": false
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Present once processed: the SHA-256 of the whole file, or null until the platform has read a file uploaded in parts (its first quote reads it)."
           }
         },
         "required": [
@@ -4453,6 +4525,9 @@
       "BatchFileList": {
         "type": "object",
         "properties": {
+          "object": {
+            "const": "list"
+          },
           "data": {
             "type": "array",
             "maxItems": 100,
@@ -4462,6 +4537,7 @@
           }
         },
         "required": [
+          "object",
           "data"
         ],
         "additionalProperties": false
@@ -4488,7 +4564,7 @@
       },
       "FileQuoteInput": {
         "type": "object",
-        "description": "A quote on an uploaded OpenAI Batch JSONL file. Its lines carry their messages and sampling; v1 takes one sampling per file.",
+        "description": "A quote on an uploaded OpenAI Batch JSONL file. Its lines carry their messages and sampling; v1 takes one sampling per file. With grader, each line also carries a reference and the order is an evaluation.",
         "properties": {
           "model": {
             "type": "string",
@@ -4514,6 +4590,10 @@
               "parquet",
               "openai_jsonl"
             ]
+          },
+          "grader": {
+            "$ref": "#/components/schemas/FileGrader",
+            "description": "Grade every completion against its line's top-level reference (a non-empty string of at most 4,096 characters): the order becomes an evaluation. Without a grader, lines that carry a reference are refused."
           }
         },
         "required": [
@@ -4687,7 +4767,51 @@
           },
           "pricing": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": true,
+            "description": "Server pricing terms; new terms may be added.",
+            "properties": {
+              "grading_fee_usd": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Evaluations only: the grading fee before the margin, included in price_usd and est_price_usd."
+              }
+            }
+          },
+          "architecture": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "The model's config.json architectures[0] at the pinned revision."
+          },
+          "gpu_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "GPUs of the node that verifies the outputs."
+          },
+          "thinking": {
+            "type": "boolean",
+            "description": "Always false for a file: the lines' chat_template_kwargs decide thinking."
+          },
+          "verification": {
+            "const": "draw",
+            "description": "Every sample follows the public seeded (forced) draw."
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "The seed the file's lines set; absent when they set none."
+          },
+          "purpose": {
+            "const": "eval",
+            "description": "Present on evaluations only."
+          },
+          "grader": {
+            "$ref": "#/components/schemas/FileGrader"
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/QuoteCapacity"
           }
         },
         "required": [
@@ -4708,9 +4832,20 @@
           "sampling",
           "line_errors",
           "preview",
-          "pricing"
+          "pricing",
+          "architecture",
+          "gpu_count",
+          "thinking"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "purpose": [
+            "grader"
+          ],
+          "grader": [
+            "purpose"
+          ]
+        }
       },
       "FileOrder": {
         "allOf": [
@@ -4756,6 +4891,26 @@
                   "parquet",
                   "openai_jsonl"
                 ]
+              },
+              "gpu_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8
+              },
+              "verification": {
+                "const": "draw"
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "purpose": {
+                "const": "eval",
+                "description": "Present on evaluations only, with evaluation."
+              },
+              "evaluation": {
+                "$ref": "#/components/schemas/FileEvaluation"
               }
             },
             "required": [
@@ -4763,7 +4918,16 @@
               "revision",
               "input_file_id",
               "sampling"
-            ]
+            ],
+            "dependentRequired": {
+              "purpose": [
+                "evaluation"
+              ],
+              "evaluation": [
+                "purpose"
+              ]
+            },
+            "description": "An order on an uploaded file. An evaluation also delivers its graded files under delivery evaluation (graded.parquet, report.json, manifest.json) beside the completions of delivery dl-{order id}."
           }
         ],
         "not": {
@@ -4780,6 +4944,423 @@
             }
           ]
         }
+      },
+      "FileGrader": {
+        "enum": [
+          "boxed_math_v1",
+          "exact_match_v1"
+        ],
+        "description": "Reference grader of an evaluation on a file. boxed_math_v1: the last \\boxed{} of the answer equals the reference by value. exact_match_v1: the answer equals the reference, surrounding whitespace removed. The answer is the completion after its reasoning block."
+      },
+      "EvaluationMetrics": {
+        "type": "object",
+        "properties": {
+          "n_problems": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 64
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "pass@1": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "ci95": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "value",
+              "ci95"
+            ],
+            "additionalProperties": false
+          },
+          "pass@k": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "n_problems_graded": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_problems": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graded_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ungraded_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "missing_rows": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attempted_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "graded_samples": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_calls_total": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_completion_tokens": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean_turns": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncation_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format_failure_rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stop_reasons": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "n_problems",
+          "samples",
+          "complete",
+          "pass@1",
+          "pass@k"
+        ],
+        "additionalProperties": false,
+        "description": "mean_score is the native mean of each problem's mean graded score, denominator n_problems_graded. Completion-row counts remain separate. Absent observed turns/tools/attempts are null; never infer them or rename Avg@N as pass@N."
+      },
+      "EvaluationMacro": {
+        "type": "object",
+        "properties": {
+          "pass@1": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "pass@k": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "required": [
+          "pass@1",
+          "pass@k"
+        ],
+        "additionalProperties": true
+      },
+      "EvaluationSummary": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "envs": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EvaluationMetrics"
+            }
+          },
+          "macro": {
+            "$ref": "#/components/schemas/EvaluationMacro"
+          }
+        },
+        "required": [
+          "complete",
+          "envs",
+          "macro"
+        ],
+        "additionalProperties": false
+      },
+      "FileEvaluation": {
+        "type": "object",
+        "description": "An evaluation on a file. Status is pending while the order waits for grading, graded when it has a summary, or ungraded when the order ends without a grading report. Read the order status, deliveries and refunded_usd separately for its outcome. Complete is null until graded and false when samples are missing from the report. Summary.envs holds one entry named after the grader.",
+        "properties": {
+          "grader": {
+            "$ref": "#/components/schemas/FileGrader"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "graded",
+              "ungraded"
+            ]
+          },
+          "complete": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "summary": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EvaluationSummary"
+              }
+            ]
+          }
+        },
+        "required": [
+          "grader",
+          "status",
+          "complete",
+          "summary"
+        ],
+        "additionalProperties": false
+      },
+      "QuoteCapacity": {
+        "description": "Model-specific estimate for an order placed now. A quote does not reserve capacity.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "now"
+              }
+            },
+            "required": [
+              "starts"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "queued"
+              },
+              "reason": {
+                "enum": [
+                  "waiting_for_capacity",
+                  "daily_capacity_reached"
+                ]
+              },
+              "queue_position": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "estimated_start_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "Estimated start, or null when the server cannot estimate it."
+              },
+              "resets_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "The daily capacity reset at midnight UTC, when applicable."
+              }
+            },
+            "required": [
+              "starts",
+              "reason",
+              "queue_position",
+              "estimated_start_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     },
     "examples": {
@@ -4814,6 +5395,11 @@
                 }
               ]
             }
+          ],
+          "architectures": [
+            "Qwen3ForCausalLM",
+            "Qwen3_5ForCausalLM",
+            "Qwen3_5ForConditionalGeneration"
           ]
         }
       },
@@ -5189,7 +5775,251 @@
           "pricing": {
             "mode": "any_model"
           },
-          "output_format": "openai_jsonl"
+          "output_format": "openai_jsonl",
+          "architecture": "Qwen3ForCausalLM",
+          "gpu_count": 1,
+          "thinking": false,
+          "verification": "draw",
+          "seed": 7
+        }
+      },
+      "batchFileProcessed": {
+        "summary": "A processed file",
+        "value": {
+          "id": "file-11111111-2222-4333-8444-555555555555",
+          "object": "file",
+          "bytes": 660,
+          "created_at": "2026-11-09T11:43:22.000Z",
+          "filename": "eval.jsonl",
+          "purpose": "batch",
+          "status": "processed",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      },
+      "batchFileList": {
+        "summary": "Owned files",
+        "value": {
+          "object": "list",
+          "data": [
+            {
+              "id": "file-11111111-2222-4333-8444-555555555555",
+              "object": "file",
+              "bytes": 660,
+              "created_at": "2026-11-09T11:43:22.000Z",
+              "filename": "eval.jsonl",
+              "purpose": "batch",
+              "status": "processed",
+              "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "id": "file-example",
+              "object": "file",
+              "bytes": 40000000,
+              "filename": "requests.jsonl",
+              "purpose": "batch",
+              "status": "uploading",
+              "created_at": "2026-11-02T00:00:00Z",
+              "upload": {
+                "part_size": 16777216,
+                "parts": 3
+              }
+            }
+          ]
+        }
+      },
+      "fileEvaluationQuoteInput": {
+        "summary": "An evaluation on a file",
+        "value": {
+          "model": "Qwen/Qwen3-8B",
+          "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+          "input_file_id": "file-11111111-2222-4333-8444-555555555555",
+          "output_format": "openai_jsonl",
+          "grader": "boxed_math_v1"
+        }
+      },
+      "fileEvaluationQuote": {
+        "summary": "An evaluation quote on a file",
+        "value": {
+          "quote_id": "22222222-3333-4444-8555-666666666666",
+          "price_usd": 2.925146,
+          "est_price_usd": 2.92508,
+          "est_tokens": 64,
+          "max_tokens": 128,
+          "eta_hours": 0.02,
+          "max_hours": 0.03,
+          "expires_at": "2026-11-10T11:43:30.000Z",
+          "model": "Qwen/Qwen3-8B",
+          "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+          "architecture": "Qwen3ForCausalLM",
+          "gpu_count": 1,
+          "prompt_count": 2,
+          "samples_per_prompt": 1,
+          "max_new_tokens": 64,
+          "thinking": false,
+          "sampling": {
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20,
+            "max_tokens": 64,
+            "seed": 7,
+            "n": 1
+          },
+          "verification": "draw",
+          "seed": 7,
+          "input_file_id": "file-11111111-2222-4333-8444-555555555555",
+          "output_format": "openai_jsonl",
+          "line_errors": 0,
+          "preview": [
+            {
+              "custom_id": "m1",
+              "prompt_tokens": 30,
+              "text": "<|im_start|>user\nWhat is 7 times 8? Put the final answer in \\boxed{}.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+            }
+          ],
+          "purpose": "eval",
+          "grader": "boxed_math_v1",
+          "pricing": {
+            "mode": "any_model",
+            "verification": "draw",
+            "grading_fee_usd": 1
+          }
+        }
+      },
+      "keyFileEvaluationOrder": {
+        "summary": "A graded evaluation on a file",
+        "value": {
+          "order": {
+            "id": "33333333-4444-4555-8666-777777777777",
+            "status": "delivered",
+            "model": "Qwen/Qwen3-8B",
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+            "input_file_id": "file-11111111-2222-4333-8444-555555555555",
+            "output_format": "openai_jsonl",
+            "verification": "draw",
+            "seed": 7,
+            "gpu_count": 1,
+            "prompt_count": 2,
+            "samples_per_prompt": 1,
+            "max_new_tokens": 64,
+            "thinking": false,
+            "sampling": {
+              "temperature": 0.6,
+              "top_p": 0.95,
+              "top_k": 20,
+              "max_tokens": 64,
+              "seed": 7,
+              "n": 1
+            },
+            "price_usd": 2.92513,
+            "cancel_requested": false,
+            "status_reason": null,
+            "needs_attention": false,
+            "progress": null,
+            "created_at": "2026-11-09T11:43:31.000Z",
+            "updated_at": "2026-11-09T11:55:00.000Z",
+            "finished_at": "2026-11-09T11:55:00.000Z",
+            "purpose": "eval",
+            "evaluation": {
+              "grader": "boxed_math_v1",
+              "status": "graded",
+              "complete": true,
+              "summary": {
+                "complete": true,
+                "envs": {
+                  "boxed_math_v1": {
+                    "n_problems": 2,
+                    "samples": 1,
+                    "expected_rows": 2,
+                    "graded_rows": 2,
+                    "ungraded_rows": 0,
+                    "missing_rows": 0,
+                    "mean_score": 0.5,
+                    "n_problems_graded": 2,
+                    "missing_problems": 0,
+                    "requested_samples": 2,
+                    "completed_samples": 2,
+                    "graded_samples": 2,
+                    "attempted_samples": null,
+                    "tool_calls_total": null,
+                    "mean_completion_tokens": 53,
+                    "mean_turns": null,
+                    "truncation_rate": 0.5,
+                    "format_failure_rate": 0.5,
+                    "stop_reasons": {
+                      "length": 1,
+                      "stop": 1
+                    },
+                    "complete": true,
+                    "pass@1": {
+                      "value": 0.5,
+                      "ci95": [
+                        0,
+                        1
+                      ]
+                    },
+                    "pass@k": {
+                      "1": 0.5
+                    }
+                  }
+                },
+                "macro": {
+                  "pass@1": 0.5,
+                  "pass@k": {
+                    "1": 0.5
+                  }
+                }
+              }
+            },
+            "refunded_usd": 1.6e-05,
+            "deliveries": [
+              {
+                "delivery_id": "dl-33333333-4444-4555-8666-777777777777",
+                "files": [
+                  {
+                    "name": "manifest.json",
+                    "size": 1030,
+                    "sha256": null,
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/dl-33333333-4444-4555-8666-777777777777/files/manifest.json"
+                  },
+                  {
+                    "name": "output-00000.jsonl",
+                    "size": 1255,
+                    "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/dl-33333333-4444-4555-8666-777777777777/files/output-00000.jsonl"
+                  },
+                  {
+                    "name": "report.json",
+                    "size": 2546,
+                    "sha256": null,
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/dl-33333333-4444-4555-8666-777777777777/files/report.json"
+                  }
+                ]
+              },
+              {
+                "delivery_id": "evaluation",
+                "files": [
+                  {
+                    "name": "graded.parquet",
+                    "size": 4728,
+                    "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/evaluation/files/graded.parquet"
+                  },
+                  {
+                    "name": "manifest.json",
+                    "size": 991,
+                    "sha256": null,
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/evaluation/files/manifest.json"
+                  },
+                  {
+                    "name": "report.json",
+                    "size": 3869,
+                    "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+                    "url": "/api/v1/dataset-orders/33333333-4444-4555-8666-777777777777/deliveries/evaluation/files/report.json"
+                  }
+                ]
+              }
+            ]
+          }
         }
       }
     }

@@ -2,7 +2,7 @@
 
 Arbos can propose a supported math-task subset and coordinate the work. Reliquary's local operator workflow composes the official kit's exact-head generation, grading and batch export. Hosted execution is a separate path requiring a fresh owner-bound qualified profile for an already frozen batch. The official Affine kit owns batch construction, its one optimizer step and its comparison gate. Generic responses from another model are not a substitute for the required exact-head rollouts.
 
-This guide uses client 0.11.2, the existing [Affine CLI workflow](affine-cli.md) and [official miner guide](https://github.com/AffineFoundation/affine/blob/eaf1ad20e4d018c85b30f53e9807b2b9a6a75e25/miner/README.md). It adds no generation engine or independent batch parser. Public source availability does not grant an account access or reserve compute.
+This guide uses client 0.12.0, the existing [Affine CLI workflow](affine-cli.md) and [official miner guide](https://github.com/AffineFoundation/affine/blob/eaf1ad20e4d018c85b30f53e9807b2b9a6a75e25/miner/README.md). It adds no generation engine or independent batch parser. Public source availability does not grant an account access or reserve compute.
 
 ## Connect Arbos
 
