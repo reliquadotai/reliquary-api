@@ -1,4 +1,6 @@
 import { parseEvaluationSummary, type EvaluationSummary } from './evaluation-summary.js';
+import { orderQueueFields, quoteCapacityFields, type QuoteCapacity } from './order-capacity.js';
+export type { QuoteCapacity } from './order-capacity.js';
 
 export type BatchSampling = { temperature: number; top_p: number; top_k: number };
 type BatchConfiguration = {
@@ -60,6 +62,7 @@ export type FileBatchQuote = {
   line_errors: number;
   preview: FilePreviewLine[];
   pricing: FilePricing;
+  capacity?: QuoteCapacity;
   output_format?: BatchOutputFormat;
   /** The model's config.json architectures[0], one the subnet serves. */
   architecture?: string;
@@ -106,6 +109,7 @@ export type BatchQuote = FileBatchQuote | (BatchConfiguration & {
   est_tokens: number;
   eta_hours: number;
   expires_at: string;
+  capacity?: QuoteCapacity;
 } & (
     | CatalogIdentity
     | (PinnedIdentity & {
@@ -156,6 +160,8 @@ type OrderFields = {
   price_usd: number;
   cancel_requested: boolean;
   status_reason: string | null;
+  queue_position?: number;
+  estimated_start_at?: string | null;
   needs_attention: boolean;
   progress: BatchOrderProgress | null;
   created_at: string;
@@ -382,6 +388,7 @@ function parseFileQuote(value: Record<string, unknown>): FileBatchQuote {
     line_errors: value['line_errors'] as number,
     preview: preview(value['preview']),
     pricing: value['pricing'] as FilePricing,
+    ...quoteCapacityFields(value),
   };
 }
 export const isFileQuote = (quote: BatchQuote): quote is FileBatchQuote => 'input_file_id' in quote;
@@ -444,6 +451,7 @@ export function parseBatchQuote(value: unknown): BatchQuote {
     est_tokens: value['est_tokens'] as number,
     eta_hours: value['eta_hours'] as number,
     expires_at: value['expires_at'] as string,
+    ...quoteCapacityFields(value),
   };
   if ('source' in common) return common;
   if (
@@ -515,6 +523,7 @@ export function parseGenerationOrder(value: unknown): GenerationOrder {
     price_usd: value['price_usd'] as number,
     cancel_requested: value['cancel_requested'] as boolean,
     status_reason: value['status_reason'] as string | null,
+    ...orderQueueFields(value),
     needs_attention: value['needs_attention'] as boolean,
     progress: progress(value['progress']),
     created_at: value['created_at'] as string,

@@ -2268,6 +2268,9 @@
           "pricing": {
             "type": "object",
             "additionalProperties": true
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/QuoteCapacity"
           }
         },
         "required": [
@@ -3087,6 +3090,20 @@
               "$ref": "#/components/schemas/File"
             },
             "maxItems": 1000
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
           }
         },
         "required": [
@@ -3126,7 +3143,15 @@
           "generation",
           "files"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "OrderSummary": {
         "type": "object",
@@ -3394,6 +3419,24 @@
                 "type": "null"
               }
             ]
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
+          },
+          "verification": {
+            "const": "draw",
+            "description": "Present on forced-draw subnet orders: every sample follows the public draw seeded by sampling.seed, which the subnet checks. Absent otherwise."
           }
         },
         "required": [
@@ -3429,7 +3472,15 @@
           "updated_at",
           "finished_at"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "OrderResponse": {
         "type": "object",
@@ -3663,6 +3714,64 @@
           "macro"
         ],
         "additionalProperties": false
+      },
+      "QuoteCapacity": {
+        "description": "Model-specific estimate for an order placed now. A quote does not reserve capacity.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "now"
+              }
+            },
+            "required": [
+              "starts"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "queued"
+              },
+              "reason": {
+                "enum": [
+                  "waiting_for_capacity",
+                  "daily_capacity_reached"
+                ]
+              },
+              "queue_position": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "estimated_start_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "Estimated start, or null when the server cannot estimate it."
+              },
+              "resets_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "The daily capacity reset at midnight UTC, when applicable."
+              }
+            },
+            "required": [
+              "starts",
+              "reason",
+              "queue_position",
+              "estimated_start_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     },
     "examples": {

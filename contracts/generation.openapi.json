@@ -3745,6 +3745,9 @@
               "pricing": {
                 "type": "object",
                 "description": "Server pricing terms. Estimates and the reservation ceiling remain separate; new terms may be added."
+              },
+              "capacity": {
+                "$ref": "#/components/schemas/QuoteCapacity"
               }
             },
             "required": [
@@ -3958,6 +3961,20 @@
             ],
             "format": "date-time",
             "maxLength": 40
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "estimated_start_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "maxLength": 40,
+            "description": "Estimated start, or null when the server cannot estimate it."
           }
         },
         "required": [
@@ -3976,7 +3993,15 @@
           "created_at",
           "updated_at",
           "finished_at"
-        ]
+        ],
+        "dependentRequired": {
+          "queue_position": [
+            "estimated_start_at"
+          ],
+          "estimated_start_at": [
+            "queue_position"
+          ]
+        }
       },
       "CatalogOrder": {
         "allOf": [
@@ -4784,6 +4809,9 @@
           },
           "grader": {
             "$ref": "#/components/schemas/FileGrader"
+          },
+          "capacity": {
+            "$ref": "#/components/schemas/QuoteCapacity"
           }
         },
         "required": [
@@ -5239,7 +5267,7 @@
       },
       "FileEvaluation": {
         "type": "object",
-        "description": "An evaluation on a file. status is pending until the order ends, graded with a summary, or ungraded when the completions were delivered without a report (the grading fee is then refunded). complete is null until graded and false when samples are missing from the report. summary.envs holds one entry named after the grader.",
+        "description": "An evaluation on a file. Status is pending while the order waits for grading, graded when it has a summary, or ungraded when the order ends without a grading report. Read the order status, deliveries and refunded_usd separately for its outcome. Complete is null until graded and false when samples are missing from the report. Summary.envs holds one entry named after the grader.",
         "properties": {
           "grader": {
             "$ref": "#/components/schemas/FileGrader"
@@ -5275,6 +5303,64 @@
           "summary"
         ],
         "additionalProperties": false
+      },
+      "QuoteCapacity": {
+        "description": "Model-specific estimate for an order placed now. A quote does not reserve capacity.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "now"
+              }
+            },
+            "required": [
+              "starts"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "starts": {
+                "const": "queued"
+              },
+              "reason": {
+                "enum": [
+                  "waiting_for_capacity",
+                  "daily_capacity_reached"
+                ]
+              },
+              "queue_position": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "estimated_start_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "Estimated start, or null when the server cannot estimate it."
+              },
+              "resets_at": {
+                "type": "string",
+                "format": "date-time",
+                "maxLength": 40,
+                "description": "The daily capacity reset at midnight UTC, when applicable."
+              }
+            },
+            "required": [
+              "starts",
+              "reason",
+              "queue_position",
+              "estimated_start_at"
+            ],
+            "additionalProperties": false
+          }
+        ]
       }
     },
     "examples": {

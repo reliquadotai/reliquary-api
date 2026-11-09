@@ -1,5 +1,6 @@
 import { GenerationApiError, type FileRange, type GenerationJsonTransport, type GenerationRequest, MAX_FILE_CHUNK_BYTES } from './generation.js';
 import { parseEvaluationMetrics, parseEvaluationSummary, type EvaluationMetrics, type EvaluationSummary } from './evaluation-summary.js';
+import { orderQueueFields, quoteCapacityFields, type QuoteCapacity } from './order-capacity.js';
 export { parseEvaluationMetrics, parseEvaluationSummary, type EvaluationMetrics, type EvaluationSummary } from './evaluation-summary.js';
 
 export type EvaluationSampling = { temperature: number; top_p: number; top_k: number; seed: number };
@@ -29,12 +30,14 @@ export type EvaluationQuote = EvaluationConfiguration & {
   quote_id: string; price_usd: number; est_price_usd: number; est_tokens: number; max_tokens: number;
   eta_hours: number; max_hours: number; expires_at: string; gpu_count: number; weight_bytes: number;
   pricing: Record<string, unknown>;
+  capacity?: QuoteCapacity;
 };
 export const EVALUATION_STATES = ['reserved', 'provisioning', 'generating', 'qualifying', 'queued', 'running', 'draining', 'grading', 'delivered', 'cancelled', 'failed'] as const;
 export type EvaluationState = (typeof EVALUATION_STATES)[number];
 export type EvaluationOrder = EvaluationConfiguration & {
   id: string; eval_id: string | null; quote_id: string | null; client_ref: string | null; status: EvaluationState;
   cancel_requested: boolean; gpu_count: number; price_usd: number; status_reason: string | null;
+  queue_position?: number; estimated_start_at?: string | null;
   needs_attention: boolean; complete: boolean | null; progress: unknown; created_at: string; updated_at: string; finished_at: string | null;
   refunded_usd?: number; summary?: EvaluationSummary | null; generation?: Record<string, unknown> | null;
   files?: { name: string; size: number; sha256: string | null; url: string }[];
@@ -172,12 +175,12 @@ export function parseEvaluationCatalog(value: unknown): EvaluationCatalog {
 }
 export function parseEvaluationQuote(value: unknown): EvaluationQuote {
   const v = record(value);
-  return { ...configuration(v), quote_id: id(v['quote_id']), price_usd: number(v['price_usd'], 0.01), est_price_usd: number(v['est_price_usd']), est_tokens: integer(v['est_tokens']), max_tokens: integer(v['max_tokens']), eta_hours: number(v['eta_hours']), max_hours: number(v['max_hours']), expires_at: time(v['expires_at']), gpu_count: integer(v['gpu_count'], 1, 8), weight_bytes: integer(v['weight_bytes'], 1), pricing: record(v['pricing']) };
+  return { ...configuration(v), ...quoteCapacityFields(v), quote_id: id(v['quote_id']), price_usd: number(v['price_usd'], 0.01), est_price_usd: number(v['est_price_usd']), est_tokens: integer(v['est_tokens']), max_tokens: integer(v['max_tokens']), eta_hours: number(v['eta_hours']), max_hours: number(v['max_hours']), expires_at: time(v['expires_at']), gpu_count: integer(v['gpu_count'], 1, 8), weight_bytes: integer(v['weight_bytes'], 1), pricing: record(v['pricing']) };
 }
 const summary = parseEvaluationSummary;
 export function parseEvaluationOrder(value: unknown): EvaluationOrder {
   const v = record(record(value)['evaluation']), orderId = id(v['id']);
-  const order: EvaluationOrder = { ...configuration(v), id: orderId, eval_id: nullable(v['eval_id'], x => text(x, 128)), quote_id: nullable(v['quote_id'], id), client_ref: nullable(v['client_ref'], clientRef), status: choice(v['status'], EVALUATION_STATES), cancel_requested: bool(v['cancel_requested']), gpu_count: integer(v['gpu_count'], 1, 8), price_usd: number(v['price_usd']), status_reason: nullable(v['status_reason'], x => text(x, 200)), needs_attention: bool(v['needs_attention']), complete: nullable(v['complete'], bool), progress: v['progress'] ?? null, created_at: time(v['created_at']), updated_at: time(v['updated_at']), finished_at: nullable(v['finished_at'], time) };
+  const order: EvaluationOrder = { ...configuration(v), ...orderQueueFields(v), id: orderId, eval_id: nullable(v['eval_id'], x => text(x, 128)), quote_id: nullable(v['quote_id'], id), client_ref: nullable(v['client_ref'], clientRef), status: choice(v['status'], EVALUATION_STATES), cancel_requested: bool(v['cancel_requested']), gpu_count: integer(v['gpu_count'], 1, 8), price_usd: number(v['price_usd']), status_reason: nullable(v['status_reason'], x => text(x, 200)), needs_attention: bool(v['needs_attention']), complete: nullable(v['complete'], bool), progress: v['progress'] ?? null, created_at: time(v['created_at']), updated_at: time(v['updated_at']), finished_at: nullable(v['finished_at'], time) };
   if (v['refunded_usd'] !== undefined) order.refunded_usd = number(v['refunded_usd']);
   if (v['summary'] !== undefined) order.summary = nullable(v['summary'], x => summary(x));
   if (v['generation'] !== undefined) order.generation = nullable(v['generation'], record);
