@@ -1,6 +1,6 @@
 ---
 name: reliquary-generation-discover
-description: "Inspect qualified generation models, sources, environments and current ordering limits before requesting a dataset."
+description: "Inspect qualified generation models, sources, environments, accepted model architectures and current ordering limits before requesting a dataset."
 ---
 
 # Discover dataset generation
@@ -11,13 +11,15 @@ Report ordering state, supported input choices, count/token limits and any mode 
 
 For a model outside the catalog, explain that a public model requires an immutable revision and qualified environment before requesting a pinned quote. Discovery itself creates no quote or order.
 
+To answer which models can be used: architectures lists the model architectures (config.json architectures[0]) that pinned-model, Batch file and evaluation quotes accept; null means the platform has not read the list yet, not that nothing is supported. The model must also be a public, ungated Hugging Face repository with top-level safetensors weights, fit its context with the requested tokens and fit one node of up to 8 GPUs; only a quote confirms a specific model and revision.
+
 Expected result: An actionable list of supported generation choices and current gates.
 
 CLI entry: `reliqua generation catalog --json`
 
 ## Interfaces and limits
 
-Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.11.2 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.12.0 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_generation_catalog`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 

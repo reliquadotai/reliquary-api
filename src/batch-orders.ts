@@ -1,3 +1,5 @@
+import { parseEvaluationSummary, type EvaluationSummary } from './evaluation-summary.js';
+
 export type BatchSampling = { temperature: number; top_p: number; top_k: number };
 type BatchConfiguration = {
   model: string;
@@ -11,6 +13,9 @@ export type BatchQuoteInput =
   | FileQuoteInput;
 export const BATCH_OUTPUT_FORMATS = ['parquet', 'openai_jsonl'] as const;
 export type BatchOutputFormat = (typeof BATCH_OUTPUT_FORMATS)[number];
+/** Reference graders of an evaluation on a customer's file: each line then carries a `reference`. */
+export const FILE_GRADERS = ['boxed_math_v1', 'exact_match_v1'] as const;
+export type FileGrader = (typeof FILE_GRADERS)[number];
 /** A quote on an uploaded batch file: its lines carry their own messages and sampling. */
 export type FileQuoteInput = {
   model: string;
@@ -18,6 +23,8 @@ export type FileQuoteInput = {
   input_file_id: string;
   max_new_tokens?: number;
   output_format?: BatchOutputFormat;
+  /** Grade every completion against its line's `reference`: the order becomes an evaluation. */
+  grader?: FileGrader;
 };
 /** The one sampling a file's lines asked for (OpenAI body fields, normalised by the platform). */
 export type FileSampling = {
@@ -30,6 +37,10 @@ export type FileSampling = {
   n?: number;
 };
 export type FilePreviewLine = { custom_id: string; prompt_tokens: number; text: string };
+/** Server pricing terms; an evaluation quote adds the grading fee before the margin. */
+export type FilePricing = Record<string, unknown> & { grading_fee_usd?: number };
+/** How the samples are checked: `draw` is the public seeded (forced) draw that every file order uses. */
+export type BatchVerification = 'qualified' | 'draw';
 export type FileBatchQuote = {
   quote_id: string;
   price_usd: number;
@@ -48,14 +59,39 @@ export type FileBatchQuote = {
   sampling: FileSampling;
   line_errors: number;
   preview: FilePreviewLine[];
-  pricing: Record<string, unknown>;
+  pricing: FilePricing;
   output_format?: BatchOutputFormat;
+  /** The model's config.json architectures[0], one the subnet serves. */
+  architecture?: string;
+  /** GPUs of one verification node the model needs. */
+  gpu_count?: number;
+  thinking?: boolean;
+  verification?: BatchVerification;
+  /** The draw seed the file's lines asked for. */
+  seed?: number;
+  /** Present on evaluations only, with their grader. */
+  purpose?: 'eval';
+  grader?: FileGrader;
 };
 type FileIdentity = {
   revision: string;
   input_file_id: string;
   sampling: FileSampling;
   output_format?: BatchOutputFormat;
+  gpu_count?: number;
+  verification?: BatchVerification;
+  seed?: number;
+  purpose?: 'eval';
+  evaluation?: FileEvaluation;
+};
+/** An evaluation on a file: `pending` until the order ends, then `graded` with its summary or `ungraded`. */
+export type FileEvaluation = {
+  grader: FileGrader;
+  status: 'pending' | 'graded' | 'ungraded';
+  /** null until graded; false when samples are missing from the report. */
+  complete: boolean | null;
+  /** envs holds one entry named after the grader; null unless graded. */
+  summary: EvaluationSummary | null;
 };
 type CatalogIdentity = { source: string };
 type PinnedIdentity = {
@@ -224,6 +260,13 @@ function fileIdentity(v: Record<string, unknown>): FileConfiguration & FileIdent
   )
     fail();
   const format = outputFormat(v['output_format']);
+  if (
+    (v['gpu_count'] !== undefined && !integer(v['gpu_count'], 1, 8)) ||
+    (v['verification'] !== undefined && !['qualified', 'draw'].includes(v['verification'] as string)) ||
+    (v['seed'] !== undefined && !integer(v['seed'])) ||
+    (v['purpose'] !== undefined && v['purpose'] !== 'eval' && v['purpose'] !== 'batch')
+  )
+    fail();
   return {
     model: v['model'] as string,
     prompt_count: v['prompt_count'] as number,
@@ -234,7 +277,54 @@ function fileIdentity(v: Record<string, unknown>): FileConfiguration & FileIdent
     input_file_id: v['input_file_id'] as string,
     sampling: parseFileSampling(v['sampling']),
     ...(format ? { output_format: format } : {}),
+    ...(v['gpu_count'] !== undefined ? { gpu_count: v['gpu_count'] as number } : {}),
+    ...(v['verification'] !== undefined ? { verification: v['verification'] as BatchVerification } : {}),
+    ...(v['seed'] !== undefined ? { seed: v['seed'] as number } : {}),
   };
+}
+const grader = (v: unknown): FileGrader => {
+  if (!FILE_GRADERS.includes(v as FileGrader)) fail();
+  return v as FileGrader;
+};
+/** order.evaluation of an evaluation on a file. */
+export function parseFileEvaluation(value: unknown): FileEvaluation {
+  if (
+    !record(value) ||
+    !['pending', 'graded', 'ungraded'].includes(value['status'] as string) ||
+    !(value['complete'] === null || typeof value['complete'] === 'boolean') ||
+    (value['status'] === 'graded') !== (value['summary'] !== null && value['summary'] !== undefined)
+  )
+    fail();
+  let summary: EvaluationSummary | null = null;
+  if (value['summary'] != null) {
+    try {
+      summary = parseEvaluationSummary(value['summary']);
+    } catch {
+      fail();
+    }
+  }
+  return {
+    grader: grader(value['grader']),
+    status: value['status'] as FileEvaluation['status'],
+    complete: value['complete'] as boolean | null,
+    summary,
+  };
+}
+// purpose "eval" names its grader on a quote and its evaluation on an order; "batch" is never sent.
+function fileQuoteEvaluation(v: Record<string, unknown>): Pick<FileBatchQuote, 'purpose' | 'grader'> {
+  if (v['purpose'] === undefined || v['purpose'] === 'batch') {
+    if (v['grader'] !== undefined && v['grader'] !== null) fail();
+    return {};
+  }
+  if (v['purpose'] !== 'eval') fail();
+  return { purpose: 'eval', grader: grader(v['grader']) };
+}
+function fileOrderEvaluation(v: Record<string, unknown>): Pick<FileIdentity, 'purpose' | 'evaluation'> {
+  if (v['purpose'] === undefined || v['purpose'] === 'batch') {
+    if (v['evaluation'] !== undefined && v['evaluation'] !== null) fail();
+    return {};
+  }
+  return { purpose: 'eval', evaluation: parseFileEvaluation(v['evaluation']) };
 }
 function preview(value: unknown): FilePreviewLine[] {
   if (!Array.isArray(value) || value.length > 10) fail();
@@ -266,13 +356,21 @@ function parseFileQuote(value: Record<string, unknown>): FileBatchQuote {
     !number(value['max_hours']) ||
     !time(value['expires_at']) ||
     !integer(value['line_errors']) ||
-    !record(value['pricing'])
+    !record(value['pricing']) ||
+    (value['pricing']['grading_fee_usd'] !== undefined && !number(value['pricing']['grading_fee_usd'])) ||
+    (value['architecture'] !== undefined && !text(value['architecture'], 200)) ||
+    Object.hasOwn(value, 'evaluation')
   )
     fail();
   const identity = fileIdentity(value);
-  const { thinking: _thinking, ...fields } = identity;
+  const { thinking, ...fields } = identity;
+  const evaluation = fileQuoteEvaluation(value);
+  if (evaluation.purpose === 'eval' && value['pricing']['grading_fee_usd'] === undefined) fail();
   return {
     ...fields,
+    ...(value['architecture'] !== undefined ? { architecture: value['architecture'] as string } : {}),
+    ...(thinking !== undefined ? { thinking } : {}),
+    ...evaluation,
     quote_id: value['quote_id'] as string,
     price_usd: value['price_usd'] as number,
     est_price_usd: value['est_price_usd'] as number,
@@ -283,7 +381,7 @@ function parseFileQuote(value: Record<string, unknown>): FileBatchQuote {
     expires_at: value['expires_at'] as string,
     line_errors: value['line_errors'] as number,
     preview: preview(value['preview']),
-    pricing: value['pricing'] as Record<string, unknown>,
+    pricing: value['pricing'] as FilePricing,
   };
 }
 export const isFileQuote = (quote: BatchQuote): quote is FileBatchQuote => 'input_file_id' in quote;
@@ -409,7 +507,9 @@ export function parseGenerationOrder(value: unknown): GenerationOrder {
   )
     fail();
   return {
-    ...(Object.hasOwn(value, 'input_file_id') ? fileIdentity(value) : { ...configuration(value), ...identity(value) }),
+    ...(Object.hasOwn(value, 'input_file_id')
+      ? { ...fileIdentity(value), ...fileOrderEvaluation(value) }
+      : { ...configuration(value), ...identity(value) }),
     id: value['id'] as string,
     status: value['status'] as BatchOrderStatus,
     price_usd: value['price_usd'] as number,

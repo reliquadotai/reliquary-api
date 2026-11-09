@@ -25,7 +25,7 @@ Expected result: One explicitly approved bounded diagnostic or the precise unava
 
 ## Interfaces and limits
 
-Supported interfaces: mcp, http. The lightweight `reliqua` CLI 0.11.2 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: mcp, http. The lightweight `reliqua` CLI 0.12.0 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_affine_pilot_status`, `reliquary_affine_checkpoint_review`, `reliquary_affine_checkpoint_prepare`, `reliquary_affine_preparation_get`, `reliquary_affine_evaluation_prepare`, `reliquary_affine_request_upload`, `reliquary_resource_create`, `reliquary_training_quote`, `reliquary_training_start`, `reliquary_training_task_get`, `reliquary_training_artifact_download`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 

@@ -1,0 +1,1875 @@
+{
+  "openapi": "3.1.1",
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "info": {
+    "title": "OpenAI-compatible Batch API",
+    "version": "0.1.0",
+    "description": "OpenAI's Files and Batches routes over file orders, for the official OpenAI SDKs (base_url https://app.reliqua.ai/api/openai/v1) or plain HTTP. A batch is a dataset order on its input file, quoted and placed in one call, on a public Hugging Face model pinned at an exact commit; every sample follows the public seeded draw and is audited before delivery. Errors use OpenAI's shape. The native routes (generation contract: /api/v1/files and /api/v1/dataset-orders) serve the same orders and add quotes before ordering, uploads over 32 MiB, Parquet deliveries and evaluation scores. Contracts do not guarantee live ordering or capacity."
+  },
+  "servers": [
+    {
+      "url": "https://app.reliqua.ai",
+      "description": "Documented origin: OpenAI SDK base_url https://app.reliqua.ai/api/openai/v1."
+    },
+    {
+      "url": "https://api.reliqua.ai",
+      "description": "Serves the same routes."
+    }
+  ],
+  "tags": [
+    {
+      "name": "OpenAI-compatible Batch",
+      "description": "orders:write workspace key, sent as Authorization: Bearer (the OpenAI SDK api_key)."
+    }
+  ],
+  "paths": {
+    "/api/openai/v1/files": {
+      "get": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiListFiles",
+        "summary": "List input files",
+        "description": "Your 100 most recent input files (native and multipart uploads), newest first. Output and error files are read by id.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "responses": {
+          "200": {
+            "description": "Owned input files.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileList"
+                },
+                "examples": {
+                  "fileList": {
+                    "$ref": "#/components/examples/fileList"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiUploadFile",
+        "summary": "Upload a batch file",
+        "description": "One multipart/form-data request with Content-Length; up to 32 MiB. The file is stored as uploaded and processed at once.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FileUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The processed file.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                },
+                "examples": {
+                  "file": {
+                    "$ref": "#/components/examples/file"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_file: purpose must be batch and file a named JSONL file.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "411": {
+            "description": "length_required: send Content-Length.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "file_too_large: over 32 MiB; use the native multi-part upload.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openai/v1/files/{file_id}": {
+      "get": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiGetFile",
+        "summary": "Read a file",
+        "description": "An input file, or a batch output (file-out-{order id}) or error (file-err-{order id}) file.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/File"
+                },
+                "examples": {
+                  "file": {
+                    "$ref": "#/components/examples/file"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openai/v1/files/{file_id}/content": {
+      "get": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiFileContent",
+        "summary": "Download a file",
+        "description": "An input file's bytes (Range supported), or a batch's output or error file: the delivery's JSONL shards concatenated (the error file starts with the refused lines). An output file is 404 file_not_found until the batch is delivered.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes.",
+            "content": {
+              "application/jsonl": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "A byte range of an input file.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "file_not_ready: a native upload still in progress.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openai/v1/batches": {
+      "get": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiListBatches",
+        "summary": "List batches",
+        "description": "Your batches, newest first. Pass the last id as after for the next page.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of batches.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchList"
+                },
+                "examples": {
+                  "batchList": {
+                    "$ref": "#/components/examples/batchList"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiCreateBatch",
+        "summary": "Create a batch",
+        "description": "Quotes the file and orders it in one call; the response is the batch object. The reserved price is charged from your balance; at delivery the completion-token part of unverified tokens is refunded. Send an Idempotency-Key so a retried request returns the same batch (the OpenAI SDK retries automatically: pass it with extra_headers). To see a price first without reserving anything, quote the file on POST /api/v1/dataset-orders/quotes.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{16,80}$"
+            },
+            "description": "Replays the batch it created; the same key with another body is 409 idempotency_conflict."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBatch"
+              },
+              "examples": {
+                "createBatch": {
+                  "$ref": "#/components/examples/createBatch"
+                },
+                "createEvaluation": {
+                  "$ref": "#/components/examples/createEvaluation"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created batch, or the batch an Idempotency-Key already created.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                },
+                "examples": {
+                  "batchCreated": {
+                    "$ref": "#/components/examples/batchCreated"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_endpoint, invalid_completion_window, invalid_metadata, invalid_idempotency_key, invalid_model, invalid_revision, endpoint_mismatch, grader_unknown.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "price_above_max, insufficient_balance.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "file_not_ready, idempotency_conflict, order_refused (retry), pricing_unavailable.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_batch_file (file_too_large, too_many_lines, too_many_tokens, no_usable_line), mixed_sampling, max_tokens_conflict, invalid_max_tokens, model_private, model_not_found, model_unsupported, architecture_unsupported, context_too_long, model_too_large, exceeds_generation_deadline.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "order_limit (five open orders), rate_limited (200 quotes in 24 hours).",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "batch_unavailable, architecture_list_unavailable, model_lookup_unavailable: retry shortly.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openai/v1/batches/{batch_id}": {
+      "get": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiGetBatch",
+        "summary": "Read a batch",
+        "description": "The batch and its request counts.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The batch.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                },
+                "examples": {
+                  "batchCompleted": {
+                    "$ref": "#/components/examples/batchCompleted"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openai/v1/batches/{batch_id}/cancel": {
+      "post": {
+        "tags": [
+          "OpenAI-compatible Batch"
+        ],
+        "operationId": "openaiCancelBatch",
+        "summary": "Cancel a batch",
+        "description": "Before generation starts the batch is released in full and ends cancelled. A running batch becomes cancelling: generation stops, what was verified is delivered and charged, and the rest is refunded.",
+        "security": [
+          {
+            "workspaceKey": []
+          }
+        ],
+        "x-required-api-key-scope": "orders:write",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The batch after the request.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "batch_not_cancellable: finalizing or ended.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "insufficient_scope: the key lacks orders:write; orders_unavailable: the account does not have dataset access.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_available (batches disabled on this deployment), file_not_found, batch_not_found or not_found.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "server_error.",
+            "headers": {
+              "X-Request-ID": {
+                "$ref": "#/components/headers/RequestId"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "workspaceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "rlq_ followed by 48 hexadecimal characters",
+        "description": "Account workspace key with orders:write (the OpenAI SDK api_key). Expiry, revocation, account access and ownership remain server checks."
+      }
+    },
+    "headers": {
+      "RequestId": {
+        "description": "Safe request reference.",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "description": "OpenAI's error shape. code keeps the platform's error code; type is authentication_error (401), not_found_error (404), rate_limit_error (429), server_error (5xx) or invalid_request_error.",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "invalid_request_error",
+                  "authentication_error",
+                  "not_found_error",
+                  "rate_limit_error",
+                  "server_error"
+                ]
+              },
+              "param": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "message",
+              "type",
+              "param",
+              "code"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "FileUpload": {
+        "type": "object",
+        "description": "multipart/form-data with Content-Length; the file is at most 33,554,432 bytes (32 MiB). Larger files use the native multi-part upload (POST /api/v1/files), whose files this API also reads.",
+        "properties": {
+          "purpose": {
+            "const": "batch"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "description": "The JSONL file; its name must match [A-Za-z0-9_.() -]{1,200} and not start with a period."
+          }
+        },
+        "required": [
+          "purpose",
+          "file"
+        ]
+      },
+      "File": {
+        "type": "object",
+        "description": "An input file (purpose batch) or a batch's output/error file (purpose batch_output, ids file-out-{order id} and file-err-{order id}).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^file-(?:(?:out|err)-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "object": {
+            "const": "file"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix seconds."
+          },
+          "filename": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "purpose": {
+            "enum": [
+              "batch",
+              "batch_output"
+            ]
+          },
+          "status": {
+            "enum": [
+              "uploading",
+              "processed"
+            ]
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Input files once processed: the SHA-256 of the whole file; null until the platform has read a file uploaded in parts. Absent on output and error files."
+          },
+          "upload": {
+            "type": "object",
+            "description": "A native multi-part upload still in progress.",
+            "properties": {
+              "part_size": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "parts": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "part_size",
+              "parts"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "bytes",
+          "created_at",
+          "filename",
+          "purpose",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "FileList": {
+        "type": "object",
+        "description": "The 100 most recent input files, newest first.",
+        "properties": {
+          "object": {
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/File"
+            }
+          },
+          "has_more": {
+            "const": false
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "Metadata": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "maxProperties": 16,
+        "propertyNames": {
+          "maxLength": 64
+        },
+        "additionalProperties": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "description": "Up to 16 string pairs, returned on the batch. Keys the platform reads are documented below; others are kept as given.",
+        "properties": {
+          "revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$",
+            "description": "Full commit of the model. Without it, the commit main names when the batch is created is pinned."
+          },
+          "model": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,95}/[A-Za-z0-9][A-Za-z0-9_.-]{0,95}$",
+            "description": "Hugging Face org/name; overrides the first line's body.model."
+          },
+          "max_price_usd": {
+            "type": "string",
+            "description": "Price ceiling in USD: a batch whose reserved price is higher is refused with 402 price_above_max and nothing is reserved."
+          },
+          "reliquary_grader": {
+            "enum": [
+              "boxed_math_v1",
+              "exact_match_v1"
+            ],
+            "description": "Makes the batch an evaluation: every line carries a top-level reference and each completion is graded against it. Scores are on the native order (GET /api/v1/dataset-orders/{order id}, order.evaluation)."
+          }
+        }
+      },
+      "CreateBatch": {
+        "type": "object",
+        "description": "Quotes the file and places the order in one call; the reserved price is the worst case (every line generates max_tokens for each of its n samples).",
+        "properties": {
+          "input_file_id": {
+            "type": "string",
+            "pattern": "^file-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "endpoint": {
+            "enum": [
+              "/v1/chat/completions",
+              "/v1/completions"
+            ],
+            "description": "The url of the file's lines (400 endpoint_mismatch otherwise)."
+          },
+          "completion_window": {
+            "type": "string",
+            "pattern": "^[0-9]{1,3}h$",
+            "description": "24h to 168h. When it passes, a running batch stops and what was verified is delivered (status expired)."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        },
+        "required": [
+          "input_file_id",
+          "endpoint",
+          "completion_window"
+        ]
+      },
+      "RequestCounts": {
+        "type": "object",
+        "description": "total counts every line of the file; completed the lines that have all their samples; failed the refused lines and, once the batch has ended, the lines short of samples.",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "completed",
+          "failed"
+        ],
+        "additionalProperties": false
+      },
+      "Batch": {
+        "type": "object",
+        "description": "The id is batch_{order id}; the native order is GET /api/v1/dataset-orders/{order id} (price_usd, refunded_usd, progress and, for an evaluation, evaluation).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^batch_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "object": {
+            "const": "batch"
+          },
+          "endpoint": {
+            "enum": [
+              "/v1/chat/completions",
+              "/v1/completions"
+            ]
+          },
+          "errors": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "object": {
+                    "const": "list"
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "param": {
+                          "type": "null"
+                        },
+                        "line": {
+                          "type": "null"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message",
+                        "param",
+                        "line"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "object",
+                  "data"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "A failed batch: errors.data[0].code gives the reason."
+          },
+          "input_file_id": {
+            "type": "string"
+          },
+          "completion_window": {
+            "type": "string",
+            "pattern": "^[0-9]{1,3}h$"
+          },
+          "status": {
+            "enum": [
+              "validating",
+              "in_progress",
+              "finalizing",
+              "completed",
+              "expired",
+              "cancelling",
+              "cancelled",
+              "failed"
+            ],
+            "description": "validating: reserved, waiting to start; in_progress: miners are generating; finalizing: exporting (and grading, for an evaluation); completed: delivered; expired: the window passed, what was verified is delivered; cancelling / cancelled; failed: ended without a delivery."
+          },
+          "output_file_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^file-out-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "error_file_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^file-err-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "description": "Set when lines were refused or some lines are short of samples."
+          },
+          "created_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix seconds."
+          },
+          "in_progress_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "expires_at": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Unix seconds."
+          },
+          "finalizing_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "completed_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "failed_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "expired_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "cancelling_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "cancelled_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Unix seconds, or null."
+          },
+          "request_counts": {
+            "$ref": "#/components/schemas/RequestCounts"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "endpoint",
+          "errors",
+          "input_file_id",
+          "completion_window",
+          "status",
+          "output_file_id",
+          "error_file_id",
+          "created_at",
+          "in_progress_at",
+          "expires_at",
+          "finalizing_at",
+          "completed_at",
+          "failed_at",
+          "expired_at",
+          "cancelling_at",
+          "cancelled_at",
+          "request_counts",
+          "metadata"
+        ],
+        "additionalProperties": false
+      },
+      "BatchList": {
+        "type": "object",
+        "properties": {
+          "object": {
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Batch"
+            }
+          },
+          "first_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "first_id",
+          "last_id",
+          "has_more"
+        ],
+        "additionalProperties": false
+      },
+      "RequestLine": {
+        "type": "object",
+        "description": "One line of an input file. custom_id is unique in the file. Every usable line uses the same endpoint and the same temperature, top_p, top_k, min_p, max_tokens, seed and n (422 mixed_sampling otherwise). A line that cannot be used goes to the error file; the rest still runs. reference is required with metadata.reliquary_grader (or the native grader) and refused without it.",
+        "properties": {
+          "custom_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "method": {
+            "const": "POST"
+          },
+          "url": {
+            "enum": [
+              "/v1/chat/completions",
+              "/v1/completions"
+            ]
+          },
+          "body": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "An OpenAI request body. Accepted: model, messages or prompt, tools, chat_template_kwargs, temperature (>0, <=4, default 1), top_p (default 1), top_k (0 or -1 for none), min_p, max_tokens or max_completion_tokens (16-131,072, default 4,096), seed, n (1-64). user, metadata, store, parallel_tool_calls and service_tier are ignored; stream, logprobs, stop, penalties, logit_bias, response_format, tool_choice, echo, suffix and best_of only at their neutral value; any other field is refused."
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "The expected answer of an evaluation line."
+          }
+        },
+        "required": [
+          "custom_id",
+          "method",
+          "url",
+          "body"
+        ]
+      },
+      "OutputLine": {
+        "type": "object",
+        "description": "A line of the output file, in OpenAI's batch output format: the n samples of an input line are the choices of its body, in sample order; finish_reason is stop or length.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "custom_id": {
+            "type": "string"
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "status_code": {
+                "const": 200
+              },
+              "request_id": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "status_code",
+              "request_id",
+              "body"
+            ]
+          },
+          "error": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "id",
+          "custom_id",
+          "response",
+          "error"
+        ]
+      },
+      "ErrorLine": {
+        "type": "object",
+        "description": "A line of the error file: refused lines first (with their file line number), then the lines that did not receive all their samples (with prompt_index).",
+        "properties": {
+          "custom_id": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "prompt_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "custom_id",
+          "error"
+        ]
+      }
+    },
+    "examples": {
+      "file": {
+        "summary": "An uploaded input file",
+        "value": {
+          "id": "file-55555555-6666-4777-8888-999999999999",
+          "object": "file",
+          "bytes": 595,
+          "created_at": 1794223099,
+          "filename": "batch.jsonl",
+          "purpose": "batch",
+          "status": "processed",
+          "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+        }
+      },
+      "fileList": {
+        "summary": "Input files",
+        "value": {
+          "object": "list",
+          "data": [
+            {
+              "id": "file-55555555-6666-4777-8888-999999999999",
+              "object": "file",
+              "bytes": 595,
+              "created_at": 1794223099,
+              "filename": "batch.jsonl",
+              "purpose": "batch",
+              "status": "processed",
+              "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+            }
+          ],
+          "has_more": false
+        }
+      },
+      "createBatch": {
+        "summary": "A batch on Qwen/Qwen3-8B with a 3 USD ceiling",
+        "value": {
+          "input_file_id": "file-55555555-6666-4777-8888-999999999999",
+          "endpoint": "/v1/chat/completions",
+          "completion_window": "24h",
+          "metadata": {
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+            "max_price_usd": "3"
+          }
+        }
+      },
+      "createEvaluation": {
+        "summary": "An evaluation graded by boxed_math_v1",
+        "value": {
+          "input_file_id": "file-55555555-6666-4777-8888-999999999999",
+          "endpoint": "/v1/chat/completions",
+          "completion_window": "24h",
+          "metadata": {
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+            "reliquary_grader": "boxed_math_v1",
+            "max_price_usd": "5"
+          }
+        }
+      },
+      "batchCreated": {
+        "summary": "A new batch",
+        "value": {
+          "id": "batch_44444444-5555-4666-8777-888888888888",
+          "object": "batch",
+          "endpoint": "/v1/chat/completions",
+          "errors": null,
+          "input_file_id": "file-55555555-6666-4777-8888-999999999999",
+          "completion_window": "24h",
+          "status": "validating",
+          "output_file_id": null,
+          "error_file_id": null,
+          "created_at": 1794223108,
+          "in_progress_at": null,
+          "expires_at": 1794309508,
+          "finalizing_at": null,
+          "completed_at": null,
+          "failed_at": null,
+          "expired_at": null,
+          "cancelling_at": null,
+          "cancelled_at": null,
+          "request_counts": {
+            "total": 2,
+            "completed": 0,
+            "failed": 0
+          },
+          "metadata": {
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+            "max_price_usd": "3"
+          }
+        }
+      },
+      "batchCompleted": {
+        "summary": "A delivered batch",
+        "value": {
+          "id": "batch_44444444-5555-4666-8777-888888888888",
+          "object": "batch",
+          "endpoint": "/v1/chat/completions",
+          "errors": null,
+          "input_file_id": "file-55555555-6666-4777-8888-999999999999",
+          "completion_window": "24h",
+          "status": "completed",
+          "output_file_id": "file-out-44444444-5555-4666-8777-888888888888",
+          "error_file_id": null,
+          "created_at": 1794223108,
+          "in_progress_at": 1794223165,
+          "expires_at": 1794309508,
+          "finalizing_at": 1794223957,
+          "completed_at": 1794224079,
+          "failed_at": null,
+          "expired_at": null,
+          "cancelling_at": null,
+          "cancelled_at": null,
+          "request_counts": {
+            "total": 2,
+            "completed": 2,
+            "failed": 0
+          },
+          "metadata": {
+            "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+            "max_price_usd": "3"
+          }
+        }
+      },
+      "batchList": {
+        "summary": "A page of batches",
+        "value": {
+          "object": "list",
+          "data": [
+            {
+              "id": "batch_44444444-5555-4666-8777-888888888888",
+              "object": "batch",
+              "endpoint": "/v1/chat/completions",
+              "errors": null,
+              "input_file_id": "file-55555555-6666-4777-8888-999999999999",
+              "completion_window": "24h",
+              "status": "completed",
+              "output_file_id": "file-out-44444444-5555-4666-8777-888888888888",
+              "error_file_id": null,
+              "created_at": 1794223108,
+              "in_progress_at": 1794223165,
+              "expires_at": 1794309508,
+              "finalizing_at": 1794223957,
+              "completed_at": 1794224079,
+              "failed_at": null,
+              "expired_at": null,
+              "cancelling_at": null,
+              "cancelled_at": null,
+              "request_counts": {
+                "total": 2,
+                "completed": 2,
+                "failed": 0
+              },
+              "metadata": {
+                "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+                "max_price_usd": "3"
+              }
+            }
+          ],
+          "first_id": "batch_44444444-5555-4666-8777-888888888888",
+          "last_id": "batch_44444444-5555-4666-8777-888888888888",
+          "has_more": false
+        }
+      }
+    }
+  }
+}

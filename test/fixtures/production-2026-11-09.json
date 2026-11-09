@@ -1,0 +1,329 @@
+{
+  "_note": "Responses recorded from production on 2026-11-09 (OpenAI-compatible Batch walkthrough, file evaluation walkthrough, public catalogs). Identifiers and output digests are replaced with synthetic values; the evaluation order is the documented projection {status, status_reason, price_usd, refunded_usd, evaluation, deliveries}.",
+  "generationCatalog": {
+    "ordering": "pilot",
+    "any_model_ordering": "pilot",
+    "envs": [],
+    "models": [],
+    "architectures": [
+      "Qwen3ForCausalLM",
+      "Qwen3_5ForCausalLM",
+      "Qwen3_5ForConditionalGeneration"
+    ]
+  },
+  "evaluationCatalog": {
+    "envs": [
+      {
+        "env": "verifiers:aime25",
+        "sets": [
+          {
+            "set_id": "verifiers-aime25-r0-n30",
+            "name": "AIME 2025",
+            "description": "AIME 2025 I and II, 30 problems, integer answers in \\boxed{}.",
+            "count": 30,
+            "default_max_new_tokens": 32768,
+            "thinking": true,
+            "protocol": null,
+            "protocol_json": null,
+            "protocol_sha256": null,
+            "qualified_support": false
+          }
+        ]
+      },
+      {
+        "env": "verifiers:aime26",
+        "sets": [
+          {
+            "set_id": "verifiers-aime26-r0-n30",
+            "name": "AIME 2026",
+            "description": "AIME 2026 I and II, 30 problems, integer answers in \\boxed{}.",
+            "count": 30,
+            "default_max_new_tokens": 32768,
+            "thinking": true,
+            "protocol": null,
+            "protocol_json": null,
+            "protocol_sha256": null,
+            "qualified_support": false
+          }
+        ]
+      },
+      {
+        "env": "verifiers:gpqa",
+        "sets": [
+          {
+            "set_id": "verifiers-gpqa-ab6f143e1-r0-n198",
+            "name": "GPQA Diamond",
+            "description": "GPQA Diamond, 198 graduate-level multiple-choice science questions.",
+            "count": 198,
+            "default_max_new_tokens": 32768,
+            "thinking": true,
+            "protocol": null,
+            "protocol_json": null,
+            "protocol_sha256": null,
+            "qualified_support": false
+          }
+        ]
+      },
+      {
+        "env": "verifiers:ifbench",
+        "sets": [
+          {
+            "set_id": "verifiers-ifbench-r0-n300",
+            "name": "IFBench",
+            "description": "IFBench, 300 prompts with verifiable output constraints.",
+            "count": 300,
+            "default_max_new_tokens": 32768,
+            "thinking": true,
+            "protocol": null,
+            "protocol_json": null,
+            "protocol_sha256": null,
+            "qualified_support": false
+          }
+        ]
+      },
+      {
+        "env": "verifiers:mmlu-pro",
+        "sets": [
+          {
+            "set_id": "verifiers-mmlu-pro-r0-n12032-k500-s7",
+            "name": "MMLU-Pro (500)",
+            "description": "MMLU-Pro, a fixed random sample of 500 of its 12,032 questions (seed 7).",
+            "count": 500,
+            "default_max_new_tokens": 32768,
+            "thinking": true,
+            "protocol": null,
+            "protocol_json": null,
+            "protocol_sha256": null,
+            "qualified_support": false
+          }
+        ]
+      }
+    ],
+    "gpu_counts": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "modes": [
+      "subnet"
+    ],
+    "default_mode": "subnet",
+    "max_problems_per_env": 5000,
+    "max_problems": 10000,
+    "ordering": "pilot"
+  },
+  "openaiFile": {
+    "id": "file-10000000-0000-4000-8000-000000000001",
+    "object": "file",
+    "bytes": 595,
+    "created_at": 1794223099,
+    "filename": "batch.jsonl",
+    "purpose": "batch",
+    "status": "processed",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "openaiBatchCreated": {
+    "id": "batch_10000000-0000-4000-8000-000000000002",
+    "object": "batch",
+    "endpoint": "/v1/chat/completions",
+    "errors": null,
+    "input_file_id": "file-10000000-0000-4000-8000-000000000001",
+    "completion_window": "24h",
+    "status": "validating",
+    "output_file_id": null,
+    "error_file_id": null,
+    "created_at": 1794223108,
+    "in_progress_at": null,
+    "expires_at": 1794309508,
+    "finalizing_at": null,
+    "completed_at": null,
+    "failed_at": null,
+    "expired_at": null,
+    "cancelling_at": null,
+    "cancelled_at": null,
+    "request_counts": {
+      "total": 2,
+      "completed": 0,
+      "failed": 0
+    },
+    "metadata": {
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "max_price_usd": "3"
+    }
+  },
+  "openaiBatchCompleted": {
+    "id": "batch_10000000-0000-4000-8000-000000000002",
+    "object": "batch",
+    "endpoint": "/v1/chat/completions",
+    "errors": null,
+    "input_file_id": "file-10000000-0000-4000-8000-000000000001",
+    "completion_window": "24h",
+    "status": "completed",
+    "output_file_id": "file-out-10000000-0000-4000-8000-000000000002",
+    "error_file_id": null,
+    "created_at": 1794223108,
+    "in_progress_at": 1794223165,
+    "expires_at": 1794309508,
+    "finalizing_at": 1794223957,
+    "completed_at": 1794224079,
+    "failed_at": null,
+    "expired_at": null,
+    "cancelling_at": null,
+    "cancelled_at": null,
+    "request_counts": {
+      "total": 2,
+      "completed": 2,
+      "failed": 0
+    },
+    "metadata": {
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "max_price_usd": "3"
+    }
+  },
+  "openaiEvaluationFile": {
+    "id": "file-10000000-0000-4000-8000-000000000003",
+    "object": "file",
+    "bytes": 660,
+    "created_at": 1794224602,
+    "filename": "eval.jsonl",
+    "purpose": "batch",
+    "status": "processed",
+    "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "openaiEvaluationBatchCreated": {
+    "id": "batch_10000000-0000-4000-8000-000000000004",
+    "object": "batch",
+    "endpoint": "/v1/chat/completions",
+    "errors": null,
+    "input_file_id": "file-10000000-0000-4000-8000-000000000003",
+    "completion_window": "24h",
+    "status": "validating",
+    "output_file_id": null,
+    "error_file_id": null,
+    "created_at": 1794224611,
+    "in_progress_at": null,
+    "expires_at": 1794311011,
+    "finalizing_at": null,
+    "completed_at": null,
+    "failed_at": null,
+    "expired_at": null,
+    "cancelling_at": null,
+    "cancelled_at": null,
+    "request_counts": {
+      "total": 2,
+      "completed": 0,
+      "failed": 0
+    },
+    "metadata": {
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "reliquary_grader": "boxed_math_v1",
+      "max_price_usd": "5"
+    }
+  },
+  "fileEvaluationOrderProjection": {
+    "status": "delivered",
+    "status_reason": null,
+    "price_usd": 2.92513,
+    "refunded_usd": 1.6e-05,
+    "evaluation": {
+      "grader": "boxed_math_v1",
+      "status": "graded",
+      "complete": true,
+      "summary": {
+        "complete": true,
+        "envs": {
+          "boxed_math_v1": {
+            "n_problems": 2,
+            "samples": 1,
+            "expected_rows": 2,
+            "graded_rows": 2,
+            "ungraded_rows": 0,
+            "missing_rows": 0,
+            "mean_score": 0.5,
+            "n_problems_graded": 2,
+            "missing_problems": 0,
+            "requested_samples": 2,
+            "completed_samples": 2,
+            "graded_samples": 2,
+            "attempted_samples": null,
+            "tool_calls_total": null,
+            "mean_completion_tokens": 53,
+            "mean_turns": null,
+            "truncation_rate": 0.5,
+            "format_failure_rate": 0.5,
+            "stop_reasons": {
+              "length": 1,
+              "stop": 1
+            },
+            "complete": true,
+            "pass@1": {
+              "value": 0.5,
+              "ci95": [
+                0,
+                1
+              ]
+            },
+            "pass@k": {
+              "1": 0.5
+            }
+          }
+        },
+        "macro": {
+          "pass@1": 0.5,
+          "pass@k": {
+            "1": 0.5
+          }
+        }
+      }
+    },
+    "deliveries": [
+      {
+        "delivery_id": "dl-10000000-0000-4000-8000-000000000004",
+        "files": [
+          {
+            "name": "manifest.json",
+            "size": 1030,
+            "sha256": null,
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/dl-10000000-0000-4000-8000-000000000004/files/manifest.json"
+          },
+          {
+            "name": "output-00000.jsonl",
+            "size": 1255,
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/dl-10000000-0000-4000-8000-000000000004/files/output-00000.jsonl"
+          },
+          {
+            "name": "report.json",
+            "size": 2546,
+            "sha256": null,
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/dl-10000000-0000-4000-8000-000000000004/files/report.json"
+          }
+        ]
+      },
+      {
+        "delivery_id": "evaluation",
+        "files": [
+          {
+            "name": "graded.parquet",
+            "size": 4728,
+            "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/evaluation/files/graded.parquet"
+          },
+          {
+            "name": "manifest.json",
+            "size": 991,
+            "sha256": null,
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/evaluation/files/manifest.json"
+          },
+          {
+            "name": "report.json",
+            "size": 3869,
+            "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "url": "/api/v1/dataset-orders/10000000-0000-4000-8000-000000000004/deliveries/evaluation/files/report.json"
+          }
+        ]
+      }
+    ]
+  }
+}

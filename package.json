@@ -1,6 +1,6 @@
 {
   "name": "@reliquary/api",
-  "version": "0.11.2",
+  "version": "0.12.0",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -48,6 +48,7 @@
       "import": "./dist/evaluation-api.js"
     },
     "./evaluations/openapi": "./contracts/evaluations.openapi.json",
+    "./openai-batch/openapi": "./contracts/openai-batch.openapi.json",
     "./subnet-client": {
       "types": "./dist/subnet-client.d.ts",
       "import": "./dist/subnet-client.js"

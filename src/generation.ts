@@ -1,5 +1,5 @@
 import {
-  BATCH_OUTPUT_FORMATS, isFileQuote, type BatchOutputFormat, type FileQuoteInput,
+  BATCH_OUTPUT_FORMATS, FILE_GRADERS, isFileQuote, type FileGrader, type BatchOutputFormat, type FileQuoteInput,
   parseBatchOrderResponse, parseBatchOrders, parseBatchQuote,
   parseGenerationOrderResponse, parseGenerationOrders,
   type BatchOrderDetail, type BatchOrdersResponse, type BatchQuote, type BatchQuoteInput,
@@ -35,18 +35,19 @@ const fileName = (name: string) => {
   return encodeURIComponent(name);
 };
 
-/** A quote on an uploaded batch file (``input_file_id``): model, its pinned revision, optional budget and format. */
+/** A quote on an uploaded batch file (``input_file_id``): model, its pinned revision, optional budget, format and grader. */
 export function parseFileQuoteInput(value: unknown): FileQuoteInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid quote request.');
   const input = value as Record<string, unknown>;
-  const fields = ['model', 'revision', 'input_file_id', 'max_new_tokens', 'output_format'];
+  const fields = ['model', 'revision', 'input_file_id', 'max_new_tokens', 'output_format', 'grader'];
   if (Object.keys(input).some(k => !fields.includes(k)) || typeof input['model'] !== 'string' ||
       !/^[A-Za-z0-9][\w.-]{0,95}\/[A-Za-z0-9][\w.-]{0,95}$/.test(input['model']) || input['model'].includes('..') ||
       typeof input['revision'] !== 'string' || !/^[a-f0-9]{40}$/.test(input['revision']) ||
       typeof input['input_file_id'] !== 'string' || !/^file-[\w-]{1,80}$/.test(input['input_file_id']) ||
       (input['max_new_tokens'] !== undefined && !(typeof input['max_new_tokens'] === 'number' &&
         Number.isSafeInteger(input['max_new_tokens']) && input['max_new_tokens'] >= 16 && input['max_new_tokens'] <= 131_072)) ||
-      (input['output_format'] !== undefined && !BATCH_OUTPUT_FORMATS.includes(input['output_format'] as BatchOutputFormat)))
+      (input['output_format'] !== undefined && !BATCH_OUTPUT_FORMATS.includes(input['output_format'] as BatchOutputFormat)) ||
+      (input['grader'] !== undefined && !FILE_GRADERS.includes(input['grader'] as FileGrader)))
     throw new Error('Invalid file quote request.');
   return value as FileQuoteInput;
 }
@@ -109,7 +110,8 @@ export function assertGenerationQuoteMatches(quote: BatchQuote, input: BatchQuot
     if (!('input_file_id' in input) || !isFileQuote(quote) || quote.model !== input.model || quote.revision !== input.revision ||
         quote.input_file_id !== input.input_file_id ||
         (input.max_new_tokens !== undefined && quote.max_new_tokens !== input.max_new_tokens) ||
-        (input.output_format !== undefined && quote.output_format !== undefined && quote.output_format !== input.output_format))
+        (input.output_format !== undefined && quote.output_format !== undefined && quote.output_format !== input.output_format) ||
+        (quote.grader ?? null) !== (input.grader ?? null) || (input.grader !== undefined) !== (quote.purpose === 'eval'))
       throw new Error('The quoted configuration changed. Request a new quote.');
     return;
   }

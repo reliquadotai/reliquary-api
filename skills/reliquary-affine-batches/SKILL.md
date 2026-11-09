@@ -5,7 +5,7 @@ description: "Review a v1/v2 batch, prepare a portable plan, or prepare an appro
 
 # Prepare an official Affine batch workflow
 
-For Arbos use its native skill import and ordinary shell; see the bundled examples/arbos-affine.md guide. With client 0.11.2, affine review --batch FILE --mining FILE --hotkey OWNER and affine plan --batch FILE --mining FILE --input FILE perform local SDK checks without credentials, network or compute. Keep inputs and redirected output private outside repositories. Native external-MCP setup still requires host-specific verification.
+For Arbos use its native skill import and ordinary shell; see the bundled examples/arbos-affine.md guide. With client 0.12.0, affine review --batch FILE --mining FILE --hotkey OWNER and affine plan --batch FILE --mining FILE --input FILE perform local SDK checks without credentials, network or compute. Keep inputs and redirected output private outside repositories. Native external-MCP setup still requires host-specific verification.
 
 CLI users start with reliqua affine status --json and their own RELIQUARY_TRAINING_KEY. Read the installed Affine CLI guide before a mutation. prepare, upload, save-draft, quote and start each consume one explicit --input JSON file of at most 32 KiB. Upload requires --confirm-rights; start requires --approve-execution in addition to the retained submission and its original stable requestKey. These flags acknowledge authorization for the exact selected stage; they do not qualify a profile or override upstream refusal.
 
@@ -37,7 +37,7 @@ CLI entry: `reliqua affine status --json`
 
 ## Interfaces and limits
 
-Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.11.2 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
+Supported interfaces: cli, mcp, http. The lightweight `reliqua` CLI 0.12.0 supports public/owned reads and explicitly selected, qualified Affine batch stages. Upload rights and launching require separate explicit flags. Installing instructions does not enable a server capability or authorize execution. Use only an already configured interface and registered tools. If installation is needed, obtain authorization and use https://app.reliqua.ai/docs/agents/cli; do not guess a public npm package.
 
 For MCP call `reliquary_connection` first, then use the task-relevant registered tools: `reliquary_affine_batch_review`, `reliquary_affine_batch_plan`, `reliquary_affine_batch_prepare`, `reliquary_training_upload`, `reliquary_resource_create`, `reliquary_training_start`, `reliquary_training_task_get`, `reliquary_training_artifact_download`. A registered tool is not proof of a valid credential or enabled service. Mutation tools require the configured write setting and upstream scope; do not enable writes automatically.
 
