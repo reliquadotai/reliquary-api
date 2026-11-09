@@ -6,7 +6,7 @@ import {
   parseBatchFileList, parseBatchQuote, parseEvaluationCatalog, parseEvaluationOrder, parseEvaluationQuote,
   parseFileEvaluation, parseFileQuoteInput, parseGenerationCatalog, parseGenerationOrderResponse, parseGenerationQuoteInput,
   parseGenerationResponse, parseProductInventory, createGenerationClient, parseEvaluationQuoteInput,
-  assertEvaluationQuoteMatches, parseEvaluationSummary,
+  assertEvaluationQuoteMatches, parseEvaluationSummary, SKILL_STATES, skillProductOpen,
 } from '../dist/index.js';
 import { createValidator } from './schema-validator.mjs';
 
@@ -303,4 +303,34 @@ test('release skills cover evaluations on a file and the discovery questions', a
     const content = await readFile(new URL(`../skills/${item.id}/SKILL.md`, import.meta.url), 'utf8');
     assert.doesNotMatch(content, /approved (?:pilot )?accounts?|account approval|request access|grant(?:s|ed)? credits|credits? (?:are|is) granted|manually (?:approve|credit)|onboarding|top up/i, item.id);
   }
+});
+
+test('workflows whose product is not open yet are marked and say what to use instead', async () => {
+  const closed = ['reliquary-generation-quote', 'reliquary-generation-order',
+    ...['readiness', 'datasets', 'import', 'draft', 'quote', 'start', 'progress', 'artifacts', 'cancel', 'dataset-lifecycle'].map(s => 'reliquary-training-' + s),
+    ...['readiness', 'validate', 'progress', 'report', 'control'].map(s => 'reliquary-cpu-' + s),
+    'reliquary-affine-pilot', 'reliquary-affine-batches'];
+  assert.deepEqual(OFFICIAL_SKILLS.filter(skill => skill.state === 'not-yet-available').map(skill => skill.id).sort(), [...closed].sort());
+  assert.deepEqual([...SKILL_STATES], ['available', 'qualified-pilot', 'gated', 'not-yet-available']);
+  for (const skill of OFFICIAL_SKILLS) {
+    assert.ok(SKILL_STATES.includes(skill.state), skill.id);
+    assert.equal(skillProductOpen(skill), !closed.includes(skill.id));
+    const content = await readFile(new URL(`../skills/${skill.id}/SKILL.md`, import.meta.url), 'utf8');
+    if (closed.includes(skill.id)) {
+      assert.match(skill.availability, /^Not yet available: /);
+      assert.ok(content.startsWith(`---\nname: ${skill.id}\n`));
+      assert.equal(content.split('\n')[7], `> ${skill.availability}`, skill.id);
+      assert.ok(skill.guidance.every(step => content.includes(step)), `${skill.id} keeps its instructions`);
+      assert.match(content, /\nSupport: not-yet-available\. /);
+    } else {
+      assert.equal(skill.availability, undefined, skill.id);
+      assert.doesNotMatch(content, /Not yet available/);
+    }
+  }
+  for (const id of ['reliquary-generation-quote', 'reliquary-generation-order'])
+    assert.match(OFFICIAL_SKILLS.find(skill => skill.id === id).availability, /reliquary-batch-files/);
+  for (const id of ['reliquary-batch-files', 'reliquary-batch-download', 'reliquary-evaluation-file', 'reliquary-evaluation-quote', 'reliquary-generation-track', 'reliquary-generation-delivery', 'reliquary-generation-cancel', 'reliquary-credits', 'reliquary-compute'])
+    assert.ok(skillProductOpen(OFFICIAL_SKILLS.find(skill => skill.id === id)), id);
+  const compute = OFFICIAL_SKILLS.find(skill => skill.id === 'reliquary-compute').guidance.join('\n');
+  assert.match(compute, /Managed rentals are not available yet: this workflow compares offers only/);
 });

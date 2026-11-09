@@ -10,6 +10,7 @@ for (const skill of OFFICIAL_SKILLS) {
     `description: ${JSON.stringify(skill.description)}`,
     '---', '',
     `# ${skill.title}`, '',
+    ...(skill.state === 'not-yet-available' ? [`> ${skill.availability}`, ''] : []),
     ...skill.guidance.flatMap(step => [step, '']),
     `Expected result: ${skill.expectedResult}`, '',
     ...(skill.command ? ['CLI entry: `' + skill.command + '`', ''] : []),

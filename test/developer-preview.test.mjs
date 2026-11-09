@@ -127,6 +127,11 @@ test('clean packed installation supports public discovery, preserves skill edits
     assert(found.some(skill => skill.id === 'reliquary-run-token-mix'));
     assert(found.every(skill => skill.category === 'observability' && skill.interfaces.includes('cli') && skill.access === 'public-read'));
     assert.deepEqual(JSON.parse((await cli(['skills', 'list', '--category', 'unknown', '--json'])).stdout).skills, []);
+    const closed = JSON.parse((await cli(['skills', 'list', '--state', 'not-yet-available', '--json'])).stdout);
+    assert.deepEqual(closed.skills.map(skill => skill.id), OFFICIAL_SKILLS.filter(skill => skill.state === 'not-yet-available').map(skill => skill.id));
+    assert.deepEqual(closed.notYetAvailable, closed.skills.map(skill => skill.id));
+    assert.ok(closed.skills.length > 0 && closed.skills.every(skill => skill.availability));
+    assert.equal((await cli(['skills', 'list', '--state', 'closed'])).code, 2);
     const instructions = await cli(['skills', 'show', '--skill', 'reliquary-run-token-mix', '--json']);
     assert.equal(instructions.code, 0, instructions.stderr);
     assert.equal(JSON.parse(instructions.stdout).instructions, await readFile(join(temp, 'install/node_modules/@reliquary/api/skills/reliquary-run-token-mix/SKILL.md'), 'utf8'));

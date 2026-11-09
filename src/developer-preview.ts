@@ -1,4 +1,7 @@
-/** Task-oriented workflows; status describes documented support, never live capacity. */
+/**
+ * Task-oriented workflows; status describes documented support, never live capacity.
+ * not-yet-available marks a workflow whose product is not open yet: its instructions are kept for when it opens.
+ */
 export type OfficialSkill = {
   id: string;
   title: string;
@@ -7,8 +10,10 @@ export type OfficialSkill = {
   category: string;
   interfaces: readonly ('cli' | 'mcp' | 'http')[];
   access: 'public-read' | 'authenticated-read' | 'approval-required';
-  state: 'available' | 'qualified-pilot' | 'gated';
+  state: 'available' | 'qualified-pilot' | 'gated' | 'not-yet-available';
   stateReason: string;
+  /** Set when state is not-yet-available: the product is not open yet, and what to use instead. */
+  availability?: string;
   requiredScopes: readonly ('resources' | 'orders' | 'evaluations' | 'training')[];
   apiRoutes: readonly { method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; path: string }[];
   mcpTools: readonly string[];
@@ -90,7 +95,7 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "Compare matching GPU model, VRAM, GPU count, region, tier and pricing mode. `priceMicroUsdPerHour` is the entire package-hour cost in millionths of USD; `priceMicroUsdPerGpuHour` is per GPU. Keep stock, reference prices and minimum rental package sizes distinct.",
       "Report offer and source observations, snapshot time, source health and expiry. Stale, unavailable, unknown-stock and disconnected sources cannot establish fresh capacity. If matchingOffers exceeds displayed rows, say the shortlist is limited; no market-wide cheapest claim follows from partial coverage.",
       "Collect model, training method, memory needs, GPU count, region, duration and budget before recommending workload suitability. A provider tier label does not certify isolation, topology or qualification.",
-      "Read current managed-rental capability fields. This CLI preview cannot book. Provider confirmation of full cost, capacity and terms is required; do not create a rental or unattended booking workflow."
+      "Managed rentals are not available yet: this workflow compares offers only. This CLI preview cannot book. Provider confirmation of full cost, capacity and terms is required; do not create a rental or unattended booking workflow."
     ],
     "expectedResult": "A bounded GPU shortlist with package and per-GPU rates, observation clocks and an explicit booking boundary.",
     "docs": "/docs/agents/compute",
@@ -350,8 +355,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires orders authority and currently enabled qualified generation; quote creation does not launch execution.",
+    "availability": "Not yet available: dataset generation from the catalog or an environment is not open yet (the generation catalog lists no models, sources or environments). To generate completions from your own prompts, use reliquary-batch-files.",
     "requiredScopes": [
       "orders"
     ],
@@ -392,8 +398,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Execution requires a fresh server quote, explicit approval, credits and current generation gates.",
+    "availability": "Not yet available: dataset generation from the catalog or an environment is not open yet (the generation catalog lists no models, sources or environments). To generate completions from your own prompts, use reliquary-batch-files.",
     "requiredScopes": [
       "orders"
     ],
@@ -764,8 +771,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -800,8 +808,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires current upload permission, compatible reviewed data and explicit transfer/data-rights confirmation.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -853,8 +862,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires delivered owned data, data rights, upload/import permission and compatible format.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training",
       "orders"
@@ -900,8 +910,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires current qualified profile, compatible owned dataset and resource-write authority; saving does not launch.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training",
       "resources"
@@ -952,8 +963,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires a qualified exact draft/dataset and a currently supported service-credit billing path.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training",
       "resources"
@@ -999,8 +1011,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires fresh exact quote where applicable, explicit launch approval, current account permission and qualified runtime capacity.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training",
       "resources"
@@ -1051,8 +1064,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -1091,8 +1105,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -1132,8 +1147,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires ownership and explicit cancellation approval; stopping may be asynchronous.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -1173,8 +1189,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "gated",
+    "state": "not-yet-available",
     "stateReason": "Requires exact file ownership and authorized archive/restore; active dependencies and quota remain server checks.",
+    "availability": "Not yet available: private training is not open yet. Keep these instructions for when it opens; do not prepare uploads, drafts, quotes or launches for a user today.",
     "requiredScopes": [
       "training"
     ],
@@ -1317,8 +1334,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: CPU validation jobs are not open yet (no CPU worker is serving them). Keep these instructions for when it opens; do not upload inputs or submit jobs for a user today.",
     "requiredScopes": [
       "resources"
     ],
@@ -1354,8 +1372,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "qualified-pilot",
+    "state": "not-yet-available",
     "stateReason": "Bounded CPU pilot only; current feature gate, account grant, fresh worker and two exact approvals remain necessary.",
+    "availability": "Not yet available: CPU validation jobs are not open yet (no CPU worker is serving them). Keep these instructions for when it opens; do not upload inputs or submit jobs for a user today.",
     "requiredScopes": [
       "resources"
     ],
@@ -1402,8 +1421,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: CPU validation jobs are not open yet (no CPU worker is serving them). Keep these instructions for when it opens; do not upload inputs or submit jobs for a user today.",
     "requiredScopes": [
       "resources"
     ],
@@ -1450,8 +1470,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "authenticated-read",
-    "state": "available",
+    "state": "not-yet-available",
     "stateReason": "Requires the configured scope and current account permission; this label does not establish execution capacity.",
+    "availability": "Not yet available: CPU validation jobs are not open yet (no CPU worker is serving them). Keep these instructions for when it opens; do not upload inputs or submit jobs for a user today.",
     "requiredScopes": [
       "resources"
     ],
@@ -1492,8 +1513,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
       "http"
     ],
     "access": "approval-required",
-    "state": "qualified-pilot",
+    "state": "not-yet-available",
     "stateReason": "Bounded CPU pilot control only; exact-action approval, current revision and account authority are required.",
+    "availability": "Not yet available: CPU validation jobs are not open yet (no CPU worker is serving them). Keep these instructions for when it opens; do not upload inputs or submit jobs for a user today.",
     "requiredScopes": [
       "resources"
     ],
@@ -1716,8 +1738,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     title: 'Prepare one bounded Affine diagnostic',
     description: 'Review a public MiMo-compatible checkpoint, approve its bounded preparation and explicitly launch one source-pinned diagnostic.',
     prompt: 'Prepare my compatible checkpoint for the assisted Affine pilot and show each approval boundary.',
-    category: 'training', interfaces: ['mcp', 'http'], access: 'approval-required', state: 'gated',
+    category: 'training', interfaces: ['mcp', 'http'], access: 'approval-required', state: 'not-yet-available',
     stateReason: 'Requires a human-claimed workspace, open pilot window, connected coordinator, exact preparation approval and separate execution approval. No live GPU is enabled by default.',
+    availability: "Not yet available: the Affine workflows have no open offering yet. Keep these instructions for when one opens; do not prepare, upload or launch for a user today.",
     requiredScopes: ['training', 'resources'], version: '0.12.0', docs: '/docs/agents/affine-pilot',
     apiRoutes: [
       { method: 'GET', path: '/api/v1/training/affine-native-evaluation/preparations' },
@@ -1749,8 +1772,9 @@ export const OFFICIAL_SKILLS: readonly OfficialSkill[] = [
     id: 'reliquary-affine-batches', title: 'Prepare an official Affine batch workflow',
     description: 'Review a v1/v2 batch, prepare a portable plan, or prepare an approved owner-scoped hosted batch request.',
     prompt: 'Prepare batch generation and export, official tokenizer validation, one GRPO step and parent/candidate comparison.',
-    category: 'training', interfaces: ['cli', 'mcp', 'http'], access: 'approval-required', state: 'qualified-pilot',
+    category: 'training', interfaces: ['cli', 'mcp', 'http'], access: 'approval-required', state: 'not-yet-available',
     stateReason: 'Hosted preparation requires an available qualified owner profile; local review cannot establish tokenizer validity, gain or official parity.',
+    availability: "Not yet available: the Affine workflows have no open offering yet. Keep these instructions for when one opens; do not prepare, upload or launch for a user today.",
     requiredScopes: ['training', 'resources'], apiRoutes: [{ method: 'POST', path: '/api/v1/training/affine-batch/prepare' }, { method: 'POST', path: '/api/v1/training/files' }, { method: 'POST', path: '/api/resources' }, { method: 'POST', path: '/api/v1/training/tasks' }, { method: 'GET', path: '/api/v1/training/tasks/{id}' }, { method: 'GET', path: '/api/v1/training/tasks/{id}/artifacts/{artifactId}' }], version: '0.12.0',
     docs: '/docs/agents/affine-batches',
     command: 'reliqua affine status --json',
@@ -1970,6 +1994,12 @@ export const DEVELOPER_PREVIEW = {
   docsOrigin: 'https://app.reliqua.ai',
   apiOrigin: 'https://api.reliqua.ai',
 } as const;
+
+export const SKILL_STATES = ['available', 'qualified-pilot', 'gated', 'not-yet-available'] as const;
+/** Whether the workflow's product is open today (every state but not-yet-available). */
+export function skillProductOpen(skill: Pick<OfficialSkill, 'state'>): boolean {
+  return skill.state !== 'not-yet-available';
+}
 
 /** Immutable instruction location for the installed catalog release. */
 export function skillInstructionsPath(skill: Pick<OfficialSkill, 'id' | 'version'>): string {

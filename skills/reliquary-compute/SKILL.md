@@ -13,7 +13,7 @@ Report offer and source observations, snapshot time, source health and expiry. S
 
 Collect model, training method, memory needs, GPU count, region, duration and budget before recommending workload suitability. A provider tier label does not certify isolation, topology or qualification.
 
-Read current managed-rental capability fields. This CLI preview cannot book. Provider confirmation of full cost, capacity and terms is required; do not create a rental or unattended booking workflow.
+Managed rentals are not available yet: this workflow compares offers only. This CLI preview cannot book. Provider confirmation of full cost, capacity and terms is required; do not create a rental or unattended booking workflow.
 
 Expected result: A bounded GPU shortlist with package and per-GPU rates, observation clocks and an explicit booking boundary.
 
