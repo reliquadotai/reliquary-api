@@ -37,6 +37,43 @@ test('checkpoint configurations allow up to 24 distinct fixed sets for one model
   }
 });
 
+test('reviewed comparison pins cover exactly the selected fixed sets', () => {
+  const f = fixture();
+  const pins = { [f.set.set_id]: f.quote.protocol_sha256 };
+  assert.deepEqual(parseCheckpointConfig({ ...f.config, comparison_protocols: pins }).comparison_protocols, pins);
+  for (const comparison_protocols of [null, [], {}, { ...pins, other: f.quote.protocol_sha256 }, { [f.set.set_id]: 'not-a-digest' }])
+    assert.throws(() => parseCheckpointConfig({ ...f.config, comparison_protocols }), /comparison protocol/i);
+});
+
+test('a changed comparison protocol stops before order confirmation and on retained quotes', async t => {
+  const dir = await privateDirectory(t), f = fixture();
+  const config = { ...f.config, comparison_protocols: { [f.set.set_id]: 'f'.repeat(64) } };
+  let creates = 0;
+  const client = createEvaluationClient(async (path, init = {}) => {
+    if (path.endsWith('/catalog')) return f.catalog;
+    if (path.endsWith('/quotes')) return f.quote;
+    if (init.method === 'POST') { creates++; return { evaluation: f.order }; }
+    return path.includes('?') ? { evaluations: [] } : { evaluation: f.order };
+  });
+  const options = { client, transport: fileTransport(f), credentialContext: context, waitSeconds: 0, confirm: true };
+  await assert.rejects(runCheckpointEvaluation(config, { ...options, journalPath: join(dir, 'new.private.json') }), /comparison protocol/i);
+  assert.equal(creates, 0);
+  const journalPath = join(dir, 'retained.private.json');
+  await runCheckpointEvaluation(f.config, { ...options, journalPath, confirm: false });
+  const state = JSON.parse(await readFile(journalPath, 'utf8'));
+  state.config = config;
+  // Use the real configuration fingerprint from a prepared intent with these pins.
+  const prepared = JSON.parse(await readFile(join(dir, 'new.private.json'), 'utf8'));
+  state.config_sha256 = prepared.config_sha256;
+  await writeJournal(journalPath, state);
+  await assert.rejects(runCheckpointEvaluation(config, { ...options, journalPath }), /comparison protocol/i);
+  assert.equal(creates, 0);
+  const matched = { ...config, comparison_protocols: { [f.set.set_id]: f.quote.protocol_sha256 } };
+  const delivered = await runCheckpointEvaluation(matched, { ...options, journalPath: join(dir, 'matched.private.json') });
+  assert.equal(creates, 1);
+  assert.equal(delivered.entries[0].result.report.protocol_sha256, f.quote.protocol_sha256);
+});
+
 test('twelve fixed sets retain one aggregate approval and poll pending orders every 30 seconds', async t => {
   const dir = await privateDirectory(t), journalPath = join(dir, 'suite.private.json'), f = fixture();
   const suites = Array.from({ length: 12 }, (_, index) => {
@@ -286,6 +323,21 @@ test('held-out export binds source clocks, unique denominators and immutable pro
   assert.throws(() => appendCheckpointBenchmarks(first, changed, a.target, now, b.publicationEvidence), /Optimizer step/);
   const baseline = appendCheckpointBenchmarks(null, a.checkpoint, { ...a.target, baseline_checkpoint: `example/model@${a.input.revision}` }, now, a.publicationEvidence);
   assert.equal(baseline.benchmarks[0].baseline.samples, 2); assert.deepEqual(baseline.benchmarks[0].checkpoints, []);
+});
+
+test('export rechecks the reviewed quote, request and order before publishing a report', () => {
+  const mutations = [
+    f => { f.checkpoint.config.requests[0].sampling.seed++; f.checkpoint.entries[0].input.sampling.seed++; },
+    f => { f.checkpoint.config.comparison_protocols = { [f.set.set_id]: 'f'.repeat(64) }; },
+    f => { f.checkpoint.entries[0].result.order.max_new_tokens++; },
+  ];
+  for (const mutate of mutations) {
+    const f = fixture();
+    // The config and retained request are independent serialized journal objects.
+    f.checkpoint = JSON.parse(JSON.stringify(f.checkpoint));
+    mutate(f);
+    assert.throws(() => appendCheckpointBenchmarks(null, f.checkpoint, f.target, Date.now(), f.publicationEvidence), /quote|comparison protocol|Receipt/i);
+  }
 });
 
 test('export refuses trainer writes, unknown disjointness, missing native clocks and incomplete reports', () => {

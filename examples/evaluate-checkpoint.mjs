@@ -17,7 +17,7 @@ const MAX_REPORT_BYTES = 8 * 1024 * 1024;
 
 export function parseCheckpointConfig(value) {
   requireValue(value && typeof value === 'object' && !Array.isArray(value), 'A checkpoint configuration is required.');
-  requireValue(Object.keys(value).every(k => ['schema_version', 'trainer_run_id', 'checkpoint_step', 'client_ref', 'max_total_usd', 'requests'].includes(k)), 'Unknown configuration field.');
+  requireValue(Object.keys(value).every(k => ['schema_version', 'trainer_run_id', 'checkpoint_step', 'client_ref', 'max_total_usd', 'requests', 'comparison_protocols'].includes(k)), 'Unknown configuration field.');
   requireValue(value.schema_version === 1 && safeRef(value.trainer_run_id) && safeRef(value.client_ref), 'Use schema_version1 and safe trainer_run_id/client_ref identifiers.');
   requireValue(value.checkpoint_step === null || Number.isSafeInteger(value.checkpoint_step) && value.checkpoint_step >= 0 && value.checkpoint_step <= 1e12, 'Use an explicit optimizer checkpoint_step in0..1e12, or null when unknown.');
   requireValue(typeof value.max_total_usd === 'number' && Number.isFinite(value.max_total_usd) && value.max_total_usd >= 0, 'An explicit approved max_total_usd is required.');
@@ -31,6 +31,13 @@ export function parseCheckpointConfig(value) {
   });
   requireValue(requests.every(r => r.model === requests[0].model && r.revision === requests[0].revision), 'One journal may evaluate exactly one model checkpoint.');
   requireValue(new Set(requests.map(r => r.envs[0].set_id)).size === requests.length, 'Each fixed set may appear once.');
+  if (value.comparison_protocols !== undefined) {
+    const pins = value.comparison_protocols;
+    requireValue(pins && typeof pins === 'object' && !Array.isArray(pins) &&
+      equal(Object.keys(pins).sort(), requests.map(r => r.envs[0].set_id).sort()) &&
+      Object.values(pins).every(sha => typeof sha === 'string' && /^[a-f0-9]{64}$/.test(sha)),
+    'Reviewed comparison protocols must pin exactly every selected fixed set.');
+  }
   return { ...value, requests };
 }
 
@@ -150,9 +157,10 @@ function verifiedSet(catalog, input) {
   return set;
 }
 
-function assertFrozenQuote(quote, input, set) {
+export function assertFrozenQuote(quote, input, set, comparisonProtocol) {
   assertEvaluationQuoteMatches(quote, input);
   verifyProtocol(quote.protocol, quote.protocol_json, quote.protocol_sha256);
+  requireValue(comparisonProtocol === undefined || quote.protocol_sha256 === comparisonProtocol, 'The quote differs from the reviewed comparison protocol.');
   const expected = {
     schema: 'reliquary/evaluation-request/v1', sets: input.envs,
     protocol_bindings: { [set.set_id]: set.protocol_sha256 }, sampling: quote.sampling,
@@ -164,7 +172,7 @@ function assertFrozenQuote(quote, input, set) {
   requireValue(typeof expected.interaction === 'string' && equal(expected, quote.protocol) && equal(quote.protocol_bindings, expected.protocol_bindings), 'The quote does not bind the exact frozen evaluation protocol.');
 }
 
-function assertOrder(order, entry) {
+export function assertOrder(order, entry) {
   requireValue(order.quote_id === entry.quote.quote_id && order.client_ref === entry.client_ref, 'Receipt quote or client reference changed.');
   for (const key of ['model', 'model_access', 'mode', 'envs', 'sampling', 'thinking', 'max_new_tokens', 'harness', 'max_turns', 'max_episode_tokens', 'episode_timeout_seconds', 'protocol', 'protocol_json', 'protocol_sha256', 'protocol_bindings'])
     requireValue(equal(order[key], entry.quote[key]), `Receipt ${key} does not match the retained quote.`);
@@ -206,7 +214,7 @@ export async function runCheckpointEvaluation(configValue, options) {
     requireValue(Array.isArray(state.entries) && state.entries.length === config.requests.length, 'Journal evaluation coverage changed.');
     state.entries.forEach((entry, index) => {
       requireValue(equal(entry.input, config.requests[index]) && entry.client_ref === `${config.client_ref}:${index}` && /^[a-f0-9-]{36}$/.test(entry.request_key), 'Journal confirmation identity changed.');
-      if (entry.quote) { verifyProtocol(entry.set.protocol, entry.set.protocol_json, entry.set.protocol_sha256); assertFrozenQuote(entry.quote, entry.input, entry.set); }
+      if (entry.quote) { verifyProtocol(entry.set.protocol, entry.set.protocol_json, entry.set.protocol_sha256); assertFrozenQuote(entry.quote, entry.input, entry.set, config.comparison_protocols?.[entry.input.envs[0].set_id]); }
     });
     const save = () => writeJournal(journalPath, state);
     const signal = AbortSignal.timeout(Math.max(15000, waitSeconds * 1000));
@@ -226,7 +234,7 @@ export async function runCheckpointEvaluation(configValue, options) {
       const set = verifiedSet(catalog, entry.input);
       entry.phase = 'quoting'; await save();
       const quote = await client.quote(entry.input, signal);
-      assertFrozenQuote(quote, entry.input, set);
+      assertFrozenQuote(quote, entry.input, set, config.comparison_protocols?.[entry.input.envs[0].set_id]);
       entry.quote = quote; entry.set = set; entry.phase = 'quoted'; await save();
     }
     const total = state.entries.reduce((sum, e) => sum + Math.round(e.quote.price_usd * 1e6), 0);
